@@ -1,0 +1,22 @@
+#  guests(
+#       businessId: ID!
+#       businessType: String!
+#       status: String
+#     ): [Guest!]!
+query guests(
+  $businessId: ID!
+  $businessType: String!
+  $status: String
+) {
+  guests(
+    businessId: $businessId
+    businessType: $businessType
+    status: $status
+  ) {
+    id
+    name
+    email
+    phone
+    createdAt
+  }
+}

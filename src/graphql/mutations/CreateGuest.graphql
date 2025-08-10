@@ -1,0 +1,10 @@
+    # createGuest(input: GuestInput!): Guest!
+mutation createGuest($input: GuestInput!) {
+  createGuest(input: $input) {
+    id
+    name
+    email
+    phone
+    createdAt
+  }
+}

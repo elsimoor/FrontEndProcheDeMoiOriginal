@@ -1,0 +1,4 @@
+    # deleteGuest(id: ID!): Boolean!
+mutation deleteGuest($id: ID!) {
+  deleteGuest(id: $id)
+}

@@ -1,0 +1,59 @@
+# reservations(
+#       businessId: ID!
+#       businessType: String!
+#       status: String
+#       date: Date
+#     ): [Reservation!]!
+
+query reservations(
+  $businessId: ID!
+  $businessType: String!
+  $status: String
+  $date: Date
+) {
+  reservations(
+    businessId: $businessId
+    businessType: $businessType
+    status: $status
+    date: $date
+  ) {
+    id
+    businessType
+    customerInfo {
+      name
+      email
+      phone
+    }
+    date
+    status
+    
+    # Hotel fields
+    roomId {
+      number
+      type
+    }
+    checkIn
+    checkOut
+    guests
+    
+    # Restaurant fields
+    tableId {
+      number
+      capacity
+    }
+    partySize
+    
+    # Salon fields
+    serviceId {
+      name
+      duration
+    }
+    staffId {
+      name
+    }
+    
+    duration
+    
+    createdAt
+  }
+}

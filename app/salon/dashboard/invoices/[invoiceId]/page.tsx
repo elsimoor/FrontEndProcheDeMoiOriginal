@@ -1,0 +1,154 @@
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { gql, useQuery, useMutation } from "@apollo/client";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
+
+/**
+ * Query to fetch invoice details by ID for salons.  It retrieves
+ * invoice items and reservation details to display.  The same
+ * `invoice` query used by hotels and restaurants works here as well
+ * because invoices are generic across business types.
+ */
+const GET_INVOICE = gql`
+  query GetInvoice($id: ID!) {
+    invoice(id: $id) {
+      id
+      date
+      total
+      items {
+        description
+        price
+        quantity
+        total
+      }
+      reservation {
+        id
+        customerInfo {
+          name
+        }
+        checkIn
+        checkOut
+        date
+      }
+    }
+  }
+`;
+
+/**
+ * Mutation to generate the PDF for a given invoice.  The server
+ * returns a Base64 encoded string representing the PDF.  We then
+ * trigger a browser download using a data URI.
+ */
+const GENERATE_INVOICE_PDF = gql`
+  mutation GenerateInvoicePdf($id: ID!) {
+    generateInvoicePdf(id: $id)
+  }
+`;
+
+export default function SalonInvoiceDetailsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const invoiceId = params.invoiceId as string;
+
+  // Load invoice details
+  const { data, loading, error } = useQuery(GET_INVOICE, {
+    variables: { id: invoiceId },
+  });
+  const [generatePdf] = useMutation(GENERATE_INVOICE_PDF);
+
+  /**
+   * Handler to download the invoice as a PDF.  It calls the
+   * `generateInvoicePdf` mutation and then uses the resulting
+   * Base64 string to create a downloadable link.  If an error
+   * occurs we inform the user.
+   */
+  const handleDownload = async () => {
+    try {
+      const { data: pdfData } = await generatePdf({ variables: { id: invoiceId } });
+      if (pdfData && pdfData.generateInvoicePdf) {
+        const base64 = pdfData.generateInvoicePdf;
+        const link = document.createElement("a");
+        link.href = `data:application/pdf;base64,${base64}`;
+        link.download = `invoice-${invoiceId}.pdf`;
+        link.click();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to download invoice.");
+    }
+  };
+
+  if (loading) {
+    return <div className="p-6">Loading…</div>;
+  }
+  if (error) {
+    return <div className="p-6 text-red-600">Unable to load invoice details.</div>;
+  }
+
+  const invoice = data?.invoice;
+  if (!invoice) {
+    return <div className="p-6 text-red-600">Invoice not found.</div>;
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Invoice {invoice.id}</h1>
+          <p className="text-sm text-gray-600">Date: {new Date(invoice.date).toLocaleDateString()}</p>
+          {invoice.reservation && (
+            <p className="text-sm text-gray-600">Customer: {invoice.reservation.customerInfo?.name}</p>
+          )}
+          {/* For salons the reservation may use a single date or a checkIn/out pair.  We display whichever is available. */}
+          {invoice.reservation?.checkIn && invoice.reservation?.checkOut ? (
+            <p className="text-sm text-gray-600">
+              Stay: {new Date(invoice.reservation.checkIn).toLocaleDateString()} – {new Date(invoice.reservation.checkOut).toLocaleDateString()}
+            </p>
+          ) : invoice.reservation?.date ? (
+            <p className="text-sm text-gray-600">Date: {new Date(invoice.reservation.date).toLocaleDateString()}</p>
+          ) : null}
+        </div>
+        <div className="space-x-2">
+          <Button variant="outline" onClick={() => router.back()}>
+            Back
+          </Button>
+          <Button onClick={handleDownload}>Download</Button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Description</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {invoice.items.map((item: any, idx: number) => (
+              <TableRow key={idx}>
+                <TableCell>{item.description}</TableCell>
+                <TableCell>${item.price.toFixed(2)}</TableCell>
+                <TableCell>{item.quantity}</TableCell>
+                <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex justify-end">
+        <div className="text-xl font-semibold">Total: ${invoice.total.toFixed(2)}</div>
+      </div>
+    </div>
+  );
+}
