@@ -3,6 +3,5 @@
   "/hotel/search/page": "app/hotel/search/page.js",
   "/hotel/rooms/[roomId]/page": "app/hotel/rooms/[roomId]/page.js",
   "/salon/booking/page": "app/salon/booking/page.js",
-  "/api/session/route": "app/api/session/route.js",
   "/hotel/dashboard/rooms/page": "app/hotel/dashboard/rooms/page.js"
 }
