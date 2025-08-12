@@ -82,6 +82,11 @@ const GET_RESERVATIONS = gql`
       date
       time
       status
+      duration
+      serviceId {
+        id
+        duration
+      }
     }
   }
 `;
@@ -182,38 +187,49 @@ export default function SalonBookingPage() {
     }
   }, [searchParams, services, bookingData.serviceId]);
 
-  // Compute reserved times for the chosen date.  We only recalc when
-  // reservationsData or bookingData.date changes.  The date string is
-  // compared via ISO format (YYYY‑MM‑DD) to avoid timezone issues.
-  const reservedTimes = useMemo(() => {
-    if (!reservationsData?.reservations) return [];
+  // Compute reserved intervals for the chosen date.  Each reservation
+  // blocks a contiguous span of time from its start to its start
+  // plus its duration.  The duration is read from the reservation
+  // itself if available, otherwise we attempt to look up the duration
+  // via the serviceId.  If both are missing a 30 minute default is
+  // used.  Intervals are represented as minutes since midnight.
+  const reservedIntervals = useMemo(() => {
+    if (!reservationsData?.reservations) return [] as { start: number; end: number }[];
     return reservationsData.reservations
-      .filter((r: any) => r.date.slice(0, 10) === bookingData.date)
-      .map((r: any) => r.time);
-  }, [reservationsData, bookingData.date]);
-
-  // Hard‑coded 30‑minute time slots.  Ideally these would be derived from
-  // business hours and service durations.
-  const timeSlots = [
-    "09:00",
-    "09:30",
-    "10:00",
-    "10:30",
-    "11:00",
-    "11:30",
-    "12:00",
-    "12:30",
-    "13:00",
-    "13:30",
-    "14:00",
-    "14:30",
-    "15:00",
-    "15:30",
-    "16:00",
-    "16:30",
-    "17:00",
-    "17:30",
-  ];
+      .filter((r: any) => {
+        // Only consider reservations on the selected date for the same service.
+        // If no serviceId is selected yet we consider all reservations to avoid false negatives.
+        const sameDate = r.date.slice(0, 10) === bookingData.date;
+        if (!sameDate) return false;
+        // GraphQL may return serviceId as an object with id and duration or as an ID string.
+        const rServiceId =
+          typeof r.serviceId === 'string' || typeof r.serviceId === 'number'
+            ? r.serviceId
+            : r.serviceId?.id;
+        if (!bookingData.serviceId) return true;
+        return rServiceId === bookingData.serviceId;
+      })
+      .map((r: any) => {
+        // Parse the reservation start time (HH:mm) to minutes since midnight
+        const [h, m] = r.time.split(':').map((x: string) => parseInt(x, 10));
+        const start = h * 60 + m;
+        // Determine the duration: use reservation.duration if set; else
+        // use the duration from the serviceId field; else fallback to 30.
+        let dur = 30;
+        if (typeof r.duration === 'number' && !isNaN(r.duration)) {
+          dur = r.duration;
+        } else if (r.serviceId && typeof r.serviceId === 'object' && r.serviceId.duration) {
+          dur = r.serviceId.duration;
+        } else {
+          // Attempt to find the service in the loaded services list
+          const srv = services.find((s: any) =>
+            s.id === (typeof r.serviceId === 'object' ? r.serviceId.id : r.serviceId)
+          );
+          if (srv?.duration) dur = srv.duration;
+        }
+        return { start, end: start + dur };
+      });
+  }, [reservationsData, bookingData.date, bookingData.serviceId, services]);
 
   // When the selected service changes we reset the option selections to
   // prevent options from bleeding across services.
@@ -223,11 +239,51 @@ export default function SalonBookingPage() {
 
   // Compute the list of option objects the user has selected based on the
   // current service.  This uses the names stored in selectedOptions and
-  // filters the service options accordingly.
+  // filters the service options accordingly.  Placing this ahead of
+  // selectedDurationMinutes allows that computation to reference
+  // selectedOptionObjects safely.
   const selectedOptionObjects = useMemo(() => {
     if (!selectedService?.options) return [];
     return selectedService.options.filter((opt: any) => selectedOptions.includes(opt.name));
   }, [selectedService, selectedOptions]);
+
+  /**
+   * Compute the effective duration of the selected service including any
+   * option impacts.  This value is used to generate appropriate time
+   * slots and to persist the duration with the reservation.  If no
+   * service is selected the duration falls back to 30 minutes so that
+   * the UI remains usable during the initial step.
+   */
+  const selectedDurationMinutes = useMemo(() => {
+    const base = selectedService?.duration ?? 30;
+    const optionMinutes = selectedOptionObjects.reduce(
+      (sum: number, opt: any) => sum + (opt.durationImpact || 0),
+      0,
+    );
+    return base + optionMinutes;
+  }, [selectedService, selectedOptionObjects]);
+
+  /**
+   * Generate available time slots based on the business hours (9:00 to
+   * 18:00) and the selected service duration.  The last appointment
+   * must finish before closing, so we stop generating start times once
+   * the service would overrun the closing time.  We iterate in
+   * half‑hour increments to offer flexibility while still respecting
+   * longer services.
+   */
+  const timeSlots = useMemo(() => {
+    const openMinutes = 9 * 60;
+    const closeMinutes = 18 * 60;
+    const slots: string[] = [];
+    for (let m = openMinutes; m <= closeMinutes - selectedDurationMinutes; m += 30) {
+      const hrs = Math.floor(m / 60)
+        .toString()
+        .padStart(2, "0");
+      const mins = (m % 60).toString().padStart(2, "0");
+      slots.push(`${hrs}:${mins}`);
+    }
+    return slots;
+  }, [selectedDurationMinutes]);
 
   // Calculate the total price of the service plus selected add‑ons.  If an
   // option has no defined price it contributes zero.
@@ -300,6 +356,11 @@ export default function SalonBookingPage() {
         notes: combinedNotes,
         source: "website",
         totalAmount: totalPrice,
+        // Persist the computed duration (base service duration plus any
+        // selected options) so that the backend knows how long to
+        // allocate for this appointment.  Without this field overlapping
+        // reservations cannot be detected reliably.
+        duration: selectedDurationMinutes,
       };
       await createReservation({ variables: { input } });
       alert("Votre demande de rendez‑vous a été envoyée avec succès !");
@@ -588,27 +649,32 @@ export default function SalonBookingPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {timeSlots.map((slot) => {
-                  const isReserved = reservedTimes.includes(slot);
+                  // Determine if this slot conflicts with any existing reservation.
+                  // Convert the candidate start and end times into minutes since midnight.
+                  const [sh, sm] = slot.split(":").map((x) => parseInt(x, 10));
+                  const startMin = sh * 60 + sm;
+                  const endMin = startMin + selectedDurationMinutes;
+                  const conflict = reservedIntervals.some((interval) => startMin < interval.end && endMin > interval.start);
                   const isSelected = bookingData.time === slot;
                   return (
                     <tr
                       key={slot}
                       className={
-                        isReserved
+                        conflict
                           ? 'bg-gray-50 text-gray-400'
                           : isSelected
                           ? 'bg-pink-50 text-pink-700'
                           : 'hover:bg-pink-50 cursor-pointer'
                       }
                       onClick={() => {
-                        if (!isReserved) {
+                        if (!conflict) {
                           setBookingData((prev) => ({ ...prev, time: slot }));
                         }
                       }}
                     >
                       <td className="px-4 py-3">{slot}</td>
                       <td className="px-4 py-3">
-                        {isReserved ? (
+                        {conflict ? (
                           <span className="inline-block px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-400">Réservé</span>
                         ) : (
                           <span className="inline-block px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Disponible</span>

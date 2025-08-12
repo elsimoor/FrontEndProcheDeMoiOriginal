@@ -27,6 +27,7 @@ export async function POST(request: Request) {
                 role
                 businessType
                 businessId
+                isActive
               }
             }
           }
@@ -69,6 +70,9 @@ export async function POST(request: Request) {
       // businessId on the user object.
       session.businessType = result.data.login.user.businessType;
       session.businessId = result.data.login.user.businessId;
+      if (session.user) {
+        session.user.isActive = result.data.login.user.isActive;
+      }
 
       await session.save();
       // session.user = {

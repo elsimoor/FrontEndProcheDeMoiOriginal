@@ -35,6 +35,25 @@ export const GET_HOTELS = gql`
       }
       images
       isActive
+
+      # Include the featured landing card for each hotel when fetching
+      # hotels via this query.  This card is selected by the hotel
+      # manager and contains promotional information displayed on
+      # public pages.  Only a subset of fields is requested here to
+      # keep the payload lightweight; additional fields can be added
+      # as needed by the UI.
+      featuredLandingCard {
+        id
+        title
+        description
+        image
+        price
+        rating
+        location
+        tags
+        amenities
+        specialOffer
+      }
     }
   }
 `

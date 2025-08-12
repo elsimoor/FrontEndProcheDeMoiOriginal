@@ -302,17 +302,18 @@ export default function RegisterPage() {
       const data = await res.json()
       setIsLoading(false)
       if (data.data?.register?.token) {
-        const role = data.data.register.user.businessType
-        if (role === "hotel") {
-          router.push("/hotel/dashboard")
-        } else if (role === "restaurant") {
-          router.push("/restaurant/dashboard")
-        } else if (role === "salon") {
-          router.push("/salon/dashboard")
-        }
+        // Instead of sending the user straight to a dashboard, redirect
+        // them to the business setup step.  The selected business type
+        // (hotel, restaurant or salon) is pulled from the form state
+        // rather than the returned user record because the user record
+        // will not yet have a businessId assigned.  The setup page
+        // will collect additional details about the business and
+        // automatically associate it with the new user.
+        const selectedType = formData.businessType;
+        router.push(`/register/business?businessType=${selectedType}`);
       } else {
-        console.log("data.error", data.error)
-        setError(data.error || "Registration failed")
+        console.log("data.error", data.error);
+        setError(data.error || "Registration failed");
       }
     } catch (error) {
       setIsLoading(false)

@@ -24,6 +24,8 @@ export default function AdminSidebar() {
     { name: "Hotels", href: "/admin/hotels", icon: Hotel },
     { name: "Restaurants", href: "/admin/restaurants", icon: UtensilsCrossed },
     { name: "Salons", href: "/admin/salons", icon: Scissors },
+    // New approvals page where administrators review pending businesses
+    { name: "Approvals", href: "/admin/approvals", icon: LayoutDashboard },
   ]
   return (
     <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">

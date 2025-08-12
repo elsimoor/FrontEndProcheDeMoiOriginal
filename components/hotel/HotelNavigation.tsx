@@ -15,6 +15,8 @@ const navigation = [
   { name: "Pricing", href: "/hotel/dashboard/pricing" },
   { name: "Reviews", href: "/hotel/dashboard/reviews" },
   { name: "Invoices", href: "/hotel/dashboard/invoices" },
+  // Page for managing promotional landing cards
+  { name: "Landing Cards", href: "/hotel/dashboard/cards" },
   // { name: "Settings", href: "/hotel/dashboard/settings" },
 
 ]

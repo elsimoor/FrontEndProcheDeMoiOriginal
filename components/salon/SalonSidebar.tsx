@@ -15,6 +15,8 @@ const navigation = [
   { name: "Options", href: "/salon/dashboard/options", icon: Sparkles },
   // Invoices page for salon
   { name: "Invoices", href: "/salon/dashboard/invoices", icon: LayoutDashboard },
+  // Manage promotional landing cards for salon
+  { name: "Landing Cards", href: "/salon/dashboard/cards", icon: Sparkles },
 ]
 
 export default function SalonSidebar() {

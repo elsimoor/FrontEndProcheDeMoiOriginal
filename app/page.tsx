@@ -1,761 +1,429 @@
-// import Link from "next/link"
+// "use client"
+
+// import { useState, useMemo } from "react";
+// import Link from "next/link";
+// import { gql, useQuery } from "@apollo/client";
 // import {
-//   Hotel,
-//   UtensilsCrossed,
-//   Sparkles,
-//   Star,
-//   Users,
+//   Search,
+//   CheckCircle,
 //   Calendar,
+//   Users,
 //   Shield,
 //   Clock,
-//   CheckCircle,
-//   ArrowRight,
-//   Phone,
-//   Mail,
-//   MapPin,
-//   Search,
-//   ClipboardList,
-//   Smile,
 // } from "lucide-react";
 
-// export default function HomePage() {
+// // GraphQL queries to fetch hotels, restaurants and salons.  We only
+// // request the minimal fields needed for the landing page: id, name,
+// // description and the first image.  The same queries are used in
+// // dedicated module landing pages so this page remains consistent.
+// const GET_HOTELS = gql`
+//   query GetHotels {
+//     hotels {
+//       id
+//       name
+//       description
+//       images
+//     }
+//   }
+// `;
+
+// const GET_RESTAURANTS = gql`
+//   query GetRestaurants {
+//     restaurants {
+//       id
+//       name
+//       description
+//       images
+//     }
+//   }
+// `;
+
+// const GET_SALONS = gql`
+//   query GetSalons {
+//     salons {
+//       id
+//       name
+//       description
+//       images
+//     }
+//   }
+// `;
+
+// /**
+//  * The root landing page provides a unified search and discovery
+//  * experience across hotels, restaurants and salons.  Visitors can
+//  * filter by category and search by name.  Below the search area
+//  * featured entries for each category are displayed with call‑to‑action
+//  * links.  Additional sections highlight key platform benefits and
+//  * encourage users to explore further.
+//  */
+// export default function LandingPage() {
+//   // Execute the GraphQL queries concurrently.  Apollo will cache
+//   // responses and avoid redundant network requests when navigating to
+//   // individual module pages.
+//   const { data: hotelsData, loading: hotelsLoading, error: hotelsError } = useQuery(GET_HOTELS);
+//   const { data: restaurantsData, loading: restaurantsLoading, error: restaurantsError } = useQuery(GET_RESTAURANTS);
+//   const { data: salonsData, loading: salonsLoading, error: salonsError } = useQuery(GET_SALONS);
+
+//   // Local state for the search term and selected categories.  The
+//   // selectedTypes set contains the categories the user wants to see.
+//   const [searchTerm, setSearchTerm] = useState<string>("");
+//   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(["hotel", "restaurant", "salon"]));
+
+//   // Sort option for results.  Users can choose to sort alphabetically
+//   // ascending or descending.  Additional sort options could be added
+//   // here in the future (e.g. by rating or price) when such data
+//   // becomes available.
+//   const [sortOption, setSortOption] = useState<string>("nameAsc");
+
+//   // Helper to toggle a category on or off.  We use a Set to ensure
+//   // uniqueness and efficient updates.  When a category is removed
+//   // the corresponding items will no longer appear in the results.
+//   const toggleType = (type: string) => {
+//     setSelectedTypes((prev) => {
+//       const set = new Set(prev);
+//       if (set.has(type)) {
+//         set.delete(type);
+//       } else {
+//         set.add(type);
+//       }
+//       return set;
+//     });
+//   };
+
+//   // Derived arrays of hotels, restaurants and salons with optional
+//   // filtering by search term and selected categories.  The filtering
+//   // runs in a `useMemo` hook to avoid unnecessary work on every
+//   // re‑render.  Each entry includes its type so we can easily
+//   // categorise them later.
+//   const hotels = hotelsData?.hotels ?? [];
+//   const restaurants = restaurantsData?.restaurants ?? [];
+//   const salons = salonsData?.salons ?? [];
+
+//   const filteredHotels = useMemo(() => {
+//     if (!selectedTypes.has("hotel")) return [];
+//     return hotels.filter((h: any) =>
+//       h.name.toLowerCase().includes(searchTerm.toLowerCase())
+//     );
+//   }, [hotels, searchTerm, selectedTypes]);
+
+//   const filteredRestaurants = useMemo(() => {
+//     if (!selectedTypes.has("restaurant")) return [];
+//     return restaurants.filter((r: any) =>
+//       r.name.toLowerCase().includes(searchTerm.toLowerCase())
+//     );
+//   }, [restaurants, searchTerm, selectedTypes]);
+
+//   const filteredSalons = useMemo(() => {
+//     if (!selectedTypes.has("salon")) return [];
+//     return salons.filter((s: any) =>
+//       s.name.toLowerCase().includes(searchTerm.toLowerCase())
+//     );
+//   }, [salons, searchTerm, selectedTypes]);
+
+//   // Sort the filtered results according to the selected sort option.  We
+//   // copy arrays before sorting to avoid mutating the original filtered
+//   // arrays.  Sorting by name is case‑insensitive.
+//   const sortedHotels = useMemo(() => {
+//     const list = [...filteredHotels];
+//     list.sort((a, b) => {
+//       const nameA = a.name.toLowerCase();
+//       const nameB = b.name.toLowerCase();
+//       if (sortOption === "nameDesc") {
+//         if (nameA < nameB) return 1;
+//         if (nameA > nameB) return -1;
+//         return 0;
+//       }
+//       // Default to ascending
+//       if (nameA < nameB) return -1;
+//       if (nameA > nameB) return 1;
+//       return 0;
+//     });
+//     return list;
+//   }, [filteredHotels, sortOption]);
+
+//   const sortedRestaurants = useMemo(() => {
+//     const list = [...filteredRestaurants];
+//     list.sort((a, b) => {
+//       const nameA = a.name.toLowerCase();
+//       const nameB = b.name.toLowerCase();
+//       if (sortOption === "nameDesc") {
+//         if (nameA < nameB) return 1;
+//         if (nameA > nameB) return -1;
+//         return 0;
+//       }
+//       if (nameA < nameB) return -1;
+//       if (nameA > nameB) return 1;
+//       return 0;
+//     });
+//     return list;
+//   }, [filteredRestaurants, sortOption]);
+
+//   const sortedSalons = useMemo(() => {
+//     const list = [...filteredSalons];
+//     list.sort((a, b) => {
+//       const nameA = a.name.toLowerCase();
+//       const nameB = b.name.toLowerCase();
+//       if (sortOption === "nameDesc") {
+//         if (nameA < nameB) return 1;
+//         if (nameA > nameB) return -1;
+//         return 0;
+//       }
+//       if (nameA < nameB) return -1;
+//       if (nameA > nameB) return 1;
+//       return 0;
+//     });
+//     return list;
+//   }, [filteredSalons, sortOption]);
+
+//   // Handle loading and error states gracefully.  A minimal
+//   // implementation is sufficient for demonstration; in a real app
+//   // skeleton screens and more descriptive errors could be added.
+//   if (hotelsLoading || restaurantsLoading || salonsLoading) {
+//     return <p className="p-8 text-center">Loading...</p>;
+//   }
+//   if (hotelsError || restaurantsError || salonsError) {
+//     return <p className="p-8 text-center text-red-500">Une erreur est survenue lors du chargement des données.</p>;
+//   }
+
 //   return (
-//     <div className="min-h-screen bg-white">
-//       {/* Hero Section */}
-//       <section className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 overflow-hidden">
-//         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-//         <div className="relative container mx-auto px-4 py-20">
-//           <div className="text-center max-w-4xl mx-auto">
-//             <h1 className="text-6xl font-bold text-gray-900 mb-6 leading-tight">
-//               Complete Business
-//               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-//                 {" "}
-//                 Management Suite
-//               </span>
-//             </h1>
-//             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-//               Streamline your hotel, restaurant, and salon operations with our comprehensive management platform.
-//               Everything you need to run your business efficiently in one powerful solution.
-//             </p>
-//             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-//               <Link
-//                 href="/register"
-//                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
-//               >
-//                 Start Free Trial
-//               </Link>
-//               <Link
-//                 href="/login"
-//                 className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 hover:shadow-md transition-all duration-200"
-//               >
-//                 Sign In
-//               </Link>
-//             </div>
+//     <div className="min-h-screen flex flex-col bg-white">
+//       {/* Navbar */}
+//       <header className="bg-white shadow-sm sticky top-0 z-20">
+//         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+//           <div className="flex items-center space-x-2">
+//             <span className="font-bold text-xl text-blue-600">ProcheDeMoi</span>
 //           </div>
-//         </div>
-//       </section>
-
-//       {/* Services Overview */}
-//       <section className="py-20 bg-white">
-//         <div className="container mx-auto px-4">
-//           <div className="text-center mb-16">
-//             <h2 className="text-4xl font-bold text-gray-900 mb-4">Three Powerful Solutions</h2>
-//             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-//               Whether you run a hotel, restaurant, or salon, we have the perfect management solution tailored to your
-//               industry needs.
-//             </p>
-//           </div>
-
-//           <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-//             {/* Hotel Management */}
-//             <div className="group bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
-//               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-//                 <Hotel className="h-10 w-10 text-white" />
-//               </div>
-//               <h3 className="text-2xl font-bold text-gray-900 mb-4">Hotel Management</h3>
-//               <p className="text-gray-600 mb-6 leading-relaxed">
-//                 Complete hotel operations management with reservation system, room management, guest services, and
-//                 comprehensive reporting.
-//               </p>
-
-//               <div className="space-y-3 mb-8">
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Room & Reservation Management
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Guest Profile & History
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Housekeeping & Maintenance
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Revenue Analytics
-//                 </div>
-//               </div>
-
-//               <div className="space-y-3">
-//                 <Link
-//                   href="/hotel"
-//                   className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-xl text-center font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
-//                 >
-//                   Learn More
-//                 </Link>
-//                 <Link
-//                   href="/hotel/dashboard"
-//                   className="block w-full border-2 border-blue-500 text-blue-600 py-3 px-6 rounded-xl text-center font-medium hover:bg-blue-50 transition-all duration-200 group"
-//                 >
-//                   Hotel Dashboard
-//                   <ArrowRight className="inline h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-//                 </Link>
-//               </div>
-//             </div>
-
-//             {/* Restaurant Management */}
-//             <div className="group bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-red-200">
-//               <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-//                 <UtensilsCrossed className="h-10 w-10 text-white" />
-//               </div>
-//               <h3 className="text-2xl font-bold text-gray-900 mb-4">Restaurant Management</h3>
-//               <p className="text-gray-600 mb-6 leading-relaxed">
-//                 Streamline your restaurant operations with table management, menu control, staff scheduling, and
-//                 customer relationship tools.
-//               </p>
-
-//               <div className="space-y-3 mb-8">
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Table & Reservation System
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Menu & Inventory Management
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Staff Scheduling & Payroll
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Customer Reviews & Feedback
-//                 </div>
-//               </div>
-
-//               <div className="space-y-3">
-//                 <Link
-//                   href="/restaurant"
-//                   className="block w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-6 rounded-xl text-center font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200"
-//                 >
-//                   Learn More
-//                 </Link>
-//                 <Link
-//                   href="/restaurant/dashboard"
-//                   className="block w-full border-2 border-red-500 text-red-600 py-3 px-6 rounded-xl text-center font-medium hover:bg-red-50 transition-all duration-200 group"
-//                 >
-//                   Restaurant Dashboard
-//                   <ArrowRight className="inline h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-//                 </Link>
-//               </div>
-//             </div>
-
-//             {/* Salon Management */}
-//             <div className="group bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-pink-200">
-//               <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-//                 <Sparkles className="h-10 w-10 text-white" />
-//               </div>
-//               <h3 className="text-2xl font-bold text-gray-900 mb-4">Salon Management</h3>
-//               <p className="text-gray-600 mb-6 leading-relaxed">
-//                 Manage your beauty salon with appointment scheduling, client profiles, service management, and stylist
-//                 coordination.
-//               </p>
-
-//               <div className="space-y-3 mb-8">
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Appointment Scheduling
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Client Management & History
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Service & Pricing Management
-//                 </div>
-//                 <div className="flex items-center text-sm text-gray-600">
-//                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-//                   Stylist Performance Tracking
-//                 </div>
-//               </div>
-
-//               <div className="space-y-3">
-//                 <Link
-//                   href="/salon"
-//                   className="block w-full bg-gradient-to-r from-pink-500 to-pink-600 text-white py-3 px-6 rounded-xl text-center font-medium hover:from-pink-600 hover:to-pink-700 transition-all duration-200"
-//                 >
-//                   Learn More
-//                 </Link>
-//                 <Link
-//                   href="/salon/dashboard"
-//                   className="block w-full border-2 border-pink-500 text-pink-600 py-3 px-6 rounded-xl text-center font-medium hover:bg-pink-50 transition-all duration-200 group"
-//                 >
-//                   Salon Dashboard
-//                   <ArrowRight className="inline h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-//                 </Link>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* Features Section */}
-//       <section className="py-20 bg-gray-50">
-//         <div className="container mx-auto px-4">
-//           <div className="text-center mb-16">
-//             <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Our Platform?</h2>
-//             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-//               Built specifically for hospitality businesses with features that matter most to your operations.
-//             </p>
-//           </div>
-
-//           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-//             <div className="text-center group">
-//               <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
-//                 <Calendar className="h-8 w-8 text-blue-600" />
-//               </div>
-//               <h3 className="text-xl font-semibold text-gray-900 mb-2">Smart Scheduling</h3>
-//               <p className="text-gray-600">
-//                 Advanced booking system with conflict detection and automated confirmations.
-//               </p>
-//             </div>
-
-//             <div className="text-center group">
-//               <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
-//                 <Users className="h-8 w-8 text-green-600" />
-//               </div>
-//               <h3 className="text-xl font-semibold text-gray-900 mb-2">Customer Management</h3>
-//               <p className="text-gray-600">
-//                 Complete customer profiles with history, preferences, and communication tools.
-//               </p>
-//             </div>
-
-//             <div className="text-center group">
-//               <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors">
-//                 <Shield className="h-8 w-8 text-purple-600" />
-//               </div>
-//               <h3 className="text-xl font-semibold text-gray-900 mb-2">Secure & Reliable</h3>
-//               <p className="text-gray-600">Enterprise-grade security with 99.9% uptime and automatic backups.</p>
-//             </div>
-
-//             <div className="text-center group">
-//               <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-200 transition-colors">
-//                 <Clock className="h-8 w-8 text-orange-600" />
-//               </div>
-//               <h3 className="text-xl font-semibold text-gray-900 mb-2">24/7 Support</h3>
-//               <p className="text-gray-600">Round-the-clock customer support to keep your business running smoothly.</p>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* Statistics Section */}
-//       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-//         <div className="container mx-auto px-4">
-//           <div className="text-center mb-16">
-//             <h2 className="text-4xl font-bold mb-4">Trusted by Businesses Worldwide</h2>
-//             <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-//               Join thousands of successful businesses that have transformed their operations with our platform.
-//             </p>
-//           </div>
-
-//           <div className="grid md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-//             <div className="text-center">
-//               <div className="text-4xl font-bold mb-2">10,000+</div>
-//               <div className="text-blue-100">Active Businesses</div>
-//             </div>
-//             <div className="text-center">
-//               <div className="text-4xl font-bold mb-2">1M+</div>
-//               <div className="text-blue-100">Bookings Processed</div>
-//             </div>
-//             <div className="text-center">
-//               <div className="text-4xl font-bold mb-2">99.9%</div>
-//               <div className="text-blue-100">Uptime Guarantee</div>
-//             </div>
-//             <div className="text-center">
-//               <div className="text-4xl font-bold mb-2">24/7</div>
-//               <div className="text-blue-100">Customer Support</div>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* Testimonials Section */}
-//       <section className="py-20 bg-white">
-//         <div className="container mx-auto px-4">
-//           <div className="text-center mb-16">
-//             <h2 className="text-4xl font-bold text-gray-900 mb-4">What Our Customers Say</h2>
-//             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-//               Real feedback from real businesses using our platform every day.
-//             </p>
-//           </div>
-
-//           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-//             <div className="bg-gray-50 rounded-2xl p-8">
-//               <div className="flex items-center mb-4">
-//                 {[...Array(5)].map((_, i) => (
-//                   <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-//                 ))}
-//               </div>
-//               <p className="text-gray-700 mb-6 italic">
-//                 "This platform completely transformed how we manage our hotel. Bookings are up 40% and our staff is more
-//                 efficient than ever."
-//               </p>
-//               <div className="flex items-center">
-//                 <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-4">
-//                   JD
-//                 </div>
-//                 <div>
-//                   <div className="font-semibold text-gray-900">John Davis</div>
-//                   <div className="text-gray-600">Grand Plaza Hotel</div>
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div className="bg-gray-50 rounded-2xl p-8">
-//               <div className="flex items-center mb-4">
-//                 {[...Array(5)].map((_, i) => (
-//                   <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-//                 ))}
-//               </div>
-//               <p className="text-gray-700 mb-6 italic">
-//                 "The restaurant management features are incredible. We've reduced no-shows by 60% and our table turnover
-//                 has improved significantly."
-//               </p>
-//               <div className="flex items-center">
-//                 <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-semibold mr-4">
-//                   MR
-//                 </div>
-//                 <div>
-//                   <div className="font-semibold text-gray-900">Maria Rodriguez</div>
-//                   <div className="text-gray-600">Bella Vista Restaurant</div>
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div className="bg-gray-50 rounded-2xl p-8">
-//               <div className="flex items-center mb-4">
-//                 {[...Array(5)].map((_, i) => (
-//                   <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-//                 ))}
-//               </div>
-//               <p className="text-gray-700 mb-6 italic">
-//                 "Our salon has never been more organized. Client management and appointment scheduling are seamless.
-//                 Highly recommended!"
-//               </p>
-//               <div className="flex items-center">
-//                 <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center text-white font-semibold mr-4">
-//                   SL
-//                 </div>
-//                 <div>
-//                   <div className="font-semibold text-gray-900">Sarah Lee</div>
-//                   <div className="text-gray-600">Luxe Beauty Salon</div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* Pricing Section */}
-//       <section className="py-20 bg-gray-50">
-//         <div className="container mx-auto px-4">
-//           <div className="text-center mb-16">
-//             <h2 className="text-4xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
-//             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-//               Choose the plan that fits your business size and needs. No hidden fees, no surprises.
-//             </p>
-//           </div>
-
-//           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-//             <div className="bg-white rounded-2xl p-8 border border-gray-200">
-//               <div className="text-center mb-8">
-//                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
-//                 <div className="text-4xl font-bold text-gray-900 mb-2">
-//                   $29<span className="text-lg text-gray-600">/month</span>
-//                 </div>
-//                 <p className="text-gray-600">Perfect for small businesses</p>
-//               </div>
-//               <ul className="space-y-3 mb-8">
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Up to 100 bookings/month
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Basic reporting
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Email support
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Mobile app access
-//                 </li>
-//               </ul>
-//               <button className="w-full bg-gray-900 text-white py-3 px-6 rounded-xl font-medium hover:bg-gray-800 transition-colors">
-//                 Start Free Trial
-//               </button>
-//             </div>
-
-//             <div className="bg-white rounded-2xl p-8 border-2 border-blue-500 relative">
-//               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-//                 <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">Most Popular</span>
-//               </div>
-//               <div className="text-center mb-8">
-//                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
-//                 <div className="text-4xl font-bold text-gray-900 mb-2">
-//                   $79<span className="text-lg text-gray-600">/month</span>
-//                 </div>
-//                 <p className="text-gray-600">For growing businesses</p>
-//               </div>
-//               <ul className="space-y-3 mb-8">
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Up to 500 bookings/month
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Advanced analytics
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Priority support
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   API access
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Custom integrations
-//                 </li>
-//               </ul>
-//               <button className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 transition-colors">
-//                 Start Free Trial
-//               </button>
-//             </div>
-
-//             <div className="bg-white rounded-2xl p-8 border border-gray-200">
-//               <div className="text-center mb-8">
-//                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
-//                 <div className="text-4xl font-bold text-gray-900 mb-2">
-//                   $199<span className="text-lg text-gray-600">/month</span>
-//                 </div>
-//                 <p className="text-gray-600">For large organizations</p>
-//               </div>
-//               <ul className="space-y-3 mb-8">
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Unlimited bookings
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   White-label solution
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   24/7 phone support
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Dedicated account manager
-//                 </li>
-//                 <li className="flex items-center text-gray-700">
-//                   <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-//                   Custom development
-//                 </li>
-//               </ul>
-//               <button className="w-full bg-gray-900 text-white py-3 px-6 rounded-xl font-medium hover:bg-gray-800 transition-colors">
-//                 Contact Sales
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* How It Works Section */}
-//       <section className="py-20 bg-white">
-//         <div className="container mx-auto px-4">
-//           <div className="text-center mb-16">
-//             <h2 className="text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
-//             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-//               Plan and book your next experience in just a few steps.
-//             </p>
-//           </div>
-//           <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-//             <div className="text-center">
-//               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-//                 <Search className="h-8 w-8 text-blue-600" />
-//               </div>
-//               <h3 className="text-lg font-semibold text-gray-900 mb-2">Choose Your Service</h3>
-//               <p className="text-gray-600">
-//                 Select the hotel, restaurant or salon service that suits your needs.
-//               </p>
-//             </div>
-//             <div className="text-center">
-//               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-//                 <ClipboardList className="h-8 w-8 text-red-600" />
-//               </div>
-//               <h3 className="text-lg font-semibold text-gray-900 mb-2">Provide Details</h3>
-//               <p className="text-gray-600">
-//                 Enter your preferred dates, party size and contact information.
-//               </p>
-//             </div>
-//             <div className="text-center">
-//               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-//                 <CheckCircle className="h-8 w-8 text-purple-600" />
-//               </div>
-//               <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm Your Booking</h3>
-//               <p className="text-gray-600">
-//                 Review and submit your request — we’ll handle the rest.
-//               </p>
-//             </div>
-//             <div className="text-center">
-//               <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-//                 <Smile className="h-8 w-8 text-pink-600" />
-//               </div>
-//               <h3 className="text-lg font-semibold text-gray-900 mb-2">Enjoy Your Visit</h3>
-//               <p className="text-gray-600">
-//                 Relax and look forward to a seamless experience at our venues.
-//               </p>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* FAQ Section */}
-//       <section className="py-20 bg-gray-50">
-//         <div className="container mx-auto px-4">
-//           <div className="text-center mb-12">
-//             <h2 className="text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
-//             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-//               Have questions? We’re here to help.
-//             </p>
-//           </div>
-//           <div className="max-w-3xl mx-auto space-y-4">
-//             <details className="bg-white border border-gray-200 rounded-lg p-4">
-//               <summary className="font-medium text-lg cursor-pointer">How do I make a booking?</summary>
-//               <p className="mt-2 text-gray-600">
-//                 Simply select the type of service you’d like and follow the prompts to choose your dates and provide your details.
-//               </p>
-//             </details>
-//             <details className="bg-white border border-gray-200 rounded-lg p-4">
-//               <summary className="font-medium text-lg cursor-pointer">Do I need an account to book?</summary>
-//               <p className="mt-2 text-gray-600">
-//                 No. You can make reservations and appointments without creating an account. We only need your contact information.
-//               </p>
-//             </details>
-//             <details className="bg-white border border-gray-200 rounded-lg p-4">
-//               <summary className="font-medium text-lg cursor-pointer">Can I modify or cancel my booking?</summary>
-//               <p className="mt-2 text-gray-600">
-//                 Yes. Please contact us directly via phone or email with your reservation details and we’ll assist you.
-//               </p>
-//             </details>
-//             <details className="bg-white border border-gray-200 rounded-lg p-4">
-//               <summary className="font-medium text-lg cursor-pointer">What payment methods are accepted?</summary>
-//               <p className="mt-2 text-gray-600">
-//                 We accept all major credit cards. Payment information will be requested once your booking is confirmed.
-//               </p>
-//             </details>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* Contact & Newsletter Section */}
-//       <section className="py-20 bg-white">
-//         <div className="container mx-auto px-4">
-//           <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
-//             <div>
-//               <h2 className="text-3xl font-bold text-gray-900 mb-4">Get in Touch</h2>
-//               <p className="text-gray-600 mb-6">
-//                 Have questions, suggestions or feedback? Send us a message and our team will respond promptly.
-//               </p>
-//               <form className="space-y-4">
-//                 <input
-//                   type="text"
-//                   placeholder="Your Name"
-//                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//                 />
-//                 <input
-//                   type="email"
-//                   placeholder="Email Address"
-//                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//                 />
-//                 <textarea
-//                   placeholder="Your Message"
-//                   rows={4}
-//                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-//                 />
-//                 <button
-//                   type="button"
-//                   className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-//                 >
-//                   Send Message
-//                 </button>
-//               </form>
-//             </div>
-//             <div>
-//               <h2 className="text-3xl font-bold text-gray-900 mb-4">Stay Updated</h2>
-//               <p className="text-gray-600 mb-6">
-//                 Subscribe to our newsletter to receive the latest news, updates and special offers.
-//               </p>
-//               <form className="space-y-4">
-//                 <input
-//                   type="email"
-//                   placeholder="Email Address"
-//                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-//                 />
-//                 <button
-//                   type="button"
-//                   className="bg-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 transition-colors"
-//                 >
-//                   Subscribe
-//                 </button>
-//               </form>
-//             </div>
-//           </div>
-//         </div>
-//       </section>
-
-//       {/* CTA Section */}
-//       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-//         <div className="container mx-auto px-4 text-center">
-//           <h2 className="text-4xl font-bold mb-4">Ready to Transform Your Business?</h2>
-//           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-//             Join thousands of successful businesses and start your free trial today. No credit card required.
-//           </p>
-//           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-//             <Link
-//               href="/register"
-//               className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors"
-//             >
-//               Start Free Trial
-//             </Link>
+//           <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
+//             <Link href="/" className="hover:text-blue-600">Accueil</Link>
+//             <Link href="/product" className="hover:text-blue-600">Produit</Link>
+//             <Link href="/hotel" className="hover:text-blue-600">Hotels</Link>
+//             <Link href="/restaurant" className="hover:text-blue-600">Restaurants</Link>
+//             <Link href="/salon" className="hover:text-blue-600">Salons</Link>
+//           </nav>
+//           <div className="flex items-center space-x-4">
 //             <Link
 //               href="/login"
-//               className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-blue-600 transition-colors"
+//               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
 //             >
-//               Sign In
+//               Se connecter
 //             </Link>
 //           </div>
 //         </div>
-//       </section>
-
-//       {/* Footer */}
-//       <footer className="bg-gray-900 text-white py-16">
-//         <div className="container mx-auto px-4">
-//           <div className="grid md:grid-cols-4 gap-8">
-//             <div>
-//               <h3 className="text-2xl font-bold mb-4">BusinessSuite</h3>
-//               <p className="text-gray-400 mb-4">
-//                 The complete management solution for hotels, restaurants, and salons.
-//               </p>
-//               <div className="flex space-x-4">
-//                 <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 cursor-pointer">
-//                   <span className="text-sm font-bold">f</span>
-//                 </div>
-//                 <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 cursor-pointer">
-//                   <span className="text-sm font-bold">t</span>
-//                 </div>
-//                 <div className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 cursor-pointer">
-//                   <span className="text-sm font-bold">in</span>
-//                 </div>
+//       </header>
+//       {/* Hero and Search */}
+//       <main className="flex-1">
+//         <section className="bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
+//           <div className="max-w-3xl mx-auto text-center mb-8">
+//             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+//               Découvrez et réservez votre prochaine expérience
+//             </h1>
+//             <p className="text-lg text-gray-600">
+//               Trouvez le meilleur hôtel, restaurant ou salon de beauté et réservez en quelques clics.
+//             </p>
+//           </div>
+//           <div className="max-w-5xl mx-auto flex flex-col gap-4">
+//             {/* Primary search row */}
+//             <div className="flex flex-col sm:flex-row items-stretch gap-4">
+//               <div className="relative flex-1 w-full">
+//                 <input
+//                   type="text"
+//                   placeholder="Rechercher par nom..."
+//                   value={searchTerm}
+//                   onChange={(e) => setSearchTerm(e.target.value)}
+//                   className="w-full border border-gray-300 rounded-full py-3 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                 />
+//                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+//               </div>
+//               {/* Sort dropdown */}
+//               <div className="flex items-center space-x-2">
+//                 <label htmlFor="sort" className="text-sm text-gray-700 whitespace-nowrap">Trier par:</label>
+//                 <select
+//                   id="sort"
+//                   value={sortOption}
+//                   onChange={(e) => setSortOption(e.target.value)}
+//                   className="border border-gray-300 rounded-full py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+//                 >
+//                   <option value="nameAsc">Nom A → Z</option>
+//                   <option value="nameDesc">Nom Z → A</option>
+//                 </select>
 //               </div>
 //             </div>
-
-//             <div>
-//               <h4 className="text-lg font-semibold mb-4">Solutions</h4>
-//               <ul className="space-y-2 text-gray-400">
-//                 <li>
-//                   <Link href="/hotel/dashboard" className="hover:text-white transition-colors">
-//                     Hotel Management
-//                   </Link>
-//                 </li>
-//                 <li>
-//                   <Link href="/restaurant/dashboard" className="hover:text-white transition-colors">
-//                     Restaurant Management
-//                   </Link>
-//                 </li>
-//                 <li>
-//                   <Link href="/salon/dashboard" className="hover:text-white transition-colors">
-//                     Salon Management
-//                   </Link>
-//                 </li>
-//                 <li>
-//                   <a href="#" className="hover:text-white transition-colors">
-//                     Enterprise Solutions
-//                   </a>
-//                 </li>
-//               </ul>
-//             </div>
-
-//             <div>
-//               <h4 className="text-lg font-semibold mb-4">Support</h4>
-//               <ul className="space-y-2 text-gray-400">
-//                 <li>
-//                   <a href="#" className="hover:text-white transition-colors">
-//                     Help Center
-//                   </a>
-//                 </li>
-//                 <li>
-//                   <a href="#" className="hover:text-white transition-colors">
-//                     Documentation
-//                   </a>
-//                 </li>
-//                 <li>
-//                   <a href="#" className="hover:text-white transition-colors">
-//                     API Reference
-//                   </a>
-//                 </li>
-//                 <li>
-//                   <a href="#" className="hover:text-white transition-colors">
-//                     Contact Support
-//                   </a>
-//                 </li>
-//               </ul>
-//             </div>
-
-//             <div>
-//               <h4 className="text-lg font-semibold mb-4">Contact</h4>
-//               <ul className="space-y-2 text-gray-400">
-//                 <li className="flex items-center">
-//                   <Phone className="h-4 w-4 mr-2" />
-//                   +1 (555) 123-4567
-//                 </li>
-//                 <li className="flex items-center">
-//                   <Mail className="h-4 w-4 mr-2" />
-//                   support@businesssuite.com
-//                 </li>
-//                 <li className="flex items-center">
-//                   <MapPin className="h-4 w-4 mr-2" />
-//                   123 Business Ave, Suite 100
-//                 </li>
-//               </ul>
+//             {/* Category filters */}
+//             <div className="flex flex-wrap items-center gap-4">
+//               {[
+//                 { type: "hotel", label: "Hôtels", color: "blue" },
+//                 { type: "restaurant", label: "Restaurants", color: "red" },
+//                 { type: "salon", label: "Salons", color: "pink" },
+//               ].map(({ type, label }) => (
+//                 <label key={type} className="flex items-center space-x-2 cursor-pointer select-none text-sm">
+//                   <input
+//                     type="checkbox"
+//                     checked={selectedTypes.has(type)}
+//                     onChange={() => toggleType(type)}
+//                     className="h-4 w-4 border-gray-300 rounded"
+//                   />
+//                   <span className="capitalize">{label}</span>
+//                 </label>
+//               ))}
 //             </div>
 //           </div>
-
-//           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-//             <p>&copy; 2024 BusinessSuite. All rights reserved. | Privacy Policy | Terms of Service</p>
+//         </section>
+//         {/* Hotels Section */}
+//         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+//           <h2 className="text-3xl font-bold text-gray-900 mb-6">Hôtels</h2>
+//           {filteredHotels.length === 0 ? (
+//             <p className="text-gray-600">Aucun hôtel ne correspond à votre recherche.</p>
+//           ) : (
+//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+//               {sortedHotels.map((hotel: any) => (
+//                 <div
+//                   key={hotel.id}
+//                   className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 flex flex-col"
+//                 >
+//                   <img
+//                     src={hotel.images?.[0] || "/placeholder.jpg"}
+//                     alt={hotel.name}
+//                     className="h-48 w-full object-cover"
+//                   />
+//                   <div className="p-6 flex flex-col flex-1">
+//                     <h3 className="text-xl font-semibold text-gray-900 mb-2 flex-1">{hotel.name}</h3>
+//                     <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
+//                       {hotel.description}
+//                     </p>
+//                     <Link
+//                       href={`/hotel/rooms?hotelId=${hotel.id}`}
+//                       className="mt-auto inline-block bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-blue-700 transition-colors"
+//                     >
+//                       Voir les chambres
+//                     </Link>
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           )}
+//         </section>
+//         {/* Restaurants Section */}
+//         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-gray-50">
+//           <h2 className="text-3xl font-bold text-gray-900 mb-6">Restaurants</h2>
+//           {filteredRestaurants.length === 0 ? (
+//             <p className="text-gray-600">Aucun restaurant ne correspond à votre recherche.</p>
+//           ) : (
+//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+//               {sortedRestaurants.map((restaurant: any) => (
+//                 <div
+//                   key={restaurant.id}
+//                   className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 flex flex-col"
+//                 >
+//                   <img
+//                     src={restaurant.images?.[0] || "/placeholder.jpg"}
+//                     alt={restaurant.name}
+//                     className="h-48 w-full object-cover"
+//                   />
+//                   <div className="p-6 flex flex-col flex-1">
+//                     <h3 className="text-xl font-semibold text-gray-900 mb-2 flex-1">{restaurant.name}</h3>
+//                     <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
+//                       {restaurant.description}
+//                     </p>
+//                     <Link
+//                       href={`/restaurant/booking?restaurantId=${restaurant.id}`}
+//                       className="mt-auto inline-block bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-700 transition-colors"
+//                     >
+//                       Réserver une table
+//                     </Link>
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           )}
+//         </section>
+//         {/* Salons Section */}
+//         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+//           <h2 className="text-3xl font-bold text-gray-900 mb-6">Salons</h2>
+//           {filteredSalons.length === 0 ? (
+//             <p className="text-gray-600">Aucun salon ne correspond à votre recherche.</p>
+//           ) : (
+//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+//               {sortedSalons.map((salon: any) => (
+//                 <div
+//                   key={salon.id}
+//                   className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 flex flex-col"
+//                 >
+//                   <img
+//                     src={salon.images?.[0] || "/placeholder.jpg"}
+//                     alt={salon.name}
+//                     className="h-48 w-full object-cover"
+//                   />
+//                   <div className="p-6 flex flex-col flex-1">
+//                     <h3 className="text-xl font-semibold text-gray-900 mb-2 flex-1">{salon.name}</h3>
+//                     <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-1">
+//                       {salon.description}
+//                     </p>
+//                     <Link
+//                       href="/salon/booking"
+//                       className="mt-auto inline-block bg-pink-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-pink-700 transition-colors"
+//                     >
+//                       Réserver un service
+//                     </Link>
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           )}
+//         </section>
+//         {/* Features Section */}
+//         <section className="bg-gray-100 py-16">
+//           <div className="max-w-7xl mx-auto px-4 text-center">
+//             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">Pourquoi choisir ProcheDeMoi ?</h2>
+//             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+//               <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+//                 <Calendar className="h-8 w-8 text-blue-600 mb-3" />
+//                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestion intelligente des réservations</h3>
+//                 <p className="text-sm text-gray-600">
+//                   Planifiez vos rendez‑vous, chambres et tables avec un système qui évite les conflits et envoie des confirmations automatiques.
+//                 </p>
+//               </div>
+//               <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+//                 <Users className="h-8 w-8 text-green-600 mb-3" />
+//                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Fidélisez vos clients</h3>
+//                 <p className="text-sm text-gray-600">
+//                   Accédez à l’historique et aux préférences de vos clients et créez des expériences personnalisées qui les feront revenir.
+//                 </p>
+//               </div>
+//               <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+//                 <Shield className="h-8 w-8 text-purple-600 mb-3" />
+//                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Sécurisé et fiable</h3>
+//                 <p className="text-sm text-gray-600">
+//                   Profitez d’une infrastructure de niveau entreprise avec sauvegardes automatiques et disponibilité garantie.
+//                 </p>
+//               </div>
+//               <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+//                 <Clock className="h-8 w-8 text-orange-600 mb-3" />
+//                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Assistance 24/7</h3>
+//                 <p className="text-sm text-gray-600">
+//                   Une équipe à votre écoute à toute heure pour que votre activité ne connaisse aucune interruption.
+//                 </p>
+//               </div>
+//             </div>
+//           </div>
+//         </section>
+//       </main>
+//       {/* Footer */}
+//       <footer className="bg-gray-800 text-white py-8">
+//         <div className="max-w-7xl mx-auto px-4 text-center">
+//           <p>&copy; {new Date().getFullYear()} ProcheDeMoi. Tous droits réservés.</p>
+//           <div className="flex justify-center space-x-6 mt-4 text-sm">
+//             <Link href="#" className="hover:text-blue-400">Politique de confidentialité</Link>
+//             <Link href="#" className="hover:text-blue-400">Conditions d’utilisation</Link>
+//             <Link href="#" className="hover:text-blue-400">Nous contacter</Link>
 //           </div>
 //         </div>
 //       </footer>
 //     </div>
-//   )
+//   );
 // }
+
+
 
 
 
@@ -765,781 +433,1121 @@
 
 
 
+
+
+"use client"
+
+import { useState, useMemo, useCallback, useEffect } from "react"
 import Link from "next/link"
+import { gql, useQuery } from "@apollo/client"
 import {
-  Hotel,
-  UtensilsCrossed,
-  Sparkles,
+  Search,
+  X,
+  MapPin,
   Star,
-  Users,
+  DollarSign,
   Calendar,
+  Users,
   Shield,
   Clock,
-  CheckCircle,
-  ArrowRight,
-  Phone,
-  Mail,
-  MapPin,
-  Search,
-  ClipboardList,
-  Smile,
+  SlidersHorizontal,
+  Grid,
+  List,
+  Zap,
+  Heart,
+  Bookmark,
+  TrendingUp,
+  Award,
+  Utensils,
 } from "lucide-react"
-import SiteNavbar from "@/components/site-navbar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export default function HomePage() {
+const GET_HOTELS = gql`
+  query GetHotels {
+    hotels {
+      id
+      name
+      description
+      images
+      # Fetch the featured landing card for each hotel.  This card is
+      # selected by the hotel manager via the dashboard and contains
+      # promotional information such as rating, price, location, tags
+      # and amenities.  If no card has been set as featured this
+      # field will be null.
+      featuredLandingCard {
+        id
+        title
+        description
+        image
+        price
+        rating
+        location
+        tags
+        amenities
+        specialOffer
+      }
+    }
+  }
+`
+
+const GET_RESTAURANTS = gql`
+  query GetRestaurants {
+    restaurants {
+      id
+      name
+      description
+      images
+    }
+  }
+`
+
+const GET_SALONS = gql`
+  query GetSalons {
+    salons {
+      id
+      name
+      description
+      images
+    }
+  }
+`
+
+interface FilterState {
+  searchTerm: string
+  categories: Set<string>
+  priceRange: [number, number]
+  ratingMin: number
+  locations: Set<string>
+  amenities: Set<string>
+  tags: Set<string>
+  sortBy: string
+  viewMode: "grid" | "list"
+  availability: string
+  specialOffers: boolean
+  instantBooking: boolean
+  popularityMin: number
+  distanceMax: number
+  openNow: boolean
+  searchHistory: string[]
+}
+
+const initialFilterState: FilterState = {
+  searchTerm: "",
+  categories: new Set(["hotel", "restaurant", "salon"]),
+  priceRange: [0, 500],
+  ratingMin: 0,
+  locations: new Set(),
+  amenities: new Set(),
+  tags: new Set(),
+  sortBy: "relevance",
+  viewMode: "grid",
+  availability: "any",
+  specialOffers: false,
+  instantBooking: false,
+  popularityMin: 0,
+  distanceMax: 50,
+  openNow: false,
+  searchHistory: [],
+}
+
+const quickFilters = [
+  { id: "popular", label: "Populaires", icon: TrendingUp, filters: { ratingMin: 4.0, popularityMin: 70 } },
+  { id: "luxury", label: "Luxe", icon: Award, filters: { priceRange: [200, 500], tags: new Set(["Luxe"]) } },
+  { id: "budget", label: "Économique", icon: DollarSign, filters: { priceRange: [0, 100] } },
+  { id: "nearby", label: "À proximité", icon: MapPin, filters: { distanceMax: 10 } },
+  { id: "offers", label: "Offres spéciales", icon: Zap, filters: { specialOffers: true } },
+  { id: "instant", label: "Réservation immédiate", icon: Clock, filters: { instantBooking: true } },
+]
+
+export default function EnhancedLandingPage() {
+  const { data: hotelsData, loading: hotelsLoading, error: hotelsError } = useQuery(GET_HOTELS)
+  const { data: restaurantsData, loading: restaurantsLoading, error: restaurantsError } = useQuery(GET_RESTAURANTS)
+  const { data: salonsData, loading: salonsLoading, error: salonsError } = useQuery(GET_SALONS)
+
+  const [filters, setFilters] = useState<FilterState>(initialFilterState)
+  const [showFilters, setShowFilters] = useState(false)
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [savedSearches, setSavedSearches] = useState<string[]>([])
+  const [expandedSections, setExpandedSections] = useState({
+    categories: true,
+    price: false,
+    rating: false,
+    location: false,
+    amenities: false,
+    tags: false,
+    advanced: false,
+  })
+
+  const hotels = useMemo(() => {
+    const cityList = ["Paris", "Lyon", "Marseille", "Nice", "Bordeaux", "Toulouse"]
+    return (hotelsData?.hotels ?? []).map((hotel: any, index: number) => {
+      const card = hotel.featuredLandingCard
+      // Use card values when available, otherwise fall back to default/random values
+      const rating = typeof card?.rating === 'number' ? card.rating : 3.5 + Math.random() * 1.5
+      const price = typeof card?.price === 'number' ? card.price : Math.floor(80 + Math.random() * 320)
+      const location = card?.location || cityList[index % cityList.length]
+      const amenities = Array.isArray(card?.amenities) && card.amenities.length > 0
+        ? card.amenities
+        : [
+            "WiFi",
+            "Parking",
+            "Piscine",
+            "Spa",
+            "Restaurant",
+            "Climatisation",
+            "Room Service",
+          ].slice(0, 3 + Math.floor(Math.random() * 4))
+      const tags = Array.isArray(card?.tags) && card.tags.length > 0
+        ? card.tags
+        : ["Luxe", "Familial", "Business", "Romantique", "Écologique", "Moderne"].slice(
+            0,
+            2 + Math.floor(Math.random() * 2),
+          )
+      const specialOffer = typeof card?.specialOffer === 'boolean' ? card.specialOffer : Math.random() > 0.7
+      return {
+        ...hotel,
+        type: "hotel",
+        // Use the card's rating/price for sorting and display.  The rest of the
+        // properties remain the same as before.  The priceRange property is
+        // simplified to a number to match the original structure used in
+        // filters and sorting.
+        rating,
+        priceRange: price,
+        location,
+        amenities,
+        tags,
+        popularity: Math.floor(30 + Math.random() * 70),
+        distance: Math.floor(1 + Math.random() * 45),
+        specialOffer,
+        instantBooking: Math.random() > 0.6,
+        openNow: Math.random() > 0.3,
+        cuisine: null,
+        services: null,
+      }
+    })
+  }, [hotelsData])
+
+  const restaurants = useMemo(() => {
+    return (restaurantsData?.restaurants ?? []).map((restaurant: any, index: number) => ({
+      ...restaurant,
+      type: "restaurant",
+      rating: 3.0 + Math.random() * 2.0,
+      priceRange: Math.floor(15 + Math.random() * 85),
+      location: ["Paris", "Lyon", "Marseille", "Nice", "Bordeaux", "Toulouse"][index % 6],
+      cuisine: ["Française", "Italienne", "Asiatique", "Méditerranéenne", "Japonaise", "Indienne"][index % 6],
+      amenities: ["Terrasse", "Parking", "WiFi", "Climatisation", "Livraison", "À emporter"].slice(
+        0,
+        2 + Math.floor(Math.random() * 3),
+      ),
+      tags: ["Gastronomique", "Familial", "Romantique", "Décontracté", "Végétarien", "Bio"].slice(
+        0,
+        2 + Math.floor(Math.random() * 2),
+      ),
+      popularity: Math.floor(25 + Math.random() * 75),
+      distance: Math.floor(1 + Math.random() * 40),
+      specialOffer: Math.random() > 0.6,
+      instantBooking: Math.random() > 0.5,
+      openNow: Math.random() > 0.4,
+      services: null,
+    }))
+  }, [restaurantsData])
+
+  const salons = useMemo(() => {
+    return (salonsData?.salons ?? []).map((salon: any, index: number) => ({
+      ...salon,
+      type: "salon",
+      rating: 3.8 + Math.random() * 1.2,
+      priceRange: Math.floor(25 + Math.random() * 125),
+      location: ["Paris", "Lyon", "Marseille", "Nice", "Bordeaux", "Toulouse"][index % 6],
+      services: ["Coiffure", "Manucure", "Massage", "Soins du visage", "Épilation", "Maquillage"].slice(
+        0,
+        3 + Math.floor(Math.random() * 3),
+      ),
+      amenities: ["WiFi", "Parking", "Climatisation", "Produits bio", "Café offert"].slice(
+        0,
+        2 + Math.floor(Math.random() * 3),
+      ),
+      tags: ["Luxe", "Bio", "Tendance", "Relaxant", "Unisexe", "Spécialisé"].slice(
+        0,
+        2 + Math.floor(Math.random() * 2),
+      ),
+      popularity: Math.floor(35 + Math.random() * 65),
+      distance: Math.floor(1 + Math.random() * 35),
+      specialOffer: Math.random() > 0.65,
+      instantBooking: Math.random() > 0.7,
+      openNow: Math.random() > 0.5,
+      cuisine: null,
+    }))
+  }, [salonsData])
+
+  const generateSearchSuggestions = useCallback(
+    (term: string) => {
+      if (!term || term.length < 2) {
+        setSearchSuggestions([])
+        return
+      }
+
+      const allItems = [...hotels, ...restaurants, ...salons]
+      const suggestions = new Set<string>()
+
+      allItems.forEach((item) => {
+        // Name suggestions
+        if (item.name.toLowerCase().includes(term.toLowerCase())) {
+          suggestions.add(item.name)
+        }
+
+        // Tag suggestions
+        if (Array.isArray(item.tags)) {
+          item.tags.forEach((tag: string) => {
+            if (tag.toLowerCase().includes(term.toLowerCase())) {
+              suggestions.add(tag)
+            }
+          })
+        }
+
+        // Location suggestions
+        if (item.location.toLowerCase().includes(term.toLowerCase())) {
+          suggestions.add(item.location)
+        }
+
+        // Cuisine/Services suggestions
+        if (item.cuisine && item.cuisine.toLowerCase().includes(term.toLowerCase())) {
+          suggestions.add(item.cuisine)
+        }
+
+        if (Array.isArray(item.services)) {
+          item.services.forEach((service: string) => {
+            if (service.toLowerCase().includes(term.toLowerCase())) {
+              suggestions.add(service)
+            }
+          })
+        }
+      })
+
+      setSearchSuggestions(Array.from(suggestions).slice(0, 8))
+    },
+    [hotels, restaurants, salons],
+  )
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      generateSearchSuggestions(filters.searchTerm)
+    }, 300)
+
+    return () => clearTimeout(debounceTimer)
+  }, [filters.searchTerm, generateSearchSuggestions])
+
+  const filteredAndSortedResults = useMemo(() => {
+    let allItems: any[] = []
+
+    if (filters.categories.has("hotel")) allItems.push(...hotels)
+    if (filters.categories.has("restaurant")) allItems.push(...restaurants)
+    if (filters.categories.has("salon")) allItems.push(...salons)
+
+    // Enhanced search - fuzzy matching across multiple fields
+    if (filters.searchTerm) {
+      const searchLower = filters.searchTerm.toLowerCase()
+      allItems = allItems.filter((item) => {
+        const searchableText = [
+          item.name,
+          item.description,
+          item.location,
+          item.cuisine,
+          ...(Array.isArray(item.tags) ? item.tags : []),
+          ...(Array.isArray(item.services) ? item.services : []),
+          ...(Array.isArray(item.amenities) ? item.amenities : []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+
+        return searchableText.includes(searchLower)
+      })
+    }
+
+    // Apply all filters
+    allItems = allItems.filter((item) => {
+      return (
+        item.priceRange >= filters.priceRange[0] &&
+        item.priceRange <= filters.priceRange[1] &&
+        item.rating >= filters.ratingMin &&
+        item.popularity >= filters.popularityMin &&
+        item.distance <= filters.distanceMax &&
+        (filters.locations.size === 0 || filters.locations.has(item.location)) &&
+        (filters.amenities.size === 0 ||
+          Array.from(filters.amenities).some((amenity) =>
+            Array.isArray(item.amenities) ? item.amenities.includes(amenity) : item.amenities === amenity,
+          )) &&
+        (filters.tags.size === 0 ||
+          Array.from(filters.tags).some((tag) =>
+            Array.isArray(item.tags) ? item.tags.includes(tag) : item.tags === tag,
+          )) &&
+        (!filters.specialOffers || item.specialOffer) &&
+        (!filters.instantBooking || item.instantBooking) &&
+        (!filters.openNow || item.openNow)
+      )
+    })
+
+    // Enhanced sorting with more options
+    allItems.sort((a, b) => {
+      switch (filters.sortBy) {
+        case "nameDesc":
+          return b.name.localeCompare(a.name)
+        case "ratingDesc":
+          return b.rating - a.rating
+        case "ratingAsc":
+          return a.rating - b.rating
+        case "priceAsc":
+          return a.priceRange - b.priceRange
+        case "priceDesc":
+          return b.priceRange - a.priceRange
+        case "popularityDesc":
+          return b.popularity - a.popularity
+        case "distanceAsc":
+          return a.distance - b.distance
+        case "relevance":
+          // Relevance based on rating, popularity, and special offers
+          const scoreA = a.rating * 0.4 + (a.popularity / 100) * 0.3 + (a.specialOffer ? 0.3 : 0)
+          const scoreB = b.rating * 0.4 + (b.popularity / 100) * 0.3 + (b.specialOffer ? 0.3 : 0)
+          return scoreB - scoreA
+        default: // nameAsc
+          return a.name.localeCompare(b.name)
+      }
+    })
+
+    return allItems
+  }, [hotels, restaurants, salons, filters])
+
+  const filterOptions = useMemo(() => {
+    const allItems = [...hotels, ...restaurants, ...salons]
+    return {
+      locations: [...new Set(allItems.map((item) => item.location))].sort(),
+      amenities: [
+        ...new Set(allItems.flatMap((item) => (Array.isArray(item.amenities) ? item.amenities : [item.amenities]))),
+      ]
+        .filter(Boolean)
+        .sort(),
+      tags: [...new Set(allItems.flatMap((item) => (Array.isArray(item.tags) ? item.tags : [item.tags])))]
+        .filter(Boolean)
+        .sort(),
+    }
+  }, [hotels, restaurants, salons])
+
+  const updateFilter = useCallback((key: keyof FilterState, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
+  }, [])
+
+  const toggleSetFilter = useCallback((key: "categories" | "locations" | "amenities" | "tags", value: string) => {
+    setFilters((prev) => {
+      const newSet = new Set(prev[key])
+      if (newSet.has(value)) {
+        newSet.delete(value)
+      } else {
+        newSet.add(value)
+      }
+      return { ...prev, [key]: newSet }
+    })
+  }, [])
+
+  const applyQuickFilter = useCallback((filterId: string) => {
+    const quickFilter = quickFilters.find((f) => f.id === filterId)
+    if (quickFilter) {
+      setFilters((prev) => ({ ...prev, ...quickFilter.filters }))
+    }
+  }, [])
+
+  const clearAllFilters = useCallback(() => {
+    setFilters(initialFilterState)
+  }, [])
+
+  const saveCurrentSearch = useCallback(() => {
+    if (filters.searchTerm && !savedSearches.includes(filters.searchTerm)) {
+      setSavedSearches((prev) => [filters.searchTerm, ...prev.slice(0, 4)])
+    }
+  }, [filters.searchTerm, savedSearches])
+
+  const getActiveFiltersCount = useMemo(() => {
+    let count = 0
+    if (filters.searchTerm) count++
+    if (filters.categories.size !== 3) count++
+    if (filters.priceRange[0] !== 0 || filters.priceRange[1] !== 500) count++
+    if (filters.ratingMin > 0) count++
+    if (filters.popularityMin > 0) count++
+    if (filters.distanceMax < 50) count++
+    if (filters.locations.size > 0) count++
+    if (filters.amenities.size > 0) count++
+    if (filters.tags.size > 0) count++
+    if (filters.specialOffers) count++
+    if (filters.instantBooking) count++
+    if (filters.openNow) count++
+    return count
+  }, [filters])
+
+  if (hotelsLoading || restaurantsLoading || salonsLoading) {
+    return <div className="p-8 text-center">Loading...</div>
+  }
+
+  if (hotelsError || restaurantsError || salonsError) {
+    return <div className="p-8 text-center text-red-500">Une erreur est survenue lors du chargement des données.</div>
+  }
+
   return (
-    <div className="min-h-screen bg-white">
-      <SiteNavbar />
-
-      {/* Hero Section */}
-      <section
-        className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
-        aria-labelledby="hero-heading"
-      >
-        {/* Subtle pattern overlay */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            backgroundImage: "radial-gradient(circle at 1px 1px, rgba(99,102,241,0.15) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        {/* Decorative blurs */}
-        <div aria-hidden className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-blue-300/30 blur-3xl" />
-        <div aria-hidden className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-purple-300/30 blur-3xl" />
-
-        <div className="relative container mx-auto px-4 pb-16 pt-24 md:pt-28">
-          <div className="mx-auto max-w-4xl text-center">
-            <span className="mb-4 inline-flex items-center rounded-full border border-blue-200 bg-white/70 px-3 py-1 text-xs font-medium text-blue-700 backdrop-blur">
-              14-day free trial • No credit card required
-            </span>
-            <h1 id="hero-heading" className="mb-6 text-5xl font-bold leading-tight text-gray-900 md:text-6xl">
-              Complete Business{" "}
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Management Suite
-              </span>
-            </h1>
-            <p className="mb-8 text-lg leading-relaxed text-gray-600 md:text-xl">
-              Streamline your hotel, restaurant, and salon operations with our comprehensive management platform.
-              Everything you need to run your business efficiently in one powerful solution.
-            </p>
-            <div className="flex flex-col justify-center gap-3 sm:flex-row">
-              <Link
-                href="/register"
-                className="transform rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                Start Free Trial
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-xl border-2 border-gray-300 px-8 py-4 text-lg font-semibold text-gray-700 transition-all duration-200 hover:border-gray-400 hover:shadow-md"
-              >
-                Sign In
-              </Link>
-            </div>
-            <div className="mt-6 flex items-center justify-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                Cancel anytime
-              </div>
-              <div className="hidden h-1 w-1 rounded-full bg-gray-300 sm:block" />
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-purple-600" />
-                SOC 2 ready
-              </div>
-            </div>
+    <div className="min-h-screen flex flex-col bg-white">
+      {/* Navbar */}
+      <header className="bg-white shadow-sm sticky top-0 z-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-xl text-blue-600">ProcheDeMoi</span>
           </div>
-        </div>
-      </section>
-
-      {/* Services Overview */}
-      <section id="services" className="bg-white py-20">
-        <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900">Three Powerful Solutions</h2>
-            <p className="mx-auto max-w-3xl text-xl text-gray-600">
-              Whether you run a hotel, restaurant, or salon, we have the perfect management solution tailored to your
-              industry needs.
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-3">
-            {/* Hotel Management */}
-            <div className="group rounded-3xl border border-gray-100 bg-white p-8 shadow-xl transition-all duration-300 hover:border-blue-200 hover:shadow-2xl">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 transition-transform duration-300 group-hover:scale-110">
-                <Hotel className="h-10 w-10 text-white" />
-              </div>
-              <h3 className="mb-4 text-2xl font-bold text-gray-900">Hotel Management</h3>
-              <p className="mb-6 leading-relaxed text-gray-600">
-                Complete hotel operations management with reservation system, room management, guest services, and
-                comprehensive reporting.
-              </p>
-              <div className="mb-8 space-y-3">
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Room & Reservation Management
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Guest Profile & History
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Housekeeping & Maintenance
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Revenue Analytics
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Link
-                  href="/hotel"
-                  className="block w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 text-center font-medium text-white transition-all duration-200 hover:from-blue-600 hover:to-blue-700"
-                >
-                  Learn More
-                </Link>
-                <Link
-                  href="/hotel/dashboard"
-                  className="group block w-full rounded-xl border-2 border-blue-500 px-6 py-3 text-center font-medium text-blue-600 transition-all duration-200 hover:bg-blue-50"
-                >
-                  Hotel Dashboard
-                  <ArrowRight className="ml-2 inline h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Restaurant Management */}
-            <div className="group rounded-3xl border border-gray-100 bg-white p-8 shadow-xl transition-all duration-300 hover:border-red-200 hover:shadow-2xl">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-red-600 transition-transform duration-300 group-hover:scale-110">
-                <UtensilsCrossed className="h-10 w-10 text-white" />
-              </div>
-              <h3 className="mb-4 text-2xl font-bold text-gray-900">Restaurant Management</h3>
-              <p className="mb-6 leading-relaxed text-gray-600">
-                Streamline your restaurant operations with table management, menu control, staff scheduling, and
-                customer relationship tools.
-              </p>
-              <div className="mb-8 space-y-3">
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Table & Reservation System
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Menu & Inventory Management
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Staff Scheduling & Payroll
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Customer Reviews & Feedback
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Link
-                  href="/u/accueil"
-                  className="block w-full rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-6 py-3 text-center font-medium text-white transition-all duration-200 hover:from-red-600 hover:to-red-700"
-                >
-                  Learn More
-                </Link>
-                <Link
-                  href="/restaurant/dashboard"
-                  className="group block w-full rounded-xl border-2 border-red-500 px-6 py-3 text-center font-medium text-red-600 transition-all duration-200 hover:bg-red-50"
-                >
-                  Restaurant Dashboard
-                  <ArrowRight className="ml-2 inline h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Salon Management */}
-            <div className="group rounded-3xl border border-gray-100 bg-white p-8 shadow-xl transition-all duration-300 hover:border-pink-200 hover:shadow-2xl">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 transition-transform duration-300 group-hover:scale-110">
-                <Sparkles className="h-10 w-10 text-white" />
-              </div>
-              <h3 className="mb-4 text-2xl font-bold text-gray-900">Salon Management</h3>
-              <p className="mb-6 leading-relaxed text-gray-600">
-                Manage your beauty salon with appointment scheduling, client profiles, service management, and stylist
-                coordination.
-              </p>
-              <div className="mb-8 space-y-3">
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Appointment Scheduling
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Client Management & History
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Service & Pricing Management
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Stylist Performance Tracking
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Link
-                  href="/salon"
-                  className="block w-full rounded-xl bg-gradient-to-r from-pink-500 to-pink-600 px-6 py-3 text-center font-medium text-white transition-all duration-200 hover:from-pink-600 hover:to-pink-700"
-                >
-                  Learn More
-                </Link>
-                <Link
-                  href="/salon/dashboard"
-                  className="group block w-full rounded-xl border-2 border-pink-500 px-6 py-3 text-center font-medium text-pink-600 transition-all duration-200 hover:bg-pink-50"
-                >
-                  Salon Dashboard
-                  <ArrowRight className="ml-2 inline h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="bg-gray-50 py-20">
-        <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900">Why Choose Our Platform?</h2>
-            <p className="mx-auto max-w-3xl text-xl text-gray-600">
-              Built specifically for hospitality businesses with features that matter most to your operations.
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-2 lg:grid-cols-4">
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 transition-colors hover:bg-blue-200">
-                <Calendar className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="mb-2 text-xl font-semibold text-gray-900">Smart Scheduling</h3>
-              <p className="text-gray-600">
-                Advanced booking system with conflict detection and automated confirmations.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 transition-colors hover:bg-green-200">
-                <Users className="h-8 w-8 text-green-600" />
-              </div>
-              <h3 className="mb-2 text-xl font-semibold text-gray-900">Customer Management</h3>
-              <p className="text-gray-600">
-                Complete customer profiles with history, preferences, and communication tools.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-100 transition-colors hover:bg-purple-200">
-                <Shield className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="mb-2 text-xl font-semibold text-gray-900">Secure & Reliable</h3>
-              <p className="text-gray-600">Enterprise-grade security with 99.9% uptime and automatic backups.</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 transition-colors hover:bg-orange-200">
-                <Clock className="h-8 w-8 text-orange-600" />
-              </div>
-              <h3 className="mb-2 text-xl font-semibold text-gray-900">24/7 Support</h3>
-              <p className="text-gray-600">Round-the-clock customer support to keep your business running smoothly.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Statistics Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-20 text-white">
-        <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold">Trusted by Businesses Worldwide</h2>
-            <p className="mx-auto max-w-3xl text-xl text-blue-100">
-              Join thousands of successful businesses that have transformed their operations with our platform.
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-4">
-            <div className="text-center">
-              <div className="mb-2 text-4xl font-bold">10,000+</div>
-              <div className="text-blue-100">Active Businesses</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-2 text-4xl font-bold">1M+</div>
-              <div className="text-blue-100">Bookings Processed</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-2 text-4xl font-bold">99.9%</div>
-              <div className="text-blue-100">Uptime Guarantee</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-2 text-4xl font-bold">24/7</div>
-              <div className="text-blue-100">Customer Support</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="bg-white py-20">
-        <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900">What Our Customers Say</h2>
-            <p className="mx-auto max-w-3xl text-xl text-gray-600">
-              Real feedback from real businesses using our platform every day.
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3">
-            <div className="rounded-2xl bg-gray-50 p-8">
-              <div className="mb-4 flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-current text-yellow-400" />
-                ))}
-              </div>
-              <p className="mb-6 italic text-gray-700">
-                {
-                  "This platform completely transformed how we manage our hotel. Bookings are up 40% and our staff is more efficient than ever."
-                }
-              </p>
-              <div className="flex items-center">
-                <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 font-semibold text-white">
-                  JD
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">John Davis</div>
-                  <div className="text-gray-600">Grand Plaza Hotel</div>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-gray-50 p-8">
-              <div className="mb-4 flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-current text-yellow-400" />
-                ))}
-              </div>
-              <p className="mb-6 italic text-gray-700">
-                {
-                  "The restaurant management features are incredible. We've reduced no-shows by 60% and our table turnover has improved significantly."
-                }
-              </p>
-              <div className="flex items-center">
-                <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500 font-semibold text-white">
-                  MR
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Maria Rodriguez</div>
-                  <div className="text-gray-600">Bella Vista Restaurant</div>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-2xl bg-gray-50 p-8">
-              <div className="mb-4 flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-current text-yellow-400" />
-                ))}
-              </div>
-              <p className="mb-6 italic text-gray-700">
-                {
-                  "Our salon has never been more organized. Client management and appointment scheduling are seamless. Highly recommended!"
-                }
-              </p>
-              <div className="flex items-center">
-                <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-pink-500 font-semibold text-white">
-                  SL
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900">Sarah Lee</div>
-                  <div className="text-gray-600">Luxe Beauty Salon</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="bg-gray-50 py-20">
-        <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900">Simple, Transparent Pricing</h2>
-            <p className="mx-auto max-w-3xl text-xl text-gray-600">
-              Choose the plan that fits your business size and needs. No hidden fees, no surprises.
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
-            <div className="rounded-2xl border border-gray-200 bg-white p-8">
-              <div className="mb-8 text-center">
-                <h3 className="mb-2 text-2xl font-bold text-gray-900">Starter</h3>
-                <div className="mb-2 text-4xl font-bold text-gray-900">
-                  {"$29"}
-                  <span className="text-lg text-gray-600">/month</span>
-                </div>
-                <p className="text-gray-600">Perfect for small businesses</p>
-              </div>
-              <ul className="mb-8 space-y-3">
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Up to 100 bookings/month
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Basic reporting
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Email support
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Mobile app access
-                </li>
-              </ul>
-              <button className="w-full rounded-xl bg-gray-900 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-800">
-                Start Free Trial
-              </button>
-            </div>
-
-            <div className="relative rounded-2xl border-2 border-blue-500 bg-white p-8">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 transform">
-                <span className="rounded-full bg-blue-500 px-4 py-1 text-sm font-medium text-white">Most Popular</span>
-              </div>
-              <div className="mb-8 text-center">
-                <h3 className="mb-2 text-2xl font-bold text-gray-900">Professional</h3>
-                <div className="mb-2 text-4xl font-bold text-gray-900">
-                  {"$79"}
-                  <span className="text-lg text-gray-600">/month</span>
-                </div>
-                <p className="text-gray-600">For growing businesses</p>
-              </div>
-              <ul className="mb-8 space-y-3">
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Up to 500 bookings/month
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Advanced analytics
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Priority support
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  API access
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Custom integrations
-                </li>
-              </ul>
-              <button className="w-full rounded-xl bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700">
-                Start Free Trial
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-8">
-              <div className="mb-8 text-center">
-                <h3 className="mb-2 text-2xl font-bold text-gray-900">Enterprise</h3>
-                <div className="mb-2 text-4xl font-bold text-gray-900">
-                  {"$199"}
-                  <span className="text-lg text-gray-600">/month</span>
-                </div>
-                <p className="text-gray-600">For large organizations</p>
-              </div>
-              <ul className="mb-8 space-y-3">
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Unlimited bookings
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  White-label solution
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  24/7 phone support
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Dedicated account manager
-                </li>
-                <li className="flex items-center text-gray-700">
-                  <CheckCircle className="mr-3 h-5 w-5 text-green-500" />
-                  Custom development
-                </li>
-              </ul>
-              <button className="w-full rounded-xl bg-gray-900 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-800">
-                Contact Sales
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="bg-white py-20">
-        <div className="container mx-auto px-4">
-          <div className="mb-16 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900">How It Works</h2>
-            <p className="mx-auto max-w-3xl text-xl text-gray-600">
-              Plan and book your next experience in just a few steps.
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-4">
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-                <Search className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Choose Your Service</h3>
-              <p className="text-gray-600">Select the hotel, restaurant or salon service that suits your needs.</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                <ClipboardList className="h-8 w-8 text-red-600" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Provide Details</h3>
-              <p className="text-gray-600">Enter your preferred dates, party size and contact information.</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100">
-                <CheckCircle className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Confirm Your Booking</h3>
-              <p className="text-gray-600">Review and submit your request — we’ll handle the rest.</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-pink-100">
-                <Smile className="h-8 w-8 text-pink-600" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">Enjoy Your Visit</h3>
-              <p className="text-gray-600">Relax and look forward to a seamless experience at our venues.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="bg-gray-50 py-20">
-        <div className="container mx-auto px-4">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>
-            <p className="mx-auto max-w-3xl text-xl text-gray-600">Have questions? We’re here to help.</p>
-          </div>
-          <div className="mx-auto max-w-3xl space-y-4">
-            <details className="rounded-lg border border-gray-200 bg-white p-4">
-              <summary className="cursor-pointer text-lg font-medium">How do I make a booking?</summary>
-              <p className="mt-2 text-gray-600">
-                Simply select the type of service you’d like and follow the prompts to choose your dates and provide
-                your details.
-              </p>
-            </details>
-            <details className="rounded-lg border border-gray-200 bg-white p-4">
-              <summary className="cursor-pointer text-lg font-medium">Do I need an account to book?</summary>
-              <p className="mt-2 text-gray-600">
-                No. You can make reservations and appointments without creating an account. We only need your contact
-                information.
-              </p>
-            </details>
-            <details className="rounded-lg border border-gray-200 bg-white p-4">
-              <summary className="cursor-pointer text-lg font-medium">Can I modify or cancel my booking?</summary>
-              <p className="mt-2 text-gray-600">
-                Yes. Please contact us directly via phone or email with your reservation details and we’ll assist you.
-              </p>
-            </details>
-            <details className="rounded-lg border border-gray-200 bg-white p-4">
-              <summary className="cursor-pointer text-lg font-medium">What payment methods are accepted?</summary>
-              <p className="mt-2 text-gray-600">
-                We accept all major credit cards. Payment information will be requested once your booking is confirmed.
-              </p>
-            </details>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact & Newsletter Section */}
-      <section id="contact" className="bg-white py-20">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2">
-            <div>
-              <h2 className="mb-4 text-3xl font-bold text-gray-900">Get in Touch</h2>
-              <p className="mb-6 text-gray-600">
-                Have questions, suggestions or feedback? Send us a message and our team will respond promptly.
-              </p>
-              <form className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                />
-                <textarea
-                  placeholder="Your Message"
-                  rows={4}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  type="button"
-                  className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
-                >
-                  Send Message
-                </button>
-              </form>
-            </div>
-            <div>
-              <h2 className="mb-4 text-3xl font-bold text-gray-900">Stay Updated</h2>
-              <p className="mb-6 text-gray-600">
-                Subscribe to our newsletter to receive the latest news, updates and special offers.
-              </p>
-              <form className="space-y-4">
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-transparent focus:ring-2 focus:ring-purple-500"
-                />
-                <button
-                  type="button"
-                  className="rounded-lg bg-purple-600 px-6 py-3 font-medium text-white transition-colors hover:bg-purple-700"
-                >
-                  Subscribe
-                </button>
-              </form>
-              <div className="mt-10 space-y-3 text-gray-600">
-                <div className="flex items-center">
-                  <Phone className="mr-2 h-4 w-4" />
-                  +1 (555) 123-4567
-                </div>
-                <div className="flex items-center">
-                  <Mail className="mr-2 h-4 w-4" />
-                  support@businesssuite.com
-                </div>
-                <div className="flex items-center">
-                  <MapPin className="mr-2 h-4 w-4" />
-                  123 Business Ave, Suite 100
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-20 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="mb-4 text-4xl font-bold">Ready to Transform Your Business?</h2>
-          <p className="mx-auto mb-8 max-w-2xl text-xl text-blue-100">
-            Join thousands of successful businesses and start your free trial today. No credit card required.
-          </p>
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <Link
-              href="/register"
-              className="rounded-xl bg-white px-8 py-4 text-lg font-semibold text-blue-600 transition-colors hover:bg-gray-100"
-            >
-              Start Free Trial
+          <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
+            <Link href="/" className="hover:text-blue-600">
+              Accueil
             </Link>
+            <Link href="/product" className="hover:text-blue-600">
+              Produit
+            </Link>
+            <Link href="/hotel" className="hover:text-blue-600">
+              Hotels
+            </Link>
+            <Link href="/restaurant" className="hover:text-blue-600">
+              Restaurants
+            </Link>
+            <Link href="/salon" className="hover:text-blue-600">
+              Salons
+            </Link>
+          </nav>
+          <div className="flex items-center space-x-4">
             <Link
               href="/login"
-              className="rounded-xl border-2 border-white px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-white hover:text-blue-600"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
             >
-              Sign In
+              Se connecter
             </Link>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 py-16 text-white">
-        <div className="container mx-auto px-4">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div>
-              <h3 className="mb-4 text-2xl font-bold">BusinessSuite</h3>
-              <p className="mb-4 text-gray-400">
-                The complete management solution for hotels, restaurants, and salons.
-              </p>
-              <div className="flex space-x-4">
-                <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700">
-                  <span className="text-sm font-bold">f</span>
-                </div>
-                <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700">
-                  <span className="text-sm font-bold">t</span>
-                </div>
-                <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700">
-                  <span className="text-sm font-bold">in</span>
+      <main className="flex-1">
+        {/* Hero and Search */}
+        <section className="bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Découvrez et réservez votre prochaine expérience
+            </h1>
+            <p className="text-lg text-gray-600">
+              Trouvez le meilleur hôtel, restaurant ou salon de beauté avec nos filtres intelligents.
+            </p>
+          </div>
+
+          <div className="max-w-6xl mx-auto">
+            <div className="relative mb-6">
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Rechercher par nom, lieu, cuisine, services..."
+                  value={filters.searchTerm}
+                  onChange={(e) => {
+                    updateFilter("searchTerm", e.target.value)
+                    setShowSuggestions(true)
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  className="pl-12 pr-20 h-14 text-base shadow-lg border-0 focus:ring-2 focus:ring-blue-500"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                {filters.searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateFilter("searchTerm", "")}
+                    className="absolute right-12 top-1/2 -translate-y-1/2"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  onClick={saveCurrentSearch}
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                >
+                  <Bookmark className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Search suggestions */}
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <Card className="absolute top-full left-0 right-0 mt-2 z-10 shadow-lg">
+                  <CardContent className="p-2">
+                    {searchSuggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          updateFilter("searchTerm", suggestion)
+                          setShowSuggestions(false)
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm"
+                      >
+                        <Search className="h-4 w-4 inline mr-2 text-gray-400" />
+                        {suggestion}
+                      </button>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-6">
+              {quickFilters.map((filter) => (
+                <Button
+                  key={filter.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyQuickFilter(filter.id)}
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                >
+                  <filter.icon className="h-4 w-4" />
+                  {filter.label}
+                </Button>
+              ))}
+            </div>
+
+            {/* Control bar */}
+            <div className="flex flex-col lg:flex-row gap-4 mb-6">
+              <div className="flex items-center gap-2 flex-1">
+                <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="h-12 px-4 shadow-sm">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filtres avancés
+                  {getActiveFiltersCount > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {getActiveFiltersCount}
+                    </Badge>
+                  )}
+                </Button>
+
+                {/* Saved searches */}
+                {savedSearches.length > 0 && (
+                  <Select onValueChange={(value) => updateFilter("searchTerm", value)}>
+                    <SelectTrigger className="w-48 h-12">
+                      <SelectValue placeholder="Recherches sauvées" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {savedSearches.map((search, index) => (
+                        <SelectItem key={index} value={search}>
+                          <div className="flex items-center">
+                            <Bookmark className="h-4 w-4 mr-2" />
+                            {search}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
+                  <SelectTrigger className="w-56 h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="relevance">Pertinence</SelectItem>
+                    <SelectItem value="nameAsc">Nom A → Z</SelectItem>
+                    <SelectItem value="nameDesc">Nom Z → A</SelectItem>
+                    <SelectItem value="ratingDesc">Note ↓</SelectItem>
+                    <SelectItem value="ratingAsc">Note ↑</SelectItem>
+                    <SelectItem value="priceAsc">Prix ↑</SelectItem>
+                    <SelectItem value="priceDesc">Prix ↓</SelectItem>
+                    <SelectItem value="popularityDesc">Popularité ↓</SelectItem>
+                    <SelectItem value="distanceAsc">Distance ↑</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex border rounded-lg shadow-sm">
+                  <Button
+                    variant={filters.viewMode === "grid" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => updateFilter("viewMode", "grid")}
+                    className="rounded-r-none h-12"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={filters.viewMode === "list" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => updateFilter("viewMode", "list")}
+                    className="rounded-l-none h-12"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
-            <div>
-              <h4 className="mb-4 text-lg font-semibold">Solutions</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <Link href="/hotel/dashboard" className="transition-colors hover:text-white">
-                    Hotel Management
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/restaurant/dashboard" className="transition-colors hover:text-white">
-                    Restaurant Management
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/salon/dashboard" className="transition-colors hover:text-white">
-                    Salon Management
-                  </Link>
-                </li>
-                <li>
-                  <a href="#" className="transition-colors hover:text-white">
-                    Enterprise Solutions
-                  </a>
-                </li>
-              </ul>
+
+            {showFilters && (
+              <Card className="mb-6 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold">Filtres avancés</h3>
+                    <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                      <X className="h-4 w-4 mr-2" />
+                      Effacer tout
+                    </Button>
+                  </div>
+
+                  <Tabs defaultValue="basic" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="basic">Filtres de base</TabsTrigger>
+                      <TabsTrigger value="location">Lieu & Distance</TabsTrigger>
+                      <TabsTrigger value="advanced">Avancés</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="basic" className="mt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Categories */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">Catégories</h4>
+                          {[
+                            { type: "hotel", label: "Hôtels" },
+                            { type: "restaurant", label: "Restaurants" },
+                            { type: "salon", label: "Salons" },
+                          ].map(({ type, label }) => (
+                            <div key={type} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={type}
+                                checked={filters.categories.has(type)}
+                                onCheckedChange={() => toggleSetFilter("categories", type)}
+                              />
+                              <label htmlFor={type} className="text-sm cursor-pointer">
+                                {label}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Price Range */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">Prix (€)</h4>
+                          <div className="px-2">
+                            <Slider
+                              value={filters.priceRange}
+                              onValueChange={(value) => updateFilter("priceRange", value)}
+                              max={500}
+                              min={0}
+                              step={10}
+                              className="mb-2"
+                            />
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{filters.priceRange[0]}€</span>
+                              <span>{filters.priceRange[1]}€</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">Note minimum</h4>
+                          <div className="px-2">
+                            <Slider
+                              value={[filters.ratingMin]}
+                              onValueChange={(value) => updateFilter("ratingMin", value[0])}
+                              max={5}
+                              min={0}
+                              step={0.5}
+                              className="mb-2"
+                            />
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Star className="h-4 w-4 mr-1 text-yellow-400" />
+                              {filters.ratingMin} et plus
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="location" className="mt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Locations */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">Villes</h4>
+                          <div className="max-h-40 overflow-y-auto space-y-2">
+                            {filterOptions.locations.map((location) => (
+                              <div key={location} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`location-${location}`}
+                                  checked={filters.locations.has(location)}
+                                  onCheckedChange={() => toggleSetFilter("locations", location)}
+                                />
+                                <label htmlFor={`location-${location}`} className="text-sm cursor-pointer">
+                                  <MapPin className="h-3 w-3 inline mr-1" />
+                                  {location}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Distance */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">Distance maximale (km)</h4>
+                          <div className="px-2">
+                            <Slider
+                              value={[filters.distanceMax]}
+                              onValueChange={(value) => updateFilter("distanceMax", value[0])}
+                              max={50}
+                              min={1}
+                              step={1}
+                              className="mb-2"
+                            />
+                            <div className="text-sm text-gray-600">Jusqu'à {filters.distanceMax} km</div>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="advanced" className="mt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Quick toggles */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">Options rapides</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="specialOffers"
+                                checked={filters.specialOffers}
+                                onCheckedChange={(checked) => updateFilter("specialOffers", checked)}
+                              />
+                              <label htmlFor="specialOffers" className="text-sm cursor-pointer">
+                                <Zap className="h-3 w-3 inline mr-1 text-yellow-500" />
+                                Offres spéciales
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="instantBooking"
+                                checked={filters.instantBooking}
+                                onCheckedChange={(checked) => updateFilter("instantBooking", checked)}
+                              />
+                              <label htmlFor="instantBooking" className="text-sm cursor-pointer">
+                                <Clock className="h-3 w-3 inline mr-1 text-green-500" />
+                                Réservation immédiate
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="openNow"
+                                checked={filters.openNow}
+                                onCheckedChange={(checked) => updateFilter("openNow", checked)}
+                              />
+                              <label htmlFor="openNow" className="text-sm cursor-pointer">
+                                <Clock className="h-3 w-3 inline mr-1 text-blue-500" />
+                                Ouvert maintenant
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Popularity */}
+                        <div className="space-y-3">
+                          <h4 className="font-medium">Popularité minimum</h4>
+                          <div className="px-2">
+                            <Slider
+                              value={[filters.popularityMin]}
+                              onValueChange={(value) => updateFilter("popularityMin", value[0])}
+                              max={100}
+                              min={0}
+                              step={10}
+                              className="mb-2"
+                            />
+                            <div className="text-sm text-gray-600">{filters.popularityMin}% et plus</div>
+                          </div>
+                        </div>
+
+                        {/* Amenities & Tags */}
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2">Équipements</h4>
+                            <div className="max-h-32 overflow-y-auto space-y-1">
+                              {filterOptions.amenities.slice(0, 8).map((amenity) => (
+                                <div key={amenity} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`amenity-${amenity}`}
+                                    checked={filters.amenities.has(amenity)}
+                                    onCheckedChange={() => toggleSetFilter("amenities", amenity)}
+                                  />
+                                  <label htmlFor={`amenity-${amenity}`} className="text-xs cursor-pointer">
+                                    {amenity}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            )}
+
+            {getActiveFiltersCount > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {filters.searchTerm && (
+                  <Badge variant="secondary" className="px-3 py-1 text-sm">
+                    <Search className="h-3 w-3 mr-1" />"{filters.searchTerm}"
+                    <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => updateFilter("searchTerm", "")} />
+                  </Badge>
+                )}
+                {filters.specialOffers && (
+                  <Badge variant="secondary" className="px-3 py-1 text-sm">
+                    <Zap className="h-3 w-3 mr-1" />
+                    Offres spéciales
+                    <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => updateFilter("specialOffers", false)} />
+                  </Badge>
+                )}
+                {filters.instantBooking && (
+                  <Badge variant="secondary" className="px-3 py-1 text-sm">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Réservation immédiate
+                    <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => updateFilter("instantBooking", false)} />
+                  </Badge>
+                )}
+                {Array.from(filters.locations).map((location) => (
+                  <Badge key={location} variant="secondary" className="px-3 py-1 text-sm">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    {location}
+                    <X className="h-3 w-3 ml-2 cursor-pointer" onClick={() => toggleSetFilter("locations", location)} />
+                  </Badge>
+                ))}
+                {Array.from(filters.amenities)
+                  .slice(0, 3)
+                  .map((amenity) => (
+                    <Badge key={amenity} variant="secondary" className="px-3 py-1 text-sm">
+                      {amenity}
+                      <X
+                        className="h-3 w-3 ml-2 cursor-pointer"
+                        onClick={() => toggleSetFilter("amenities", amenity)}
+                      />
+                    </Badge>
+                  ))}
+                {filters.amenities.size > 3 && (
+                  <Badge variant="outline" className="px-3 py-1 text-sm">
+                    +{filters.amenities.size - 3} autres
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Results Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Résultats ({filteredAndSortedResults.length})
+              {filters.searchTerm && (
+                <span className="text-base font-normal text-gray-600 ml-2">pour "{filters.searchTerm}"</span>
+              )}
+            </h2>
+          </div>
+
+          {filteredAndSortedResults.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-gray-400 mb-4">
+                <Search className="h-20 w-20 mx-auto" />
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 mb-2">Aucun résultat trouvé</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Essayez de modifier vos critères de recherche, d'élargir votre zone géographique ou de supprimer
+                certains filtres.
+              </p>
+              <div className="flex justify-center gap-4">
+                <Button onClick={clearAllFilters} variant="outline">
+                  <X className="h-4 w-4 mr-2" />
+                  Effacer tous les filtres
+                </Button>
+                <Button onClick={() => updateFilter("distanceMax", 50)} variant="outline">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Élargir la zone
+                </Button>
+              </div>
             </div>
-            <div>
-              <h4 className="mb-4 text-lg font-semibold">Support</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="transition-colors hover:text-white">
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="transition-colors hover:text-white">
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="transition-colors hover:text-white">
-                    API Reference
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="transition-colors hover:text-white">
-                    Contact Support
-                  </a>
-                </li>
-              </ul>
+          ) : (
+            <div
+              className={
+                filters.viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" : "space-y-6"
+              }
+            >
+              {filteredAndSortedResults.map((item: any) => (
+                <div
+                  key={`${item.type}-${item.id}`}
+                  className={`bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 ${
+                    filters.viewMode === "list" ? "flex" : "flex flex-col"
+                  } ${item.specialOffer ? "ring-2 ring-yellow-200" : ""}`}
+                >
+                  <div className="relative">
+                    <img
+                      src={item.images?.[0] || "/placeholder.jpg"}
+                      alt={item.name}
+                      className={
+                        filters.viewMode === "list"
+                          ? "h-32 w-48 object-cover flex-shrink-0"
+                          : "h-48 w-full object-cover"
+                      }
+                    />
+                    {item.specialOffer && (
+                      <Badge className="absolute top-2 left-2 bg-yellow-500 text-yellow-900">
+                        <Zap className="h-3 w-3 mr-1" />
+                        Offre spéciale
+                      </Badge>
+                    )}
+                    {item.instantBooking && (
+                      <Badge className="absolute top-2 right-2 bg-green-500">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Immédiat
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="p-6 flex flex-col flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900 flex-1">{item.name}</h3>
+                      <div className="flex items-center ml-2">
+                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                        <span className="text-sm font-medium">{item.rating.toFixed(1)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center text-sm text-gray-600 mb-2 flex-wrap gap-4">
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {item.location} • {item.distance}km
+                      </div>
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 mr-1" />
+                        {item.priceRange}€
+                      </div>
+                      <div className="flex items-center">
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        {item.popularity}% populaire
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-1">{item.description}</p>
+
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {(Array.isArray(item.tags) ? item.tags : [item.tags])
+                        .slice(0, 3)
+                        .map((tag: string, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      {item.cuisine && (
+                        <Badge variant="outline" className="text-xs">
+                          <Utensils className="h-3 w-3 mr-1" />
+                          {item.cuisine}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Link
+                        href={
+                          item.type === "hotel"
+                            ? `/hotel/rooms?hotelId=${item.id}`
+                            : item.type === "restaurant"
+                              ? `/restaurant/booking?restaurantId=${item.id}`
+                              : "/salon/booking"
+                        }
+                        className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                          item.type === "hotel"
+                            ? "bg-blue-600 hover:bg-blue-700 text-white"
+                            : item.type === "restaurant"
+                              ? "bg-red-600 hover:bg-red-700 text-white"
+                              : "bg-pink-600 hover:bg-pink-700 text-white"
+                        }`}
+                      >
+                        {item.type === "hotel"
+                          ? "Voir les chambres"
+                          : item.type === "restaurant"
+                            ? "Réserver une table"
+                            : "Réserver un service"}
+                      </Link>
+
+                      <Button variant="ghost" size="sm">
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <h4 className="mb-4 text-lg font-semibold">Contact</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="flex items-center">
-                  <Phone className="mr-2 h-4 w-4" />
-                  +1 (555) 123-4567
-                </li>
-                <li className="flex items-center">
-                  <Mail className="mr-2 h-4 w-4" />
-                  support@businesssuite.com
-                </li>
-                <li className="flex items-center">
-                  <MapPin className="mr-2 h-4 w-4" />
-                  123 Business Ave, Suite 100
-                </li>
-              </ul>
+          )}
+        </section>
+
+        <section className="bg-gray-100 py-16">
+          <div className="max-w-7xl mx-auto px-4 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">Pourquoi choisir ProcheDeMoi ?</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+                <Calendar className="h-8 w-8 text-blue-600 mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Gestion intelligente des réservations</h3>
+                <p className="text-sm text-gray-600">
+                  Planifiez vos rendez‑vous, chambres et tables avec un système qui évite les conflits et envoie des
+                  confirmations automatiques.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+                <Users className="h-8 w-8 text-green-600 mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Fidélisez vos clients</h3>
+                <p className="text-sm text-gray-600">
+                  Accédez à l'historique et aux préférences de vos clients et créez des expériences personnalisées qui
+                  les feront revenir.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+                <Shield className="h-8 w-8 text-purple-600 mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Sécurisé et fiable</h3>
+                <p className="text-sm text-gray-600">
+                  Profitez d'une infrastructure de niveau entreprise avec sauvegardes automatiques et disponibilité
+                  garantie.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow">
+                <Clock className="h-8 w-8 text-orange-600 mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Assistance 24/7</h3>
+                <p className="text-sm text-gray-600">
+                  Une équipe à votre écoute à toute heure pour que votre activité ne connaisse aucune interruption.
+                </p>
+              </div>
             </div>
           </div>
-          <div className="mt-12 border-t border-gray-800 pt-8 text-center text-gray-400">
-            <p>{"© 2024 BusinessSuite. All rights reserved. | Privacy Policy | Terms of Service"}</p>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p>&copy; {new Date().getFullYear()} ProcheDeMoi. Tous droits réservés.</p>
+          <div className="flex justify-center space-x-6 mt-4 text-sm">
+            <Link href="#" className="hover:text-blue-400">
+              Politique de confidentialité
+            </Link>
+            <Link href="#" className="hover:text-blue-400">
+              Conditions d'utilisation
+            </Link>
+            <Link href="#" className="hover:text-blue-400">
+              Nous contacter
+            </Link>
           </div>
         </div>
       </footer>

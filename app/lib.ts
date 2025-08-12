@@ -12,6 +12,7 @@ export interface SessionData {
         email?: string;
         role?: string;
         imageUrl?: string;
+        isActive?: boolean;
     };
     isLoggedIn?: boolean;
 

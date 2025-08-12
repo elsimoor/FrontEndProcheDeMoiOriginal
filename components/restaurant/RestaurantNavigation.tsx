@@ -68,6 +68,7 @@ export default function RestaurantNavigation({ setSidebarOpen }: { setSidebarOpe
                 <a href="/restaurant/dashboard/tables-disponibilites" className="hover:text-red-600 transition-colors">Tables & Dispos</a>
                 <a href="/restaurant/dashboard/settings" className="hover:text-red-600 transition-colors">Settings</a>
                 <a href="/restaurant/dashboard/invoices" className="hover:text-red-600 transition-colors">Invoices</a>
+                <a href="/restaurant/dashboard/cards" className="hover:text-red-600 transition-colors">Landing Cards</a>
             </nav>
           </div>
           <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end">
