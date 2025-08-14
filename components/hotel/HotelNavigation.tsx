@@ -1,107 +1,127 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Menu, X, Hotel } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Bell, Search, User, Menu, Hotel as HotelIcon } from "lucide-react"
 
-const navigation = [
-  { name: "Dashboard", href: "/hotel/dashboard" },
-  { name: "Reservations", href: "/hotel/dashboard/reservations" },
-  { name: "Guests", href: "/hotel/dashboard/guests" },
-  { name: "Rooms", href: "/hotel/dashboard/rooms" },
-  { name: "Options", href: "/hotel/dashboard/options"},
-  { name: "Opening Hours", href: "/hotel/dashboard/opening-hours" },
-  { name: "Pricing", href: "/hotel/dashboard/pricing" },
-  { name: "Reviews", href: "/hotel/dashboard/reviews" },
-  { name: "Invoices", href: "/hotel/dashboard/invoices" },
-  // Page for managing promotional landing cards
-  { name: "Landing Cards", href: "/hotel/dashboard/cards" },
-  // { name: "Settings", href: "/hotel/dashboard/settings" },
+interface SessionUser {
+  id: string
+  firstName?: string
+  lastName?: string
+  email?: string
+}
 
-]
+// The hotel dashboard navigation bar now mirrors the salon and restaurant
+// navigation components.  It removes the horizontal list of page links and
+// instead provides a compact header with a brand, search bar, notification
+// bell and user menu.  A hamburger button opens the sidebar on mobile.
+export default function HotelNavigation({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => void }) {
+  const [user, setUser] = useState<SessionUser | null>(null)
+  const [search, setSearch] = useState("")
+  const [menuOpen, setMenuOpen] = useState(false)
 
+  useEffect(() => {
+    async function fetchSession() {
+      try {
+        const res = await fetch("/api/session")
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.user) {
+          setUser(data.user)
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchSession()
+  }, [])
 
-
-
-export default function HotelNavigation() {
-  const pathname = usePathname()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/session", { method: "DELETE" })
+    } catch (err) {
+      console.error(err)
+    } finally {
+      window.location.href = "/login"
+    }
+  }
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between">
-          <div className="flex">
-            <div className="flex flex-shrink-0 items-center">
-              <Hotel className="h-8 w-auto text-blue-600" />
-              <span className="ml-2 text-lg font-semibold text-gray-900">HotelAdmin</span>
+    <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <button
+              type="button"
+              className="md:hidden bg-white p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <span className="sr-only">Open sidebar</span>
+              <Menu className="h-6 w-6" />
+            </button>
+            <div className="hidden md:flex items-center">
+              <HotelIcon className="h-8 w-8 text-blue-600" />
+              <span className="ml-2 text-lg font-semibold text-gray-900">Hotel Dashboard</span>
             </div>
           </div>
-          <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                  pathname === item.href
-                    ? "border-blue-500 text-gray-900"
-                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                }`}
-                aria-current={pathname === item.href ? "page" : undefined}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-          <div className="flex items-center">
-            <div className="ml-4 flex items-center sm:ml-6">
-              <div className="flex-shrink-0">
-                <button
-                  type="button"
-                  className="relative rounded-full bg-peach-500 p-1 text-white hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
-                >
-                  <span className="absolute -inset-1.5" />
-                  <span className="sr-only">View notifications</span>
-                  <div className="h-8 w-8 rounded-full bg-orange-200" />
-                </button>
+          <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end">
+            <div className="max-w-lg w-full lg:max-w-xs">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Search"
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
             </div>
-            <div className="-mr-2 flex items-center sm:hidden">
-              <button
-                type="button"
-                className="inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <span className="sr-only">Open main menu</span>
-                <Menu className="block h-6 w-6" aria-hidden="true" />
-              </button>
+          </div>
+          {/* Right side: notifications and user info */}
+          <div className="flex items-center">
+            <button
+              type="button"
+              className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <span className="sr-only">View notifications</span>
+              <Bell className="h-6 w-6" />
+            </button>
+            <div className="ml-3 relative">
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                >
+                  <span className="sr-only">Open user menu</span>
+                  <User className="h-8 w-8 rounded-full bg-gray-200 p-1" />
+                  <span className="ml-2 text-gray-700 text-sm font-medium">
+                    {user ? `${user.firstName || "User"} ${user.lastName || ""}` : "Guest"}
+                  </span>
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                    <a
+                      href="#"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Profile
+                    </a>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      {mobileMenuOpen && (
-        <div className="sm:hidden" id="mobile-menu">
-          <div className="space-y-1 pb-3 pt-2">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`block border-l-4 py-2 pl-3 pr-4 text-base font-medium ${
-                  pathname === item.href
-                    ? "border-blue-500 bg-blue-50 text-blue-700"
-                    : "border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800"
-                }`}
-                aria-current={pathname === item.href ? "page" : undefined}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-    </header>
+    </div>
   )
 }

@@ -72,10 +72,13 @@ const isSameDay = (d1: Date, d2: Date) =>
   d1.getMonth() === d2.getMonth() &&
   d1.getDate() === d2.getDate();
 
-// Generate an array of the last six months for revenue chart
-const getLastSixMonths = () => {
+// Generate an array of the last six months for the revenue chart.  This
+// function accepts an optional reference date so that the chart
+// reflects months relative to the selected date rather than always
+// starting from the current month.
+const getLastSixMonths = (referenceDate?: Date) => {
   const months: { month: string; year: number }[] = [];
-  const date = new Date();
+  const date = referenceDate ? new Date(referenceDate) : new Date();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(date.getFullYear(), date.getMonth() - i, 1);
     months.push({ month: d.toLocaleString(undefined, { month: "short" }), year: d.getFullYear() });
@@ -93,6 +96,12 @@ export default function RestaurantDashboard() {
   const [businessType, setBusinessType] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
+
+  // Date filter: allows the user to select a specific day for which
+  // statistics will be computed.  Defaults to today when the page
+  // first loads.  Changing this value will recompute the metrics
+  // based on the chosen date.
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   useEffect(() => {
     async function fetchSession() {
@@ -140,13 +149,14 @@ export default function RestaurantDashboard() {
   const stats = useMemo(() => {
     if (!reservationsData) return null;
     const reservations = reservationsData.reservations;
-    const now = new Date();
-    // Filter reservations for today
+    // Use the selected date as the reference; fall back to today if undefined
+    const now = selectedDate ? new Date(selectedDate) : new Date();
+    // Filter reservations for the selected day
     const todays = reservations.filter((r: any) => {
       const date = parseDate(r.date);
       return date && isSameDay(date, now);
     });
-    // Current diners: reservations happening now (time not used yet)
+    // Current diners: reservations on the selected day with statuses indicating an active diner
     const current = reservations.filter((r: any) => {
       const date = parseDate(r.date);
       return (
@@ -155,12 +165,15 @@ export default function RestaurantDashboard() {
         (r.status === "confirmed" || r.status === "in-progress" || r.status === "seated")
       );
     });
-    // Completed orders: reservations marked completed today
-    const completed = reservations.filter((r: any) => r.status === "completed");
-    // Revenue today: sum totalAmount for today's reservations
+    // Completed orders: reservations marked completed on the selected day
+    const completed = reservations.filter((r: any) => {
+      const date = parseDate(r.date);
+      return date && isSameDay(date, now) && r.status === "completed";
+    });
+    // Revenue for the selected day: sum totalAmount for today's reservations
     const revenueToday = todays.reduce((sum: number, r: any) => sum + (r.totalAmount || 0), 0);
-    // Monthly revenue for last 6 months
-    const months = getLastSixMonths();
+    // Monthly revenue for the last 6 months relative to the selected date
+    const months = getLastSixMonths(now);
     const monthlyRevenue = months.map(({ month, year }) => {
       const total = reservations.reduce((acc: number, r: any) => {
         const date = parseDate(r.date) || parseDate(r.createdAt);
@@ -175,11 +188,14 @@ export default function RestaurantDashboard() {
       }, 0);
       return { name: month, revenue: total };
     });
-    // Count reservations by status for additional statistics
+    // Count reservations by status for the selected day
     const statusCounts: Record<string, number> = {};
     for (const res of reservations) {
-      const status = res.status || "pending";
-      statusCounts[status] = (statusCounts[status] || 0) + 1;
+      const date = parseDate(res.date);
+      if (date && isSameDay(date, now)) {
+        const status = res.status || "pending";
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      }
     }
     return {
       todays,
@@ -187,10 +203,10 @@ export default function RestaurantDashboard() {
       completed,
       revenueToday,
       monthlyRevenue,
-      totalReservations: reservations.length,
+      totalReservations: todays.length,
       statusCounts,
     };
-  }, [reservationsData]);
+  }, [reservationsData, selectedDate]);
 
   // Compute popular dishes once menu items load.  We group by
   // category/name and count occurrences of the `popular` flag.
@@ -229,9 +245,27 @@ export default function RestaurantDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Restaurant Dashboard</h1>
-        <p className="text-gray-600">Welcome back! Here's what's happening at your restaurant today.</p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Restaurant Dashboard</h1>
+          <p className="text-gray-600">Welcome back! Here's what's happening at your restaurant.</p>
+        </div>
+        {/* Date Picker */}
+        <div className="flex items-center space-x-2">
+          <label htmlFor="restaurant-date" className="text-sm font-medium text-gray-700">
+            Date:
+          </label>
+          <input
+            id="restaurant-date"
+            type="date"
+            value={selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedDate(value ? new Date(value) : undefined);
+            }}
+            className="border border-gray-300 rounded-md p-2 text-sm"
+          />
+        </div>
       </div>
 
       {/* Stats Cards */}

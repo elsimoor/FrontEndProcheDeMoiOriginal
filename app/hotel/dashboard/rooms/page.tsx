@@ -644,6 +644,18 @@ const DELETE_ROOM = gql`
   }
 `
 
+// Query to fetch custom room types defined by the hotel.  Falls back to
+// an empty array when none are defined.  These names populate the
+// room type select in the form below.
+const GET_ROOM_TYPES = gql`
+  query GetRoomTypes($hotelId: ID!) {
+    roomTypes(hotelId: $hotelId) {
+      id
+      name
+    }
+  }
+`
+
 // Define the shape of our form state for TypeScript
 interface RoomFormState {
   id?: string
@@ -704,6 +716,19 @@ export default function HotelRoomsPage() {
     error: roomsError,
     refetch: refetchRooms,
   } = useQuery(GET_ROOMS, {
+    variables: { hotelId },
+    skip: !hotelId,
+  })
+
+  // Fetch custom room types defined for this hotel.  When no types
+  // exist the result will be an empty array.  We skip the query
+  // entirely until a hotelId is present.
+  const {
+    data: roomTypesData,
+    loading: roomTypesLoading,
+    error: roomTypesError,
+    refetch: refetchRoomTypes,
+  } = useQuery(GET_ROOM_TYPES, {
     variables: { hotelId },
     skip: !hotelId,
   })
@@ -1042,10 +1067,18 @@ export default function HotelRoomsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Standard">Standard</SelectItem>
-                      <SelectItem value="Deluxe">Deluxe</SelectItem>
-                      <SelectItem value="Suite">Suite</SelectItem>
-                      <SelectItem value="Executive">Executive</SelectItem>
+                      {roomTypesData?.roomTypes && roomTypesData.roomTypes.length > 0 ? (
+                        roomTypesData.roomTypes.map((rt: any) => (
+                          <SelectItem key={rt.id} value={rt.name}>{rt.name}</SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="Standard">Standard</SelectItem>
+                          <SelectItem value="Deluxe">Deluxe</SelectItem>
+                          <SelectItem value="Suite">Suite</SelectItem>
+                          <SelectItem value="Executive">Executive</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

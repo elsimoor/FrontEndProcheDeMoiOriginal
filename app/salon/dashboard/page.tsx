@@ -74,6 +74,10 @@ export default function SalonDashboard() {
   // State to select the time range for statistics (daily, weekly or monthly)
   const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly'>('daily')
 
+  // Selected date for filtering dashboard statistics.  Defaults to today.  Changing
+  // this value will recompute analytics relative to the chosen day.
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+
   useEffect(() => {
     async function fetchSession() {
       try {
@@ -174,25 +178,28 @@ export default function SalonDashboard() {
    * available minutes (assuming each staff member can work 8 hours per day).
    */
   const analytics = useMemo(() => {
-    const now = new Date()
+    // Determine reference date; fall back to today if no date is selected
+    const now = selectedDate ? new Date(selectedDate) : new Date()
     let periodStart = new Date(now)
     if (timeRange === 'daily') {
-      // start at midnight
+      // start at midnight of the selected day
       periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     } else if (timeRange === 'weekly') {
+      // last 7 days ending on selected day
       periodStart = new Date(now)
       periodStart.setDate(now.getDate() - 6)
     } else {
-      // monthly
+      // monthly: start at the first day of the selected month
       periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
     }
+    // Filter reservations within the selected period
     const filtered = reservations.filter((r) => {
       const d = new Date(r.date)
       return d >= periodStart && d <= now
     })
     const totalBookings = filtered.length
     const totalRevenue = filtered.reduce((sum, r) => sum + (r.serviceId?.price || 0), 0)
-    // Sum durations in minutes; if duration not defined default to 60
+    // Sum durations in minutes; default to 60 minutes if undefined
     const totalMinutes = filtered.reduce((sum, r) => sum + (r.serviceId?.duration || 60), 0)
     // available minutes: number of days * number of staff * 8 hours (480 minutes)
     const daysCount = Math.ceil((now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
@@ -208,10 +215,10 @@ export default function SalonDashboard() {
       const percentage = totalBookings > 0 ? Math.round((count / totalBookings) * 100) : 0
       return { name, count, percentage }
     })
-    // Booking trends: group bookings by week number (last 4 weeks) for the selected period
+    // Booking trends: group bookings by period relative to selected date
     const trends: { name: string; bookings: number }[] = []
     if (timeRange === 'daily') {
-      // show last 4 days
+      // show last 4 days up to selected day
       for (let i = 3; i >= 0; i--) {
         const date = new Date(now)
         date.setDate(now.getDate() - i)
@@ -220,7 +227,7 @@ export default function SalonDashboard() {
         trends.push({ name: label, bookings: count })
       }
     } else if (timeRange === 'weekly') {
-      // last 4 weeks
+      // last 4 weeks ending on selected week
       for (let i = 3; i >= 0; i--) {
         const start = new Date(now)
         start.setDate(now.getDate() - i * 7)
@@ -234,7 +241,7 @@ export default function SalonDashboard() {
         trends.push({ name: label, bookings: count })
       }
     } else {
-      // monthly: 4 weeks segments
+      // monthly: 4 week segments within the selected month
       for (let i = 3; i >= 0; i--) {
         const start = new Date(now.getFullYear(), now.getMonth(), 1 + i * 7)
         const end = new Date(now.getFullYear(), now.getMonth(), Math.min(start.getDate() + 6, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()))
@@ -269,7 +276,7 @@ export default function SalonDashboard() {
       revenueByService,
       recent,
     }
-  }, [reservations, services, staff, timeRange])
+  }, [reservations, services, staff, timeRange, selectedDate])
 
   // Helper function: get ISO week number for a given date
   function getWeekNumber(date: Date): number {
@@ -325,24 +332,42 @@ export default function SalonDashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600">Overview of your business performance</p>
         </div>
-        {/* Time range selector */}
-        <div className="flex items-center bg-gray-100 rounded-lg overflow-hidden">
-          {(["daily", "weekly", "monthly"] as const).map((range) => (
-            <button
-              key={range}
-              className={`px-4 py-2 text-sm font-medium ${
-                timeRange === range ? "bg-pink-600 text-white" : "text-gray-700 hover:bg-pink-50"
-              }`}
-              onClick={() => setTimeRange(range)}
-            >
-              {range === "daily" ? "Daily" : range === "weekly" ? "Weekly" : "Monthly"}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {/* Date picker for filtering */}
+          <div className="flex items-center space-x-2">
+            <label htmlFor="salon-date" className="text-sm font-medium text-gray-700">
+              Date:
+            </label>
+            <input
+              id="salon-date"
+              type="date"
+              value={selectedDate ? new Date(selectedDate).toISOString().split('T')[0] : ''}
+              onChange={(e) => {
+                const value = e.target.value
+                setSelectedDate(value ? new Date(value) : undefined)
+              }}
+              className="border border-gray-300 rounded-md p-2 text-sm"
+            />
+          </div>
+          {/* Time range selector */}
+          <div className="flex items-center bg-gray-100 rounded-lg overflow-hidden">
+            {(["daily", "weekly", "monthly"] as const).map((range) => (
+              <button
+                key={range}
+                className={`px-4 py-2 text-sm font-medium ${
+                  timeRange === range ? "bg-pink-600 text-white" : "text-gray-700 hover:bg-pink-50"
+                }`}
+                onClick={() => setTimeRange(range)}
+              >
+                {range === "daily" ? "Daily" : range === "weekly" ? "Weekly" : "Monthly"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -71,10 +71,14 @@ const isSameDay = (d1: Date, d2: Date) =>
   d1.getMonth() === d2.getMonth() &&
   d1.getDate() === d2.getDate();
 
-// Produce an array of the last six months (including current month).
-const getLastSixMonths = () => {
+// Produce an array of the last six months (including the month of the
+// provided reference date).  If no reference date is supplied the
+// current date is used.  Each entry has a month name (e.g. "Jan")
+// and a year.
+const getLastSixMonths = (referenceDate: Date = new Date()) => {
   const months: { month: string; year: number }[] = [];
-  const date = new Date();
+  // Start from the first day of the reference month
+  const date = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
   for (let i = 5; i >= 0; i--) {
     const d = new Date(date.getFullYear(), date.getMonth() - i, 1);
     months.push({ month: d.toLocaleString(undefined, { month: "short" }), year: d.getFullYear() });
@@ -100,6 +104,14 @@ export default function HotelDashboardPage() {
   const [businessType, setBusinessType] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
+
+  // Selected date for filtering dashboard statistics.  Defaults to
+  // today (ISO format).  Changing this value will recompute
+  // statistics based on the chosen day.
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const now = new Date();
+    return now.toISOString().split("T")[0];
+  });
 
   useEffect(() => {
     async function fetchSession() {
@@ -151,49 +163,60 @@ export default function HotelDashboardPage() {
     if (!roomsData || !reservationsData) return null;
     const rooms = roomsData.rooms;
     const reservations = reservationsData.reservations;
-    const now = new Date();
+    // Use the selected date as the reference for filtering.  If
+    // selectedDate is empty (should not happen) fall back to today.
+    const refDate = selectedDate ? new Date(selectedDate) : new Date();
 
-    // Today’s bookings: reservations created today or starting today
+    // Reservations occurring on the selected date.  Consider both
+    // reservation creation date and check‑in date for the definition of
+    // a booking on a given day.
     const todaysReservations = reservations.filter((r: any) => {
       const createdAt = parseDate(r.createdAt);
       const checkIn = parseDate(r.checkIn);
       return (
-        (createdAt && isSameDay(createdAt, now)) ||
-        (checkIn && isSameDay(checkIn, now))
+        (createdAt && isSameDay(createdAt, refDate)) ||
+        (checkIn && isSameDay(checkIn, refDate))
       );
     });
 
-    // Current guests: reservations where now is between checkIn and checkOut
+    // Guests currently staying on the selected date: check if the
+    // reference date is within the reservation interval.  Exclude
+    // cancelled reservations.
     const currentGuests = reservations.filter((r: any) => {
       const checkIn = parseDate(r.checkIn);
       const checkOut = parseDate(r.checkOut);
       if (!checkIn || !checkOut) return false;
-      return checkIn <= now && now <= checkOut && r.status !== "cancelled";
+      return checkIn <= refDate && refDate <= checkOut && r.status !== "cancelled";
     });
 
-    // Occupancy rate: percentage of rooms currently occupied.  Use
-    // reservation data to determine occupied rooms.  A room is
-    // considered occupied if there is a current reservation for it.
+    // Occupied rooms count for occupancy rate
     const occupiedRoomIds = new Set(
-      currentGuests.map((r: any) => r.roomId?.id).filter(Boolean)
+      currentGuests.map((r: any) => r.roomId?.id).filter(Boolean),
     );
     const occupancyRate = rooms.length > 0 ? (occupiedRoomIds.size / rooms.length) * 100 : 0;
 
-    // Revenue today: sum of totalAmount for reservations starting today
+    // Revenue for the selected date: sum of totalAmount for
+    // reservations starting on the reference date.
     const revenueToday = todaysReservations.reduce(
       (sum: number, r: any) => sum + (r.totalAmount || 0),
-      0
+      0,
     );
 
-    // Monthly revenue for last 6 months.  Group by month abbreviation.
-    const months = getLastSixMonths();
+    // Monthly revenue for the last six months relative to the selected
+    // date.  Each month is represented as an object with a label and
+    // total revenue aggregated from reservations with check‑in or
+    // creation dates in that month.
+    const months = getLastSixMonths(refDate);
     const monthlyRevenue = months.map(({ month, year }) => {
-      // For each month, sum totalAmount for reservations with checkIn or createdAt in that month/year
       const total = reservations.reduce((acc: number, r: any) => {
         const checkIn = parseDate(r.checkIn);
         const createdAt = parseDate(r.createdAt);
         const date = checkIn || createdAt;
-        if (date && date.getFullYear() === year && date.toLocaleString(undefined, { month: "short" }) === month) {
+        if (
+          date &&
+          date.getFullYear() === year &&
+          date.toLocaleString(undefined, { month: "short" }) === month
+        ) {
           return acc + (r.totalAmount || 0);
         }
         return acc;
@@ -201,7 +224,7 @@ export default function HotelDashboardPage() {
       return { month: `${month} ${year.toString().slice(-2)}`, revenue: total };
     });
 
-    // Room type distribution.  Count each type; unknown types go to "Other".
+    // Room type distribution remains constant regardless of the selected date.
     const typeCounts: { [key: string]: number } = {};
     rooms.forEach((room: any) => {
       const type = room.type || "Other";
@@ -221,7 +244,7 @@ export default function HotelDashboardPage() {
       monthlyRevenue,
       roomTypeData,
     };
-  }, [roomsData, reservationsData]);
+  }, [roomsData, reservationsData, selectedDate]);
 
   // Loading and error states
   if (sessionLoading || roomsLoading || reservationsLoading) {
@@ -255,6 +278,19 @@ export default function HotelDashboardPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Hotel Dashboard</h1>
         <p className="text-gray-600">Overview of your hotel’s performance</p>
+        {/* Date filter: select a specific day to view statistics */}
+        <div className="mt-2 flex items-center space-x-2">
+          <label htmlFor="hotel-date-filter" className="text-sm text-gray-600">
+            Filter Date:
+          </label>
+          <input
+            id="hotel-date-filter"
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="border rounded-md px-2 py-1 text-sm"
+          />
+        </div>
       </div>
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

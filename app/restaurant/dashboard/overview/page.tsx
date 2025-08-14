@@ -21,9 +21,14 @@ import { DayContent, DayContentProps } from "react-day-picker";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Fetch metrics for a specific date range.  The optional `from` and `to`
+// arguments allow the backend to compute statistics over a custom
+// period instead of the default current month.  We will pass the
+// selected date for both `from` and `to` to filter metrics for
+// exactly that day.
 const GET_DASHBOARD_METRICS = gql`
-  query GetDashboardMetrics($restaurantId: ID!) {
-    dashboardMetrics(restaurantId: $restaurantId) {
+  query GetDashboardMetrics($restaurantId: ID!, $from: String, $to: String) {
+    dashboardMetrics(restaurantId: $restaurantId, from: $from, to: $to) {
       reservationsTotales
       chiffreAffaires
       tauxRemplissage
@@ -105,8 +110,12 @@ export default function RestaurantOverviewPage() {
   }, []);
 
   const { data: metricsData, loading: metricsLoading, error: metricsError } = useQuery(GET_DASHBOARD_METRICS, {
-    variables: { restaurantId },
-    skip: !restaurantId,
+    variables: {
+        restaurantId,
+        from: selectedDate ? moment.utc(selectedDate).format("YYYY-MM-DD") : undefined,
+        to: selectedDate ? moment.utc(selectedDate).format("YYYY-MM-DD") : undefined,
+    },
+    skip: !restaurantId || !selectedDate,
   });
 
   const { data: calendarData, loading: calendarLoading } = useQuery(GET_DASHBOARD_CALENDAR, {

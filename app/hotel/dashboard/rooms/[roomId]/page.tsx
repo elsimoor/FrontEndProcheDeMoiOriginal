@@ -36,6 +36,20 @@ const GET_ROOMS = gql`
   }
 `;
 
+// Query to fetch custom room types defined for the current hotel.  If no
+// custom types are present this will return an empty array.  These
+// values will be used to populate the room type select below so that
+// operators can choose from hotel‑specific categories instead of a
+// fixed list.
+const GET_ROOM_TYPES = gql`
+  query GetRoomTypes($hotelId: ID!) {
+    roomTypes(hotelId: $hotelId) {
+      id
+      name
+    }
+  }
+`;
+
 const UPDATE_ROOM = gql`
   mutation UpdateRoom($id: ID!, $input: RoomInput!) {
     updateRoom(id: $id, input: $input) {
@@ -80,6 +94,14 @@ export default function HotelRoomDetailsPage() {
   // if the hotelId is not available.  In a real backend we would
   // ideally have a dedicated room(id) query.
   const { data: roomsData, loading: roomsLoading, error: roomsError } = useQuery(GET_ROOMS, {
+    variables: { hotelId },
+    skip: !hotelId,
+  });
+
+  // Fetch custom room types for this hotel.  The query is skipped
+  // entirely until we know the hotelId.  When there are no custom
+  // room types defined the result will be an empty array.
+  const { data: roomTypesData, loading: roomTypesLoading, error: roomTypesError } = useQuery(GET_ROOM_TYPES, {
     variables: { hotelId },
     skip: !hotelId,
   });
@@ -241,15 +263,28 @@ export default function HotelRoomDetailsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
+                {/* When custom room types are defined for this hotel we populate
+                    the select with those values.  Otherwise we fall back to a
+                    small list of standard types. */}
                 <select
                   value={formState.type}
                   onChange={(e) => setFormState({ ...formState, type: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="Standard">Standard</option>
-                  <option value="Deluxe">Deluxe</option>
-                  <option value="Suite">Suite</option>
-                  <option value="Executive">Executive</option>
+                  {roomTypesData?.roomTypes && roomTypesData.roomTypes.length > 0 ? (
+                    roomTypesData.roomTypes.map((rt: any) => (
+                      <option key={rt.id} value={rt.name}>
+                        {rt.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Standard">Standard</option>
+                      <option value="Deluxe">Deluxe</option>
+                      <option value="Suite">Suite</option>
+                      <option value="Executive">Executive</option>
+                    </>
+                  )}
                 </select>
               </div>
               <div>
