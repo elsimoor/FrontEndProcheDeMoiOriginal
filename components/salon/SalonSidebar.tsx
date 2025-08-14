@@ -18,7 +18,7 @@ const navigation = [
   // Payments view to monitor completed transactions for salon services
   { name: "Payments", href: "/salon/dashboard/payments", icon: CreditCard },
   // Manage promotional landing cards for salon
-  { name: "Landing Cards", href: "/salon/dashboard/cards", icon: Sparkles },
+  // { name: "Landing Cards", href: "/salon/dashboard/cards", icon: Sparkles },
   // Settings page for salon, to edit general info, notification
   // preferences, payment methods and policies.
   { name: "Settings", href: "/salon/dashboard/settings", icon: Cog },
