@@ -101,6 +101,17 @@ const CREATE_RESERVATION = gql`
   }
 `;
 
+// GraphQL: Mutation to create a payment session after a reservation.  Used
+// to redirect the user to Stripe for payment.
+const CREATE_PAYMENT_SESSION = gql`
+  mutation CreatePaymentSession($input: CreatePaymentSessionInput!) {
+    createPaymentSession(input: $input) {
+      sessionId
+      url
+    }
+  }
+`;
+
 export default function SalonBookingPage() {
   // Track the current step in the booking flow.  Steps are numbered 0–4.
   const [step, setStep] = useState(0);
@@ -156,6 +167,7 @@ export default function SalonBookingPage() {
 
   // Set up the mutation for reservation creation.
   const [createReservation] = useMutation(CREATE_RESERVATION);
+  const [createPaymentSession] = useMutation(CREATE_PAYMENT_SESSION);
 
   // Derive lists from GraphQL data.  Provide fallbacks to empty arrays if
   // queries haven't loaded yet.
@@ -362,9 +374,31 @@ export default function SalonBookingPage() {
         // reservations cannot be detected reliably.
         duration: selectedDurationMinutes,
       };
-      await createReservation({ variables: { input } });
-      alert("Votre demande de rendez‑vous a été envoyée avec succès !");
+      const res = await createReservation({ variables: { input } });
+      const reservationId = res.data?.createReservation?.id;
+      if (!reservationId) {
+        throw new Error("Failed to create reservation");
+      }
+      // Initiate Stripe checkout session
+      const origin = window.location.origin;
+      const successUrl = `${origin}/payment/success`;
+      const cancelUrl = `${origin}/payment/cancel`;
+      const { data: paymentData } = await createPaymentSession({
+        variables: {
+          input: {
+            reservationId,
+            successUrl,
+            cancelUrl,
+          },
+        },
+      });
+      const url = paymentData?.createPaymentSession?.url;
       resetBooking();
+      if (url) {
+        window.location.href = url;
+      } else {
+        alert("Erreur lors de l'initialisation du paiement.");
+      }
     } catch (err) {
       console.error(err);
       alert("La réservation a échoué. Veuillez réessayer.");

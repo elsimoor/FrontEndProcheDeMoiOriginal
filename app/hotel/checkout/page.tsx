@@ -36,6 +36,18 @@ const CREATE_RESERVATION = gql`
   }
 `;
 
+// GraphQL mutation to create a payment session via Stripe.  After a
+// reservation is created we call this mutation to obtain a checkout
+// session URL which the user will be redirected to for payment.
+const CREATE_PAYMENT_SESSION = gql`
+  mutation CreatePaymentSession($input: CreatePaymentSessionInput!) {
+    createPaymentSession(input: $input) {
+      sessionId
+      url
+    }
+  }
+`;
+
 export default function CheckoutPage() {
   const router = useRouter();
   const booking = typeof window !== "undefined" ? getBooking() : {};
@@ -53,6 +65,10 @@ export default function CheckoutPage() {
   });
 
   const [createReservation, { loading: creating }] = useMutation(CREATE_RESERVATION);
+
+  // Mutation hook for creating a Stripe checkout session.  This will
+  // redirect the user to Stripe after the reservation is recorded.
+  const [createPaymentSession] = useMutation(CREATE_PAYMENT_SESSION);
 
   // Compute nights and cost
   const nights = useMemo(() => {
@@ -72,7 +88,10 @@ export default function CheckoutPage() {
   const handleReserve = async () => {
     if (!room) return;
     try {
-      await createReservation({
+      // First create the reservation.  We await the result so we can
+      // obtain the reservation ID for payment.  If the creation
+      // succeeds we proceed to generate a payment session.
+      const res = await createReservation({
         variables: {
           input: {
             businessId: booking.hotelId,
@@ -94,9 +113,34 @@ export default function CheckoutPage() {
           },
         },
       });
+      const reservationId = res.data?.createReservation?.id;
+      if (!reservationId) {
+        throw new Error("Failed to create reservation");
+      }
+      // After successfully creating the reservation, initiate the
+      // payment session.  Compute success and cancel URLs based on
+      // the current origin so that the user returns to our app after
+      // completing or cancelling payment.
+      const origin = window.location.origin;
+      const successUrl = `${origin}/payment/success`;
+      const cancelUrl = `${origin}/payment/cancel`;
+      const { data: paymentData } = await createPaymentSession({
+        variables: {
+          input: {
+            reservationId: reservationId,
+            successUrl: successUrl,
+            cancelUrl: cancelUrl,
+          },
+        },
+      });
+      const url = paymentData?.createPaymentSession?.url;
       clearBooking();
-      alert("Your reservation has been submitted!");
-      router.push("/hotel");
+      if (url) {
+        // Redirect the user to the Stripe hosted checkout page
+        window.location.href = url;
+      } else {
+        alert("Failed to initiate payment session.");
+      }
     } catch (e: any) {
       console.error(e);
       alert(e.message || "Failed to create reservation");

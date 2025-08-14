@@ -20,6 +20,16 @@ const CREATE_RESERVATION = gql`
   }
 `;
 
+// Mutation to initiate payment after reservation creation
+const CREATE_PAYMENT_SESSION = gql`
+  mutation CreatePaymentSession($input: CreatePaymentSessionInput!) {
+    createPaymentSession(input: $input) {
+      sessionId
+      url
+    }
+  }
+`;
+
 export default function RestaurantBookingPage() {
   const [bookingData, setBookingData] = useState({
     date: "",
@@ -57,6 +67,7 @@ export default function RestaurantBookingPage() {
   // Prepare the createReservation mutation.  After a successful
   // reservation the form is reset and a confirmation alert is shown.
   const [createReservation] = useMutation(CREATE_RESERVATION)
+  const [createPaymentSession] = useMutation(CREATE_PAYMENT_SESSION)
 
   const timeSlots = ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00"]
 
@@ -86,8 +97,31 @@ export default function RestaurantBookingPage() {
         status: "pending",
         specialRequests: bookingData.specialRequests || undefined,
         source: "website",
+        // Assign a provisional amount based on number of guests.  This
+        // value is charged on Stripe.  In a real app you could pull
+        // pricing from a menu or deposit policy.  Here we use a
+        // simple fixed amount per guest for demonstration purposes.
+        totalAmount: (+bookingData.guests) * 20,
       };
-      await createReservation({ variables: { input } });
+      const res = await createReservation({ variables: { input } });
+      const reservationId = res.data?.createReservation?.id;
+      if (!reservationId) {
+        throw new Error("Failed to create reservation");
+      }
+      // Initiate payment.  Compute return URLs based on current origin.
+      const origin = window.location.origin;
+      const successUrl = `${origin}/payment/success`;
+      const cancelUrl = `${origin}/payment/cancel`;
+      const { data: paymentData } = await createPaymentSession({
+        variables: {
+          input: {
+            reservationId,
+            successUrl,
+            cancelUrl,
+          },
+        },
+      });
+      const url = paymentData?.createPaymentSession?.url;
       // Reset form on success
       setBookingData({
         date: "",
@@ -98,7 +132,11 @@ export default function RestaurantBookingPage() {
         phone: "",
         specialRequests: "",
       });
-      alert("Reservation request submitted successfully!");
+      if (url) {
+        window.location.href = url;
+      } else {
+        alert("Failed to initiate payment session.");
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to submit reservation. Please try again.");

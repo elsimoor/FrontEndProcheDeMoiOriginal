@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Calendar, Users, Sparkles, UserCheck } from "lucide-react"
+import { LayoutDashboard, Calendar, Users, Sparkles, UserCheck, Cog, CreditCard } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/salon/dashboard", icon: LayoutDashboard },
@@ -15,8 +15,13 @@ const navigation = [
   { name: "Options", href: "/salon/dashboard/options", icon: Sparkles },
   // Invoices page for salon
   { name: "Invoices", href: "/salon/dashboard/invoices", icon: LayoutDashboard },
+  // Payments view to monitor completed transactions for salon services
+  { name: "Payments", href: "/salon/dashboard/payments", icon: CreditCard },
   // Manage promotional landing cards for salon
   { name: "Landing Cards", href: "/salon/dashboard/cards", icon: Sparkles },
+  // Settings page for salon, to edit general info, notification
+  // preferences, payment methods and policies.
+  { name: "Settings", href: "/salon/dashboard/settings", icon: Cog },
 ]
 
 export default function SalonSidebar() {

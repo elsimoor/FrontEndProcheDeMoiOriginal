@@ -22,6 +22,7 @@ import {
   Star,
   FileText,
   Image,
+  CreditCard,
 } from "lucide-react"
 
 export default function HotelSidebar({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void }) {
@@ -42,7 +43,12 @@ export default function HotelSidebar({ sidebarOpen, setSidebarOpen }: { sidebarO
     { name: "Pricing", href: "/hotel/dashboard/pricing", icon: ShoppingCart },
     { name: "Reviews", href: "/hotel/dashboard/reviews", icon: Star },
     { name: "Invoices", href: "/hotel/dashboard/invoices", icon: FileText },
+    // Provide a payments view so owners can track completed transactions
+    { name: "Payments", href: "/hotel/dashboard/payments", icon: CreditCard },
     { name: "Landing Cards", href: "/hotel/dashboard/cards", icon: Image },
+    // Expose the settings page for hotel owners.  This page allows them
+    // to update general information, notification preferences and policies.
+    { name: "Settings", href: "/hotel/dashboard/settings", icon: Cog },
   ]
   return (
     <>

@@ -110,6 +110,10 @@ function ReserverContent() {
             <div className="flex flex-wrap gap-3 mt-3">
               {loading && <p>Chargement des créneaux...</p>}
               {error && <p className="text-red-500">Erreur de chargement.</p>}
+              {/* When not loading or error, but no available slots are returned, show a friendly message. */}
+              {!loading && !error && availableSlots.length === 0 && (
+                <p className="text-gray-600">Aucun créneau disponible pour cette date.</p>
+              )}
               {availableSlots.map((slot) => {
                 const isSelected = heure === slot.time;
                 return (

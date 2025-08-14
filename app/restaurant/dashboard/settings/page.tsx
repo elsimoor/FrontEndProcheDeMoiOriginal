@@ -4,7 +4,25 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { gql, useQuery, useMutation } from "@apollo/client"
-import { Save, Bell, CreditCard, Shield, Clock, UtensilsCrossed, Plus, Edit, Trash2, X } from "lucide-react"
+// Firebase helper and upload component for handling logo uploads.  We
+// import these at the top of the file so they are available when
+// constructing the general settings section.  The logo is stored in
+// Firebase Storage and the URL persisted to the backend.
+import { uploadImage } from "@/app/lib/firebase"
+import { ImageUpload } from "@/components/ui/ImageUpload"
+import {
+  Save,
+  Bell,
+  CreditCard,
+  Shield,
+  Clock,
+  UtensilsCrossed,
+  Plus,
+  Edit,
+  Trash2,
+  X,
+  Image as ImageIcon,
+} from "lucide-react"
 
 // GraphQL definitions will be declared within the component
 
@@ -36,6 +54,13 @@ export default function RestaurantSettings() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [showPolicyModal, setShowPolicyModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
+
+  // Local state to manage the restaurant profile image.  When the
+  // component mounts, the existing logo (if any) is loaded into
+  // uploadedImage.  When the user uploads a new image via the
+  // ImageUpload component we store the returned download URL here.
+  const [uploadedImage, setUploadedImage] = useState<string>("")
+  const [imageUploading, setImageUploading] = useState(false)
 
   // Session state
   const [restaurantId, setRestaurantId] = useState<string | null>(null)
@@ -136,6 +161,9 @@ export default function RestaurantSettings() {
           zipCode
           country
         }
+        # Include images so we can display the current logo and persist
+        # it back if no new image is uploaded.
+        images
       }
     }
   `
@@ -231,6 +259,13 @@ export default function RestaurantSettings() {
           category: p.category,
         })) || []
       )
+
+      // Set the current logo if one exists.  We only use the first
+      // element of the images array since this settings page supports a
+      // single profile image.
+      if (rest.images && rest.images.length > 0) {
+        setUploadedImage(rest.images[0])
+      }
     }
   }, [data])
 
@@ -261,17 +296,17 @@ export default function RestaurantSettings() {
           reservationWindow: settings.reservationWindow ? parseInt(settings.reservationWindow, 10) : null,
           cancellationHours: settings.cancellationHours ? parseInt(settings.cancellationHours, 10) : null,
         },
-        businessHours: businessHours.map(({ day, isOpen, openTime, closeTime }) => ({
-          day,
-          isOpen,
-          openTime,
-          closeTime,
-        })),
+        // Omit businessHours from the update payload.  Schedule management is handled separately via the tables-disponibilites page.
         policies: policies.map(({ title, description, category }) => ({
           title,
           description,
           category,
         })),
+      }
+      // Include the uploaded logo if available.  Only a single image
+      // is supported so we wrap the URL in an array.
+      if (uploadedImage) {
+        input.images = [uploadedImage]
       }
       await updateRestaurant({ variables: { id: restaurantId, input } })
       alert("Settings saved successfully!")
@@ -299,6 +334,23 @@ export default function RestaurantSettings() {
     setShowHoursModal(false)
     setEditingItem(null)
     setHoursForm({})
+  }
+
+  // Handle uploading of a new restaurant logo.  We upload a single file
+  // to Firebase Storage and update the uploadedImage state with the
+  // returned download URL.  A loading flag is used to disable the
+  // upload button while the file is uploading.
+  const handleImageUpload = async (files: File[]) => {
+    if (!files || files.length === 0) return
+    setImageUploading(true)
+    try {
+      const url = await uploadImage(files[0], "business-logos")
+      setUploadedImage(url)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setImageUploading(false)
+    }
   }
 
   const editHours = (hour: BusinessHours) => {
@@ -412,7 +464,7 @@ export default function RestaurantSettings() {
           <nav className="flex space-x-8 px-6">
             {[
               { id: "general", label: "General", icon: UtensilsCrossed },
-              { id: "hours", label: "Business Hours", icon: Clock },
+              // Removed the Business Hours tab. All scheduling and capacity settings are now managed via the tables-disponibilites page.
               { id: "notifications", label: "Notifications", icon: Bell },
               { id: "payments", label: "Payments", icon: CreditCard },
               { id: "policies", label: "Policies", icon: Shield },
@@ -443,6 +495,18 @@ export default function RestaurantSettings() {
               <h2 className="text-xl font-semibold text-gray-900">General Information</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Profile image upload */}
+                <div className="md:col-span-2 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                  {uploadedImage && (
+                    <img
+                      src={uploadedImage}
+                      alt="Profile"
+                      className="h-20 w-20 rounded-full object-cover mb-2"
+                    />
+                  )}
+                  <ImageUpload onUpload={handleImageUpload} uploading={imageUploading} multiple={false} />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Name</label>
                   <input
@@ -598,67 +662,7 @@ export default function RestaurantSettings() {
             </div>
           )}
 
-          {/* Business Hours */}
-          {activeTab === "hours" && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Business Hours</h2>
-                <button
-                  onClick={() => {
-                    setEditingItem(null)
-                    setHoursForm({})
-                    setShowHoursModal(true)
-                  }}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Hours
-                </button>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Day</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hours</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {businessHours.map((hour) => (
-                      <tr key={hour.id}>
-                        <td className="px-6 py-4 whitespace-nowrap font-medium">{hour.day}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              hour.isOpen ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {hour.isOpen ? "Open" : "Closed"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {hour.isOpen ? `${hour.openTime} - ${hour.closeTime}` : "Closed"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <button onClick={() => editHours(hour)} className="text-red-600 hover:text-red-900">
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button onClick={() => deleteHours(hour.id)} className="text-red-600 hover:text-red-900">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          {/* Removed the Business Hours tab and view.  All schedule management is now via the Tables Disponibilites page. */}
 
           {/* Notifications Settings */}
           {activeTab === "notifications" && (
@@ -874,86 +878,7 @@ export default function RestaurantSettings() {
         </div>
       </div>
 
-      {/* Business Hours Modal */}
-      {showHoursModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingItem ? "Edit Business Hours" : "Add Business Hours"}
-              </h2>
-              <button onClick={() => setShowHoursModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <form onSubmit={handleHoursSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
-                <select
-                  required
-                  value={hoursForm.day || ""}
-                  onChange={(e) => setHoursForm({ ...hoursForm, day: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                >
-                  <option value="">Select Day</option>
-                  <option value="Monday">Monday</option>
-                  <option value="Tuesday">Tuesday</option>
-                  <option value="Wednesday">Wednesday</option>
-                  <option value="Thursday">Thursday</option>
-                  <option value="Friday">Friday</option>
-                  <option value="Saturday">Saturday</option>
-                  <option value="Sunday">Sunday</option>
-                </select>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={hoursForm.isOpen || false}
-                  onChange={(e) => setHoursForm({ ...hoursForm, isOpen: e.target.checked })}
-                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                />
-                <label className="text-sm font-medium text-gray-700">Open on this day</label>
-              </div>
-              {hoursForm.isOpen && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Opening Time</label>
-                    <input
-                      type="time"
-                      required
-                      value={hoursForm.openTime || ""}
-                      onChange={(e) => setHoursForm({ ...hoursForm, openTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Closing Time</label>
-                    <input
-                      type="time"
-                      required
-                      value={hoursForm.closeTime || ""}
-                      onChange={(e) => setHoursForm({ ...hoursForm, closeTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    />
-                  </div>
-                </>
-              )}
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowHoursModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                  {editingItem ? "Update" : "Add"} Hours
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Removed Business Hours Modal. */}
 
       {/* Payment Method Modal */}
       {showPaymentModal && (

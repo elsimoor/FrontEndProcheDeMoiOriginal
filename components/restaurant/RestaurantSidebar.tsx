@@ -15,6 +15,7 @@ import {
   Cog,
   FileText,
   Image,
+  CreditCard,
 } from 'lucide-react'
 
 export default function RestaurantSidebar({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void }) {
@@ -34,6 +35,8 @@ export default function RestaurantSidebar({ sidebarOpen, setSidebarOpen }: { sid
     { name: 'Tables & Dispos', href: '/restaurant/dashboard/tables-disponibilites', icon: Calendar },
     { name: 'Settings', href: '/restaurant/dashboard/settings', icon: Cog },
     { name: 'Invoices', href: '/restaurant/dashboard/invoices', icon: FileText },
+    // New payments view for tracking completed transactions
+    { name: 'Payments', href: '/restaurant/dashboard/payments', icon: CreditCard },
     { name: 'Landing Cards', href: '/restaurant/dashboard/cards', icon: Image },
   ]
   return (

@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { gql, useMutation } from '@apollo/client';
+import { gql, useMutation, useQuery } from '@apollo/client';
 import { toast } from 'sonner';
 import moment from 'moment';
 import { RestaurantSubnav } from '../accueil/page';
@@ -21,6 +21,36 @@ const CREATE_PRIVATISATION_V2 = gql`
   mutation CreatePrivatisationV2($input: CreatePrivatisationV2Input!) {
     createPrivatisationV2(input: $input) {
       id
+    }
+  }
+`;
+
+// Mutation to initiate a Stripe checkout session.  The backend returns
+// the session id and a URL to redirect the user to Stripe's hosted
+// payment page.  The reservation id is provided by the previous
+// reservation/privatisation mutation.
+const CREATE_PAYMENT_SESSION = gql`
+  mutation CreatePaymentSession($input: CreatePaymentSessionInput!) {
+    createPaymentSession(input: $input) {
+      sessionId
+      url
+    }
+  }
+`;
+
+// Query to fetch the restaurant's settings (in particular the horaires with their pricing).
+// We only fetch the fields needed to compute a reservation price on the client side.
+const GET_RESTAURANT_SETTINGS = gql`
+  query RestaurantSettings($id: ID!) {
+    restaurant(id: $id) {
+      id
+      settings {
+        horaires {
+          ouverture
+          fermeture
+          prix
+        }
+      }
     }
   }
 `;
@@ -42,79 +72,159 @@ function ConfirmationContent() {
   const menuGroupe = searchParams.get('menuGroupe');
   const espace = searchParams.get('espace');
 
-  const [createReservation, { loading: reservationLoading }] = useMutation(CREATE_RESERVATION_V2, {
-    onCompleted: () => {
-      toast.success("Réservation confirmée avec succès !");
-      router.push('/'); // Redirect to a success page or home
-    },
-    onError: (error) => {
-      toast.error(`Échec: ${error.message}`);
-      console.error(error);
-    }
+  // Prepare the mutations without automatic completion callbacks.  We
+  // explicitly handle success and error cases within the confirm
+  // handler to coordinate payment creation.  Leaving out onCompleted
+  // avoids unwanted redirects before the payment session is created.
+  const [createReservation, { loading: reservationLoading }] = useMutation(CREATE_RESERVATION_V2);
+
+  const [createPrivatisation, { loading: privatisationLoading }] = useMutation(CREATE_PRIVATISATION_V2);
+
+  // Mutation to create a payment session via Stripe.  We will call
+  // this after successfully creating the reservation/privatisation.
+  const [createPaymentSession, { loading: paymentSessionLoading }] = useMutation(CREATE_PAYMENT_SESSION);
+
+  // Fetch the restaurant settings to compute an accurate price per guest.  The query is skipped
+  // when no restaurantId is available in the URL (e.g. on initial render).
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: restaurantId },
+    skip: !restaurantId,
   });
 
-  const [createPrivatisation, { loading: privatisationLoading }] = useMutation(CREATE_PRIVATISATION_V2, {
-     onCompleted: () => {
-      toast.success("Demande de privatisation envoyée !");
-      router.push('/');
-    },
-    onError: (error) => {
-      toast.error(`Échec: ${error.message}`);
-      console.error(error);
-    }
-  });
-
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    // Validate required details before proceeding.  Missing values
+    // should prevent the request and inform the user via a toast.
     if (!date || !heure || !personnes) {
-        toast.error("Détails de réservation manquants.");
-        return;
+      toast.error("Détails de réservation manquants.");
+      return;
     }
-
-    if (type === 'privatisation') {
-      if (!typePrivatisation || !menuGroupe || !espace) {
-        toast.error("Détails de privatisation manquants.");
-        return;
+    // When privatisation is selected, ensure all required
+    // privatisation fields are present.
+    if (type === 'privatisation' && (!typePrivatisation || !menuGroupe || !espace)) {
+      toast.error("Détails de privatisation manquants.");
+      return;
+    }
+    try {
+      let reservationId: string | undefined;
+      // Construct the appropriate input based on the type of booking.  We
+      // await the mutation so that we can use the returned id to
+      // initiate the Stripe payment session.
+      if (type === 'privatisation') {
+        const res = await createPrivatisation({
+          variables: {
+            input: {
+              restaurantId,
+              date,
+              heure,
+              personnes: parseInt(personnes, 10),
+              type: typePrivatisation,
+              menu: menuGroupe,
+              espace,
+              dureeHeures: 4, // Example value, should be part of privatisation option
+              source: 'new-ui',
+              customerInfo,
+            },
+          },
+        });
+        reservationId = res.data?.createPrivatisationV2?.id;
+      } else {
+        const res = await createReservation({
+          variables: {
+            input: {
+              restaurantId,
+              date,
+              heure,
+              personnes: parseInt(personnes, 10),
+              emplacement: emplacement || '',
+              source: 'new-ui',
+              customerInfo,
+            },
+          },
+        });
+        reservationId = res.data?.createReservationV2?.id;
       }
-      createPrivatisation({
+      if (!reservationId) {
+        throw new Error('Échec de la création de la réservation');
+      }
+      // Once the reservation is created, initiate a Stripe checkout
+      // session.  We compute success and cancellation URLs based on
+      // the current origin so that Stripe redirects back to the
+      // application.
+      const origin = window.location.origin;
+      const successUrl = `${origin}/payment/success`;
+      const cancelUrl = `${origin}/payment/cancel`;
+      const paymentRes = await createPaymentSession({
         variables: {
           input: {
-            restaurantId,
-            date,
-            heure,
-            personnes: parseInt(personnes, 10),
-            type: typePrivatisation,
-            menu: menuGroupe,
-            espace,
-            dureeHeures: 4, // Example value, should be part of privatisation option
-            source: 'new-ui',
-            customerInfo,
-          }
-        }
+            reservationId,
+            successUrl,
+            cancelUrl,
+          },
+        },
       });
-    } else {
-      createReservation({
-        variables: {
-          input: {
-            restaurantId,
-            date,
-            heure,
-            personnes: parseInt(personnes, 10),
-            emplacement: emplacement || '',
-            source: 'new-ui',
-            customerInfo,
-          }
-        }
-      });
+      const url = paymentRes.data?.createPaymentSession?.url;
+      if (url) {
+        // Redirect the user to the Stripe hosted checkout page.
+        window.location.href = url;
+      } else {
+        throw new Error('Échec de l’initiation du paiement');
+      }
+    } catch (error: any) {
+      // Display a friendly error message.  Use error.message if
+      // available; otherwise fall back to a generic failure notice.
+      toast.error(`Échec: ${error?.message ?? 'Une erreur est survenue'}`);
+      console.error(error);
     }
   };
 
-  const isLoading = reservationLoading || privatisationLoading;
+  const isLoading = reservationLoading || privatisationLoading || paymentSessionLoading;
 
   const formattedDate = date ? moment(date).format("dddd, MMMM D") : "N/A";
-
-  // Compute a rough price for the reservation based on the number of guests and the type.
+  // Determine the number of guests.  If the parameter is missing or invalid, default to zero.
   const numGuests = personnes ? parseInt(personnes, 10) : 0;
-  const pricePerPerson = type === 'privatisation' ? 100 : 75;
+
+  /**
+   * Compute the price per person based on restaurant settings and reservation type.  When the
+   * type is 'privatisation', a flat rate of 100 is used unless overridden by menu pricing
+   * (not currently implemented).  For standard reservations, we examine the restaurant's
+   * horaires to find a matching time range and use its `prix` value if it exists and is
+   * positive.  Otherwise, we default to 75.  If no settings data is available or the
+   * reservation time is missing, the default price is used.  This mirrors the logic on
+   * the server side for computing `totalAmount` in createReservationV2.
+   */
+  const computePricePerPerson = (): number => {
+    // Privatisation uses a higher baseline rate per guest
+    if (type === 'privatisation') {
+      return 100;
+    }
+    let defaultPrice = 75;
+    const horaires = settingsData?.restaurant?.settings?.horaires || [];
+    if (!heure || horaires.length === 0) {
+      return defaultPrice;
+    }
+    // Convert a HH:mm string to minutes since midnight
+    const toMinutes = (t: string) => {
+      const [h, m] = t.split(":").map((n) => parseInt(n, 10));
+      return h * 60 + m;
+    };
+    const reservationTimeMinutes = toMinutes(heure);
+    for (const h of horaires) {
+      if (h.ouverture && h.fermeture) {
+        const start = toMinutes(h.ouverture);
+        const end = toMinutes(h.fermeture);
+        // Determine if the reservation time falls within the current time range
+        if (reservationTimeMinutes >= start && reservationTimeMinutes < end) {
+          const p = h.prix;
+          if (typeof p === 'number' && p > 0) {
+            return p;
+          }
+          break;
+        }
+      }
+    }
+    return defaultPrice;
+  };
+  const pricePerPerson = computePricePerPerson();
   const totalPrice = numGuests * pricePerPerson;
 
   return (

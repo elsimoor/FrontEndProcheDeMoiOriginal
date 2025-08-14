@@ -1,10 +1,19 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, Bell, CreditCard, Shield, Globe, Building } from "lucide-react"
+import { Save, Bell, CreditCard, Shield, Globe, Building, Image as ImageIcon } from "lucide-react"
 
 // Apollo Client hooks
 import { gql, useQuery, useMutation } from "@apollo/client"
+
+// Firebase image upload helper and UI component.  These helpers allow
+// administrators to upload a profile image (logo) for their hotel.  The
+// uploaded image is stored in Firebase Storage under the
+// "business-logos" folder and the returned download URL is persisted
+// via the GraphQL mutation.  The ImageUpload component provides a
+// drag‑and‑drop file picker with preview.
+import { uploadImage } from "@/app/lib/firebase"
+import { ImageUpload } from "@/components/ui/ImageUpload"
 
 /**
  * GraphQL query to fetch a single hotel by its identifier.  We request
@@ -36,6 +45,9 @@ const GET_HOTEL = gql`
         taxRate
         serviceFee
       }
+      # Retrieve existing images so we can display the current logo and
+      # persist it back if no new image is uploaded.
+      images
     }
   }
 `
@@ -137,6 +149,32 @@ export default function HotelSettings() {
     smokingPolicy: "no-smoking",
   })
 
+  // Local state for the hotel profile image (logo).  When the
+  // component mounts and the hotel data is fetched we set the
+  // uploadedImage to the first image in the hotel.images array (if
+  // present).  When uploading a new image we temporarily store the
+  // download URL here until the save handler persists it.
+  const [uploadedImage, setUploadedImage] = useState<string>("")
+  const [imageUploading, setImageUploading] = useState(false)
+
+  // Handler for uploading a new image.  Accepts a single file from
+  // ImageUpload and uploads it to Firebase Storage under the
+  // "business-logos" folder.  On success the returned download URL
+  // replaces the current uploadedImage value.  A loading flag is
+  // toggled during the upload to disable the upload button.
+  const handleImageUpload = async (files: File[]) => {
+    if (!files || files.length === 0) return
+    setImageUploading(true)
+    try {
+      const url = await uploadImage(files[0], "business-logos")
+      setUploadedImage(url)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setImageUploading(false)
+    }
+  }
+
   // Populate state when hotel data becomes available
   useEffect(() => {
     if (hotelData && hotelData.hotel) {
@@ -157,6 +195,11 @@ export default function HotelSettings() {
         taxRate: h.settings?.taxRate?.toString() || "",
         serviceFee: h.settings?.serviceFee?.toString() || "",
       }))
+      // Set the current logo if one exists.  We only consider the first
+      // image in the array.
+      if (h.images && h.images.length > 0) {
+        setUploadedImage(h.images[0])
+      }
     }
   }, [hotelData])
 
@@ -191,6 +234,12 @@ export default function HotelSettings() {
         taxRate: settingsState.taxRate !== "" ? parseFloat(settingsState.taxRate) : null,
         serviceFee: settingsState.serviceFee !== "" ? parseFloat(settingsState.serviceFee) : null,
       },
+    }
+    // If the user has uploaded a new logo, include it in the input.  The
+    // images field expects an array of URLs.  We only support a single
+    // image in the settings page, so we take the uploadedImage state.
+    if (uploadedImage) {
+      input.images = [uploadedImage]
     }
     try {
       await updateHotel({ variables: { id: hotelId, input } })
@@ -267,6 +316,14 @@ export default function HotelSettings() {
               <h2 className="text-xl font-semibold text-gray-900">General Information</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Profile image upload */}
+                <div className="md:col-span-2 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                  {uploadedImage && (
+                    <img src={uploadedImage} alt="Profile" className="h-20 w-20 rounded-full object-cover mb-2" />
+                  )}
+                  <ImageUpload onUpload={handleImageUpload} uploading={imageUploading} multiple={false} />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Hotel Name</label>
                   <input

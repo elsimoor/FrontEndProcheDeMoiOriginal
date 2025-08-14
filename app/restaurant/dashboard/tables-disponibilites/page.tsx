@@ -48,8 +48,13 @@ const GET_RESTAURANT_SETTINGS = gql`
   }
 `;
 
+// The GraphQL schema defines updateRestaurant to accept a RestaurantInput! for
+// updates.  Using UpdateRestaurantInput here causes a validation error because
+// the root schema expects RestaurantInput.  Therefore, we specify
+// RestaurantInput! for the input variable.  Only provided fields are modified
+// during the update.
 const UPDATE_RESTAURANT_MUTATION = gql`
-    mutation UpdateRestaurant($id: ID!, $input: UpdateRestaurantInput!) {
+    mutation UpdateRestaurant($id: ID!, $input: RestaurantInput!) {
         updateRestaurant(id: $id, input: $input) {
             id
         }
