@@ -37,7 +37,7 @@ export default function RestaurantSidebar({ sidebarOpen, setSidebarOpen }: { sid
     { name: 'Invoices', href: '/restaurant/dashboard/invoices', icon: FileText },
     // New payments view for tracking completed transactions
     { name: 'Payments', href: '/restaurant/dashboard/payments', icon: CreditCard },
-    { name: 'Landing Cards', href: '/restaurant/dashboard/cards', icon: Image },
+    // { name: 'Landing Cards', href: '/restaurant/dashboard/cards', icon: Image },
   ]
   return (
     <>
