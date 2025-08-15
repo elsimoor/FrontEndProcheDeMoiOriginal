@@ -1,7 +1,6 @@
 "use client"
 
 import { gql, useQuery, useMutation } from "@apollo/client";
-import { useEffect, useState } from "react";
 
 // GraphQL queries to fetch pending businesses.  These return
 // businesses with isActive = false.  Admins use this page to
@@ -11,7 +10,9 @@ const GET_PENDING_HOTELS = gql`
     pendingHotels {
       id
       name
-      
+      contact {
+        email
+      }
     }
   }
 `;
@@ -20,7 +21,9 @@ const GET_PENDING_RESTAURANTS = gql`
     pendingRestaurants {
       id
       name
-      
+      contact {
+        email
+      }
     }
   }
 `;
@@ -29,7 +32,9 @@ const GET_PENDING_SALONS = gql`
     pendingSalons {
       id
       name
-      
+      contact {
+        email
+      }
     }
   }
 `;
@@ -90,6 +95,7 @@ interface PendingEntry {
   id: string;
   name: string;
   type: string;
+  email?: string;
 }
 
 export default function AdminApprovalsPage() {
@@ -113,13 +119,34 @@ export default function AdminApprovalsPage() {
   // Combine all pending entries into a single array with type.
   const pendingEntries: PendingEntry[] = [];
   if (hotelsData?.pendingHotels) {
-    pendingEntries.push(...hotelsData.pendingHotels.map((h: any) => ({ id: h.id, name: h.name, type: "hotel" })));
+    pendingEntries.push(
+      ...hotelsData.pendingHotels.map((h: any) => ({
+        id: h.id,
+        name: h.name,
+        type: "hotel",
+        email: h.contact?.email || undefined,
+      }))
+    );
   }
   if (restaurantsData?.pendingRestaurants) {
-    pendingEntries.push(...restaurantsData.pendingRestaurants.map((r: any) => ({ id: r.id, name: r.name, type: "restaurant" })));
+    pendingEntries.push(
+      ...restaurantsData.pendingRestaurants.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        type: "restaurant",
+        email: r.contact?.email || undefined,
+      }))
+    );
   }
   if (salonsData?.pendingSalons) {
-    pendingEntries.push(...salonsData.pendingSalons.map((s: any) => ({ id: s.id, name: s.name, type: "salon" })));
+    pendingEntries.push(
+      ...salonsData.pendingSalons.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        type: "salon",
+        email: s.contact?.email || undefined,
+      }))
+    );
   }
 
   const handleApprove = (entry: PendingEntry) => {
@@ -170,9 +197,7 @@ export default function AdminApprovalsPage() {
                   <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{entry.name}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 capitalize">{entry.type}</td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                    {entry.type === "hotel" ? hotelsData?.pendingHotels.find((h: any) => h.id === entry.id)?.email :
-                     entry.type === "restaurant" ? restaurantsData?.pendingRestaurants.find((r: any) => r.id === entry.id)?.email :
-                     salonsData?.pendingSalons.find((s: any) => s.id === entry.id)?.email}
+                    {entry.email || "-"}
                   </td>
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-right space-x-2">
                     <button

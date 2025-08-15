@@ -72,6 +72,12 @@ export type AvailabilityInput = {
   startTime: Scalars['String'];
 };
 
+export type AvailabilitySlot = {
+  __typename?: 'AvailabilitySlot';
+  available: Scalars['Boolean'];
+  time: Scalars['String'];
+};
+
 export type BusinessHours = {
   __typename?: 'BusinessHours';
   closeTime?: Maybe<Scalars['String']>;
@@ -108,6 +114,12 @@ export enum CacheControlScope {
   Private = 'PRIVATE',
   Public = 'PUBLIC'
 }
+
+export type CalendarDayHeat = {
+  __typename?: 'CalendarDayHeat';
+  count: Scalars['Int'];
+  date: Scalars['String'];
+};
 
 /**
  * A Client (also referred to as a Business) represents a single tenant of
@@ -148,6 +160,17 @@ export type ClientUpdateInput = {
   theme?: InputMaybe<ThemeInput>;
 };
 
+export type ClosurePeriod = {
+  __typename?: 'ClosurePeriod';
+  debut?: Maybe<Scalars['String']>;
+  fin?: Maybe<Scalars['String']>;
+};
+
+export type ClosurePeriodInput = {
+  debut?: InputMaybe<Scalars['String']>;
+  fin?: InputMaybe<Scalars['String']>;
+};
+
 export type CommunicationPreferences = {
   __typename?: 'CommunicationPreferences';
   email: Scalars['Boolean'];
@@ -174,6 +197,48 @@ export type ContactInput = {
   website?: InputMaybe<Scalars['String']>;
 };
 
+export type CreatePaymentSessionInput = {
+  cancelUrl: Scalars['String'];
+  reservationId: Scalars['ID'];
+  successUrl: Scalars['String'];
+};
+
+export type CreatePrivatisationOptionInput = {
+  capaciteMaximale: Scalars['Int'];
+  conditions?: InputMaybe<Scalars['String']>;
+  description?: InputMaybe<Scalars['String']>;
+  dureeMaximaleHeures: Scalars['Int'];
+  menusDeGroupe?: InputMaybe<Array<Scalars['String']>>;
+  menusDetails?: InputMaybe<Array<MenuDetailInput>>;
+  nom: Scalars['String'];
+  restaurantId: Scalars['ID'];
+  tarif?: InputMaybe<Scalars['Float']>;
+  type: Scalars['String'];
+};
+
+export type CreatePrivatisationV2Input = {
+  customerInfo: CustomerInfoInput;
+  date: Scalars['String'];
+  dureeHeures: Scalars['Int'];
+  espace: Scalars['String'];
+  heure: Scalars['String'];
+  menu: Scalars['String'];
+  personnes: Scalars['Int'];
+  restaurantId: Scalars['ID'];
+  source: Scalars['String'];
+  type: Scalars['String'];
+};
+
+export type CreateReservationV2Input = {
+  customerInfo: CustomerInfoInput;
+  date: Scalars['String'];
+  emplacement?: InputMaybe<Scalars['String']>;
+  heure: Scalars['String'];
+  personnes: Scalars['Int'];
+  restaurantId: Scalars['ID'];
+  source: Scalars['String'];
+};
+
 export type CustomerInfo = {
   __typename?: 'CustomerInfo';
   email: Scalars['String'];
@@ -185,6 +250,13 @@ export type CustomerInfoInput = {
   email: Scalars['String'];
   name: Scalars['String'];
   phone: Scalars['String'];
+};
+
+export type DashboardMetrics = {
+  __typename?: 'DashboardMetrics';
+  chiffreAffaires: Scalars['Float'];
+  reservationsTotales: Scalars['Int'];
+  tauxRemplissage: Scalars['Float'];
 };
 
 export type Guest = {
@@ -250,6 +322,19 @@ export type GuestPreferencesInput = {
   seatingPreference?: InputMaybe<Scalars['String']>;
 };
 
+export type Horaire = {
+  __typename?: 'Horaire';
+  fermeture?: Maybe<Scalars['String']>;
+  ouverture?: Maybe<Scalars['String']>;
+  prix?: Maybe<Scalars['Float']>;
+};
+
+export type HoraireInput = {
+  fermeture?: InputMaybe<Scalars['String']>;
+  ouverture?: InputMaybe<Scalars['String']>;
+  prix?: InputMaybe<Scalars['Float']>;
+};
+
 export type Hotel = {
   __typename?: 'Hotel';
   address?: Maybe<Address>;
@@ -257,6 +342,7 @@ export type Hotel = {
   contact?: Maybe<Contact>;
   createdAt: Scalars['Date'];
   description?: Maybe<Scalars['String']>;
+  featuredLandingCard?: Maybe<LandingCard>;
   id: Scalars['ID'];
   images: Array<Scalars['String']>;
   isActive: Scalars['Boolean'];
@@ -264,6 +350,7 @@ export type Hotel = {
   openingPeriods?: Maybe<Array<OpeningPeriod>>;
   policies: Array<Policy>;
   rating?: Maybe<Rating>;
+  roomPaidOptions: Array<RoomPaidOption>;
   services: Array<BusinessService>;
   settings?: Maybe<HotelSettings>;
   updatedAt: Scalars['Date'];
@@ -278,6 +365,7 @@ export type HotelInput = {
   name?: InputMaybe<Scalars['String']>;
   openingPeriods?: InputMaybe<Array<OpeningPeriodInput>>;
   policies?: InputMaybe<Array<PolicyInput>>;
+  roomPaidOptions?: InputMaybe<Array<RoomPaidOptionInput>>;
   services?: InputMaybe<Array<BusinessServiceInput>>;
   settings?: InputMaybe<HotelSettingsInput>;
 };
@@ -301,9 +389,70 @@ export type HotelSettingsInput = {
   timezone?: InputMaybe<Scalars['String']>;
 };
 
+export type Invoice = {
+  __typename?: 'Invoice';
+  businessId: Scalars['ID'];
+  createdAt: Scalars['Date'];
+  date: Scalars['Date'];
+  id: Scalars['ID'];
+  items: Array<InvoiceItem>;
+  reservation?: Maybe<Reservation>;
+  reservationId: Scalars['ID'];
+  total: Scalars['Float'];
+  updatedAt: Scalars['Date'];
+};
+
+export type InvoiceInput = {
+  businessId: Scalars['ID'];
+  items: Array<InvoiceItemInput>;
+  reservationId: Scalars['ID'];
+  total: Scalars['Float'];
+};
+
+export type InvoiceItem = {
+  __typename?: 'InvoiceItem';
+  description: Scalars['String'];
+  price: Scalars['Float'];
+  quantity: Scalars['Int'];
+  total: Scalars['Float'];
+};
+
+export type InvoiceItemInput = {
+  description: Scalars['String'];
+  price: Scalars['Float'];
+  quantity: Scalars['Int'];
+};
+
+export type LandingCard = {
+  __typename?: 'LandingCard';
+  amenities?: Maybe<Array<Scalars['String']>>;
+  description?: Maybe<Scalars['String']>;
+  id?: Maybe<Scalars['ID']>;
+  image?: Maybe<Scalars['String']>;
+  location?: Maybe<Scalars['String']>;
+  price?: Maybe<Scalars['Float']>;
+  rating?: Maybe<Scalars['Float']>;
+  specialOffer?: Maybe<Scalars['Boolean']>;
+  tags?: Maybe<Array<Scalars['String']>>;
+  title?: Maybe<Scalars['String']>;
+};
+
 export type LoginInput = {
   email: Scalars['String'];
   password: Scalars['String'];
+};
+
+export type MenuDetail = {
+  __typename?: 'MenuDetail';
+  description?: Maybe<Scalars['String']>;
+  nom: Scalars['String'];
+  prix: Scalars['Float'];
+};
+
+export type MenuDetailInput = {
+  description?: InputMaybe<Scalars['String']>;
+  nom: Scalars['String'];
+  prix: Scalars['Float'];
 };
 
 export type MenuItem = {
@@ -362,6 +511,10 @@ export type ModulesInput = {
 export type Mutation = {
   __typename?: 'Mutation';
   _?: Maybe<Scalars['String']>;
+  approveHotel: Hotel;
+  approveRestaurant: Restaurant;
+  approveSalon: Salon;
+  cancelReservation?: Maybe<ReservationInfo>;
   /**
    * Create a new client.  The caller may specify the modules and theme; if
    * omitted the modules default to all disabled and the theme is blank.  A
@@ -370,10 +523,16 @@ export type Mutation = {
   createClient: Client;
   createGuest: Guest;
   createHotel: Hotel;
+  createInvoice: Invoice;
   createMenuItem: MenuItem;
+  createPaymentSession: PaymentSessionResponse;
+  createPrivatisationOption: PrivatisationOption;
+  createPrivatisationV2: Reservation;
   createReservation: Reservation;
+  createReservationV2: Reservation;
   createRestaurant: Restaurant;
   createRoom: Room;
+  createRoomType: RoomType;
   createSalon: Salon;
   createService: Service;
   createStaff: Staff;
@@ -385,16 +544,23 @@ export type Mutation = {
   deleteClient: Scalars['Boolean'];
   deleteGuest: Scalars['Boolean'];
   deleteHotel: Scalars['Boolean'];
+  deleteInvoice: Scalars['Boolean'];
   deleteMenuItem: Scalars['Boolean'];
+  deletePrivatisationOption: Scalars['Boolean'];
   deleteReservation: Scalars['Boolean'];
   deleteRestaurant: Scalars['Boolean'];
   deleteRoom: Scalars['Boolean'];
+  deleteRoomType: Scalars['Boolean'];
   deleteSalon: Scalars['Boolean'];
   deleteService: Scalars['Boolean'];
   deleteStaff: Scalars['Boolean'];
   deleteTable: Scalars['Boolean'];
+  generateInvoicePdf: Scalars['String'];
   login: AuthPayload;
   register: AuthPayload;
+  rejectHotel: Hotel;
+  rejectRestaurant: Restaurant;
+  rejectSalon: Salon;
   /**
    * Update an existing client.  Only the provided fields will be modified.
    * Attempting to update a non‑existent client returns null.
@@ -402,15 +568,39 @@ export type Mutation = {
   updateClient?: Maybe<Client>;
   updateGuest: Guest;
   updateHotel: Hotel;
+  updateInvoice: Invoice;
   updateMenuItem: MenuItem;
+  updatePrivatisationOption: PrivatisationOption;
   updateReservation: Reservation;
+  updateReservationDetails?: Maybe<ReservationInfo>;
   updateRestaurant: Restaurant;
   updateRoom: Room;
+  updateRoomType?: Maybe<RoomType>;
   updateSalon: Salon;
   updateService: Service;
   updateStaff: Staff;
   updateTable: Table;
   updateUser: User;
+};
+
+
+export type MutationApproveHotelArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type MutationApproveRestaurantArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type MutationApproveSalonArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type MutationCancelReservationArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -429,13 +619,38 @@ export type MutationCreateHotelArgs = {
 };
 
 
+export type MutationCreateInvoiceArgs = {
+  input: InvoiceInput;
+};
+
+
 export type MutationCreateMenuItemArgs = {
   input: MenuItemInput;
 };
 
 
+export type MutationCreatePaymentSessionArgs = {
+  input: CreatePaymentSessionInput;
+};
+
+
+export type MutationCreatePrivatisationOptionArgs = {
+  input: CreatePrivatisationOptionInput;
+};
+
+
+export type MutationCreatePrivatisationV2Args = {
+  input: CreatePrivatisationV2Input;
+};
+
+
 export type MutationCreateReservationArgs = {
   input: ReservationInput;
+};
+
+
+export type MutationCreateReservationV2Args = {
+  input: CreateReservationV2Input;
 };
 
 
@@ -446,6 +661,11 @@ export type MutationCreateRestaurantArgs = {
 
 export type MutationCreateRoomArgs = {
   input: RoomInput;
+};
+
+
+export type MutationCreateRoomTypeArgs = {
+  input: RoomTypeInput;
 };
 
 
@@ -484,7 +704,17 @@ export type MutationDeleteHotelArgs = {
 };
 
 
+export type MutationDeleteInvoiceArgs = {
+  id: Scalars['ID'];
+};
+
+
 export type MutationDeleteMenuItemArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type MutationDeletePrivatisationOptionArgs = {
   id: Scalars['ID'];
 };
 
@@ -500,6 +730,11 @@ export type MutationDeleteRestaurantArgs = {
 
 
 export type MutationDeleteRoomArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type MutationDeleteRoomTypeArgs = {
   id: Scalars['ID'];
 };
 
@@ -524,6 +759,11 @@ export type MutationDeleteTableArgs = {
 };
 
 
+export type MutationGenerateInvoicePdfArgs = {
+  id: Scalars['ID'];
+};
+
+
 export type MutationLoginArgs = {
   input: LoginInput;
 };
@@ -531,6 +771,21 @@ export type MutationLoginArgs = {
 
 export type MutationRegisterArgs = {
   input: RegisterInput;
+};
+
+
+export type MutationRejectHotelArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type MutationRejectRestaurantArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type MutationRejectSalonArgs = {
+  id: Scalars['ID'];
 };
 
 
@@ -552,15 +807,33 @@ export type MutationUpdateHotelArgs = {
 };
 
 
+export type MutationUpdateInvoiceArgs = {
+  id: Scalars['ID'];
+  input: InvoiceInput;
+};
+
+
 export type MutationUpdateMenuItemArgs = {
   id: Scalars['ID'];
   input: MenuItemInput;
 };
 
 
+export type MutationUpdatePrivatisationOptionArgs = {
+  id: Scalars['ID'];
+  input: UpdatePrivatisationOptionInput;
+};
+
+
 export type MutationUpdateReservationArgs = {
   id: Scalars['ID'];
   input: ReservationInput;
+};
+
+
+export type MutationUpdateReservationDetailsArgs = {
+  id: Scalars['ID'];
+  input: UpdateReservationInput;
 };
 
 
@@ -573,6 +846,12 @@ export type MutationUpdateRestaurantArgs = {
 export type MutationUpdateRoomArgs = {
   id: Scalars['ID'];
   input: RoomInput;
+};
+
+
+export type MutationUpdateRoomTypeArgs = {
+  id: Scalars['ID'];
+  input: RoomTypeInput;
 };
 
 
@@ -627,10 +906,6 @@ export type NutritionalInfoInput = {
   protein?: InputMaybe<Scalars['Float']>;
 };
 
-/**
- * OpeningPeriod defines a continuous date range during which a hotel
- * accepts reservations.  Both startDate and endDate are inclusive.
- */
 export type OpeningPeriod = {
   __typename?: 'OpeningPeriod';
   endDate: Scalars['Date'];
@@ -641,6 +916,32 @@ export type OpeningPeriod = {
 export type OpeningPeriodInput = {
   endDate: Scalars['Date'];
   startDate: Scalars['Date'];
+};
+
+export type Payment = {
+  __typename?: 'Payment';
+  amount: Scalars['Float'];
+  businessId: Scalars['ID'];
+  createdAt: Scalars['Date'];
+  currency: Scalars['String'];
+  id: Scalars['ID'];
+  invoice?: Maybe<Invoice>;
+  invoiceId?: Maybe<Scalars['ID']>;
+  paymentMethod?: Maybe<Scalars['String']>;
+  receiptUrl?: Maybe<Scalars['String']>;
+  reservation?: Maybe<Reservation>;
+  reservationId?: Maybe<Scalars['ID']>;
+  status: Scalars['String'];
+  stripeCustomerId?: Maybe<Scalars['String']>;
+  stripePaymentIntentId?: Maybe<Scalars['String']>;
+  stripeSessionId?: Maybe<Scalars['String']>;
+  updatedAt: Scalars['Date'];
+};
+
+export type PaymentSessionResponse = {
+  __typename?: 'PaymentSessionResponse';
+  sessionId: Scalars['String'];
+  url: Scalars['String'];
 };
 
 export type Policy = {
@@ -667,9 +968,27 @@ export type PositionInput = {
   y?: InputMaybe<Scalars['Float']>;
 };
 
+export type PrivatisationOption = {
+  __typename?: 'PrivatisationOption';
+  capaciteMaximale: Scalars['Int'];
+  conditions?: Maybe<Scalars['String']>;
+  createdAt: Scalars['Date'];
+  description?: Maybe<Scalars['String']>;
+  dureeMaximaleHeures: Scalars['Int'];
+  id: Scalars['ID'];
+  menusDeGroupe: Array<Scalars['String']>;
+  menusDetails?: Maybe<Array<MenuDetail>>;
+  nom: Scalars['String'];
+  restaurantId: Scalars['ID'];
+  tarif?: Maybe<Scalars['Float']>;
+  type: Scalars['String'];
+  updatedAt: Scalars['Date'];
+};
+
 export type Query = {
   __typename?: 'Query';
   _: Scalars['String'];
+  availability: Array<AvailabilitySlot>;
   /**
    * Return a list of rooms that are available for the given hotel and date
    * range.  A room is considered available if it is active, has status
@@ -689,17 +1008,31 @@ export type Query = {
    * automatically.  Clients are ordered by creation date descending.
    */
   clients: Array<Client>;
+  dashboardCalendar?: Maybe<Array<CalendarDayHeat>>;
+  dashboardMetrics?: Maybe<DashboardMetrics>;
   guest?: Maybe<Guest>;
   guests: Array<Guest>;
   hotel?: Maybe<Hotel>;
   hotels: Array<Hotel>;
+  invoice?: Maybe<Invoice>;
+  invoices: Array<Invoice>;
   menuItem?: Maybe<MenuItem>;
   menuItems: Array<MenuItem>;
+  payment?: Maybe<Payment>;
+  payments: Array<Payment>;
+  pendingHotels: Array<Hotel>;
+  pendingRestaurants: Array<Restaurant>;
+  pendingSalons: Array<Salon>;
+  privatisationOption?: Maybe<PrivatisationOption>;
+  privatisationOptionsByRestaurant: Array<PrivatisationOption>;
   reservation?: Maybe<Reservation>;
   reservations: Array<Reservation>;
+  reservationsByDate?: Maybe<Array<Maybe<ReservationInfo>>>;
   restaurant?: Maybe<Restaurant>;
   restaurants: Array<Restaurant>;
   room?: Maybe<Room>;
+  roomType?: Maybe<RoomType>;
+  roomTypes: Array<RoomType>;
   rooms: Array<Room>;
   salon?: Maybe<Salon>;
   salons: Array<Salon>;
@@ -711,6 +1044,13 @@ export type Query = {
   tables: Array<Table>;
   user?: Maybe<User>;
   users: Array<User>;
+};
+
+
+export type QueryAvailabilityArgs = {
+  date: Scalars['String'];
+  partySize: Scalars['Int'];
+  restaurantId: Scalars['ID'];
 };
 
 
@@ -737,6 +1077,19 @@ export type QueryClientArgs = {
 };
 
 
+export type QueryDashboardCalendarArgs = {
+  month: Scalars['String'];
+  restaurantId: Scalars['ID'];
+};
+
+
+export type QueryDashboardMetricsArgs = {
+  from?: InputMaybe<Scalars['String']>;
+  restaurantId: Scalars['ID'];
+  to?: InputMaybe<Scalars['String']>;
+};
+
+
 export type QueryGuestArgs = {
   id: Scalars['ID'];
 };
@@ -754,6 +1107,16 @@ export type QueryHotelArgs = {
 };
 
 
+export type QueryInvoiceArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type QueryInvoicesArgs = {
+  businessId: Scalars['ID'];
+};
+
+
 export type QueryMenuItemArgs = {
   id: Scalars['ID'];
 };
@@ -761,6 +1124,26 @@ export type QueryMenuItemArgs = {
 
 export type QueryMenuItemsArgs = {
   category?: InputMaybe<Scalars['String']>;
+  restaurantId: Scalars['ID'];
+};
+
+
+export type QueryPaymentArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type QueryPaymentsArgs = {
+  businessId: Scalars['ID'];
+};
+
+
+export type QueryPrivatisationOptionArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type QueryPrivatisationOptionsByRestaurantArgs = {
   restaurantId: Scalars['ID'];
 };
 
@@ -778,6 +1161,12 @@ export type QueryReservationsArgs = {
 };
 
 
+export type QueryReservationsByDateArgs = {
+  date: Scalars['String'];
+  restaurantId: Scalars['ID'];
+};
+
+
 export type QueryRestaurantArgs = {
   id: Scalars['ID'];
 };
@@ -785,6 +1174,16 @@ export type QueryRestaurantArgs = {
 
 export type QueryRoomArgs = {
   id: Scalars['ID'];
+};
+
+
+export type QueryRoomTypeArgs = {
+  id: Scalars['ID'];
+};
+
+
+export type QueryRoomTypesArgs = {
+  hotelId: Scalars['ID'];
 };
 
 
@@ -887,6 +1286,16 @@ export type Reservation = {
   updatedAt: Scalars['Date'];
 };
 
+export type ReservationInfo = {
+  __typename?: 'ReservationInfo';
+  date?: Maybe<Scalars['String']>;
+  heure?: Maybe<Scalars['String']>;
+  id: Scalars['ID'];
+  personnes?: Maybe<Scalars['Int']>;
+  restaurant?: Maybe<Restaurant>;
+  statut?: Maybe<Scalars['String']>;
+};
+
 export type ReservationInput = {
   businessId: Scalars['ID'];
   businessType: Scalars['String'];
@@ -934,12 +1343,13 @@ export type Restaurant = {
 export type RestaurantInput = {
   address?: InputMaybe<AddressInput>;
   businessHours?: InputMaybe<Array<BusinessHoursInput>>;
+  clientId?: InputMaybe<Scalars['ID']>;
   contact?: InputMaybe<ContactInput>;
   cuisine?: InputMaybe<Array<Scalars['String']>>;
   description?: InputMaybe<Scalars['String']>;
   features?: InputMaybe<Array<Scalars['String']>>;
   images?: InputMaybe<Array<Scalars['String']>>;
-  name: Scalars['String'];
+  name?: InputMaybe<Scalars['String']>;
   policies?: InputMaybe<Array<PolicyInput>>;
   priceRange?: InputMaybe<Scalars['String']>;
   settings?: InputMaybe<RestaurantSettingsInput>;
@@ -948,20 +1358,37 @@ export type RestaurantInput = {
 export type RestaurantSettings = {
   __typename?: 'RestaurantSettings';
   cancellationHours?: Maybe<Scalars['Int']>;
+  capaciteTheorique?: Maybe<Scalars['Int']>;
+  capaciteTotale?: Maybe<Scalars['Int']>;
   currency?: Maybe<Scalars['String']>;
+  customTables?: Maybe<Array<TableSize>>;
+  fermetures?: Maybe<Array<ClosurePeriod>>;
+  frequenceCreneauxMinutes?: Maybe<Scalars['Int']>;
+  horaires?: Maybe<Array<Horaire>>;
+  joursOuverts?: Maybe<Array<Scalars['String']>>;
   maxPartySize?: Maybe<Scalars['Int']>;
+  maxReservationsParCreneau?: Maybe<Scalars['Int']>;
   reservationWindow?: Maybe<Scalars['Int']>;
   serviceFee?: Maybe<Scalars['Float']>;
+  tables?: Maybe<Tables>;
   taxRate?: Maybe<Scalars['Float']>;
   timezone?: Maybe<Scalars['String']>;
 };
 
 export type RestaurantSettingsInput = {
   cancellationHours?: InputMaybe<Scalars['Int']>;
+  capaciteTotale?: InputMaybe<Scalars['Int']>;
   currency?: InputMaybe<Scalars['String']>;
+  customTables?: InputMaybe<Array<TableSizeInput>>;
+  fermetures?: InputMaybe<Array<ClosurePeriodInput>>;
+  frequenceCreneauxMinutes?: InputMaybe<Scalars['Int']>;
+  horaires?: InputMaybe<Array<HoraireInput>>;
+  joursOuverts?: InputMaybe<Array<Scalars['String']>>;
   maxPartySize?: InputMaybe<Scalars['Int']>;
+  maxReservationsParCreneau?: InputMaybe<Scalars['Int']>;
   reservationWindow?: InputMaybe<Scalars['Int']>;
   serviceFee?: InputMaybe<Scalars['Float']>;
+  tables?: InputMaybe<TablesInput>;
   taxRate?: InputMaybe<Scalars['Float']>;
   timezone?: InputMaybe<Scalars['String']>;
 };
@@ -976,7 +1403,7 @@ export type Room = {
   description?: Maybe<Scalars['String']>;
   features: Array<Scalars['String']>;
   floor?: Maybe<Scalars['Int']>;
-  hotelId: Scalars['ID'];
+  hotelId?: Maybe<Hotel>;
   id: Scalars['ID'];
   images: Array<Scalars['String']>;
   isActive: Scalars['Boolean'];
@@ -1011,6 +1438,41 @@ export type RoomInput = {
   size?: InputMaybe<Scalars['Int']>;
   status?: InputMaybe<Scalars['String']>;
   type: Scalars['String'];
+};
+
+export type RoomPaidOption = {
+  __typename?: 'RoomPaidOption';
+  category?: Maybe<Scalars['String']>;
+  description?: Maybe<Scalars['String']>;
+  name: Scalars['String'];
+  price: Scalars['Float'];
+};
+
+/**
+ * Input type for specifying a paid room option when creating or updating
+ * a hotel.  Each option is an add-on that can be purchased in addition
+ * to a room booking.  The price field is required.
+ */
+export type RoomPaidOptionInput = {
+  category?: InputMaybe<Scalars['String']>;
+  description?: InputMaybe<Scalars['String']>;
+  name: Scalars['String'];
+  price: Scalars['Float'];
+};
+
+export type RoomType = {
+  __typename?: 'RoomType';
+  createdAt: Scalars['Date'];
+  hotelId: Scalars['ID'];
+  id: Scalars['ID'];
+  isActive: Scalars['Boolean'];
+  name: Scalars['String'];
+  updatedAt: Scalars['Date'];
+};
+
+export type RoomTypeInput = {
+  hotelId: Scalars['ID'];
+  name: Scalars['String'];
 };
 
 export type Salon = {
@@ -1175,6 +1637,7 @@ export type Table = {
   createdAt: Scalars['Date'];
   features: Array<Scalars['String']>;
   id: Scalars['ID'];
+  images?: Maybe<Array<Maybe<Scalars['String']>>>;
   isActive: Scalars['Boolean'];
   location: Scalars['String'];
   number: Scalars['Int'];
@@ -1187,11 +1650,38 @@ export type Table = {
 export type TableInput = {
   capacity: Scalars['Int'];
   features?: InputMaybe<Array<Scalars['String']>>;
+  images?: InputMaybe<Array<Scalars['String']>>;
   location: Scalars['String'];
   number: Scalars['Int'];
   position?: InputMaybe<PositionInput>;
   restaurantId: Scalars['ID'];
   status?: InputMaybe<Scalars['String']>;
+};
+
+export type TableSize = {
+  __typename?: 'TableSize';
+  nombre?: Maybe<Scalars['Int']>;
+  taille?: Maybe<Scalars['Int']>;
+};
+
+export type TableSizeInput = {
+  nombre?: InputMaybe<Scalars['Int']>;
+  taille?: InputMaybe<Scalars['Int']>;
+};
+
+export type Tables = {
+  __typename?: 'Tables';
+  size2?: Maybe<Scalars['Int']>;
+  size4?: Maybe<Scalars['Int']>;
+  size6?: Maybe<Scalars['Int']>;
+  size8?: Maybe<Scalars['Int']>;
+};
+
+export type TablesInput = {
+  size2?: InputMaybe<Scalars['Int']>;
+  size4?: InputMaybe<Scalars['Int']>;
+  size6?: InputMaybe<Scalars['Int']>;
+  size8?: InputMaybe<Scalars['Int']>;
 };
 
 /**
@@ -1212,6 +1702,36 @@ export type ThemeInput = {
   primaryColor?: InputMaybe<Scalars['String']>;
   secondaryColor?: InputMaybe<Scalars['String']>;
   typography?: InputMaybe<Scalars['String']>;
+};
+
+export type UpdatePrivatisationOptionInput = {
+  capaciteMaximale?: InputMaybe<Scalars['Int']>;
+  conditions?: InputMaybe<Scalars['String']>;
+  description?: InputMaybe<Scalars['String']>;
+  dureeMaximaleHeures?: InputMaybe<Scalars['Int']>;
+  menusDeGroupe?: InputMaybe<Array<Scalars['String']>>;
+  menusDetails?: InputMaybe<Array<MenuDetailInput>>;
+  nom?: InputMaybe<Scalars['String']>;
+  tarif?: InputMaybe<Scalars['Float']>;
+  type?: InputMaybe<Scalars['String']>;
+};
+
+export type UpdateReservationInput = {
+  heure?: InputMaybe<Scalars['String']>;
+  personnes?: InputMaybe<Scalars['Int']>;
+};
+
+export type UpdateRestaurantInput = {
+  address?: InputMaybe<AddressInput>;
+  contact?: InputMaybe<ContactInput>;
+  cuisine?: InputMaybe<Array<Scalars['String']>>;
+  description?: InputMaybe<Scalars['String']>;
+  features?: InputMaybe<Array<Scalars['String']>>;
+  images?: InputMaybe<Array<Scalars['String']>>;
+  isActive?: InputMaybe<Scalars['Boolean']>;
+  name?: InputMaybe<Scalars['String']>;
+  priceRange?: InputMaybe<Scalars['String']>;
+  settings?: InputMaybe<RestaurantSettingsInput>;
 };
 
 export type User = {

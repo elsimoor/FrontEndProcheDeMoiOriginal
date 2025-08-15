@@ -37,6 +37,12 @@ const GET_HOTEL = gql`
         description
         category
       }
+      roomPaidOptions {
+        name
+        description
+        category
+        price
+      }
     }
   }
 `
@@ -79,6 +85,16 @@ interface Policy {
   category: string
 }
 
+// Represents a paid room option.  These are add-ons such as petals,
+// champagne boxes, etc.  Price is required; description and category are optional.
+interface RoomPaidOption {
+  id: number
+  name: string
+  description?: string
+  category?: string
+  price: number
+}
+
 // Helper function to remove __typename from an array of objects
 const cleanTypename = (arr: any[]) => arr.map(({ __typename, ...rest }) => rest);
 
@@ -86,7 +102,9 @@ export default function HotelOptions() {
   const [activeTab, setActiveTab] = useState("services")
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
-  const [modalType, setModalType] = useState<"service" | "amenity" | "policy">("service")
+  const [modalType, setModalType] = useState<
+    "service" | "amenity" | "policy" | "roomPaidOption"
+  >("service")
 
   // Business identifier for the currently logged in hotel.  This is derived
   // from the server session via the /api/session endpoint.  We default to
@@ -147,6 +165,11 @@ export default function HotelOptions() {
   const [amenities, setAmenities] = useState<Amenity[]>([])
   const [policies, setPolicies] = useState<Policy[]>([])
 
+  // Local state for paid room options.  These correspond to purchasable
+  // add-ons configured by the hotel manager.  Initialised from
+  // hotelData.roomPaidOptions when the query resolves.
+  const [roomPaidOptions, setRoomPaidOptions] = useState<RoomPaidOption[]>([])
+
   // When the hotel data is fetched, populate the local state arrays.  We
   // assign a generated id to each item for React list rendering because
   // items in the backend do not have intrinsic identifiers.  The id is
@@ -185,6 +208,15 @@ export default function HotelOptions() {
           ...policy,
         }))
       )
+
+      // Initialise paid room options.  Each option is assigned a unique id
+      // based on its index for React list rendering.
+      setRoomPaidOptions(
+        (h.roomPaidOptions || []).map((opt: any, index: number) => ({
+          id: index + 1,
+          ...opt,
+        }))
+      )
     }
   }, [hotelData])
 
@@ -221,15 +253,29 @@ export default function HotelOptions() {
     // Helper to persist changes to the backend.  We build a new array for
     // each item type and then call updateHotel.  After updating we refetch
     // the hotel to refresh local state.
-    const persistChanges = async (updatedServices: any[], updatedAmenities: any[], updatedPolicies: any[]) => {
+    const persistChanges = async (
+      updatedServices: any[],
+      updatedAmenities: any[],
+      updatedPolicies: any[],
+      updatedRoomPaidOptions: any[]
+    ) => {
       try {
         await updateHotel({
           variables: {
             id: hotelId,
             input: {
-              services: cleanTypename(updatedServices.map(({ id, icon, ...rest }) => rest)),
-              amenities: cleanTypename(updatedAmenities.map(({ id, ...rest }) => rest)),
-              policies: cleanTypename(updatedPolicies.map(({ id, ...rest }) => rest)),
+              services: cleanTypename(
+                updatedServices.map(({ id, icon, ...rest }) => rest)
+              ),
+              amenities: cleanTypename(
+                updatedAmenities.map(({ id, ...rest }) => rest)
+              ),
+              policies: cleanTypename(
+                updatedPolicies.map(({ id, ...rest }) => rest)
+              ),
+              roomPaidOptions: cleanTypename(
+                updatedRoomPaidOptions.map(({ id, ...rest }) => rest)
+              ),
             },
           },
         })
@@ -261,6 +307,7 @@ export default function HotelOptions() {
         updatedServices.map(({ id, icon, ...rest }) => rest),
         amenities.map(({ id, ...rest }) => rest),
         policies.map(({ id, ...rest }) => rest),
+        roomPaidOptions.map(({ id, ...rest }) => rest),
       )
     } else if (modalType === "amenity") {
       let updatedAmenities: any[]
@@ -283,6 +330,7 @@ export default function HotelOptions() {
         services.map(({ id, icon, ...rest }) => rest),
         updatedAmenities.map(({ id, ...rest }) => rest),
         policies.map(({ id, ...rest }) => rest),
+        roomPaidOptions.map(({ id, ...rest }) => rest),
       )
     } else if (modalType === "policy") {
       let updatedPolicies: any[]
@@ -303,6 +351,35 @@ export default function HotelOptions() {
         services.map(({ id, icon, ...rest }) => rest),
         amenities.map(({ id, ...rest }) => rest),
         updatedPolicies.map(({ id, ...rest }) => rest),
+        roomPaidOptions.map(({ id, ...rest }) => rest),
+      )
+    } else if (modalType === "roomPaidOption") {
+      // Handle creation or editing of a paid room option
+      let updatedOptions: any[]
+      if (editingItem) {
+        updatedOptions = roomPaidOptions.map((opt) =>
+          opt.id === editingItem.id ? { ...opt, ...formData } : opt
+        )
+      } else {
+        const newId =
+          roomPaidOptions.length > 0
+            ? Math.max(...roomPaidOptions.map((o) => o.id)) + 1
+            : 1
+        const newOption: RoomPaidOption = {
+          id: newId,
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          price: formData.price,
+        }
+        updatedOptions = [...roomPaidOptions, newOption]
+      }
+      setRoomPaidOptions(updatedOptions)
+      await persistChanges(
+        services.map(({ id, icon, ...rest }) => rest),
+        amenities.map(({ id, ...rest }) => rest),
+        policies.map(({ id, ...rest }) => rest),
+        updatedOptions.map(({ id, ...rest }) => rest),
       )
     }
 
@@ -311,19 +388,26 @@ export default function HotelOptions() {
     setFormData({})
   }
 
-  const handleEdit = (item: any, type: "service" | "amenity" | "policy") => {
+  const handleEdit = (
+    item: any,
+    type: "service" | "amenity" | "policy" | "roomPaidOption"
+  ) => {
     setEditingItem(item)
     setFormData(item)
     setModalType(type)
     setShowModal(true)
   }
 
-  const handleDelete = async (id: number, type: "service" | "amenity" | "policy") => {
+  const handleDelete = async (
+    id: number,
+    type: "service" | "amenity" | "policy" | "roomPaidOption"
+  ) => {
     if (!hotelId) return
     if (confirm("Are you sure you want to delete this item?")) {
       let updatedServices = services
       let updatedAmenities = amenities
       let updatedPolicies = policies
+      let updatedOptions = roomPaidOptions
       if (type === "service") {
         updatedServices = services.filter((service) => service.id !== id)
         setServices(updatedServices)
@@ -333,15 +417,27 @@ export default function HotelOptions() {
       } else if (type === "policy") {
         updatedPolicies = policies.filter((policy) => policy.id !== id)
         setPolicies(updatedPolicies)
+      } else if (type === "roomPaidOption") {
+        updatedOptions = roomPaidOptions.filter((opt) => opt.id !== id)
+        setRoomPaidOptions(updatedOptions)
       }
       try {
         await updateHotel({
           variables: {
             id: hotelId,
             input: {
-              services: cleanTypename(updatedServices.map(({ id, icon, ...rest }) => rest)),
-              amenities: cleanTypename(updatedAmenities.map(({ id, ...rest }) => rest)),
-              policies: cleanTypename(updatedPolicies.map(({ id, ...rest }) => rest)),
+              services: cleanTypename(
+                updatedServices.map(({ id, icon, ...rest }) => rest)
+              ),
+              amenities: cleanTypename(
+                updatedAmenities.map(({ id, ...rest }) => rest)
+              ),
+              policies: cleanTypename(
+                updatedPolicies.map(({ id, ...rest }) => rest)
+              ),
+              roomPaidOptions: cleanTypename(
+                updatedOptions.map(({ id, ...rest }) => rest)
+              ),
             },
           },
         })
@@ -352,7 +448,9 @@ export default function HotelOptions() {
     }
   }
 
-  const openCreateModal = (type: "service" | "amenity" | "policy") => {
+  const openCreateModal = (
+    type: "service" | "amenity" | "policy" | "roomPaidOption"
+  ) => {
     setEditingItem(null)
     setModalType(type)
     setFormData({})
@@ -378,7 +476,9 @@ export default function HotelOptions() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Hotel Services & Options</h1>
-          <p className="text-gray-600">Manage services, amenities, and policies</p>
+          <p className="text-gray-600">
+            Manage services, amenities, policies and paid room options
+          </p>
         </div>
       </div>
 
@@ -390,6 +490,7 @@ export default function HotelOptions() {
               { id: "services", label: "Services" },
               { id: "amenities", label: "Amenities" },
               { id: "policies", label: "Policies" },
+              { id: "roomPaidOptions", label: "Paid Room Options" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -588,6 +689,60 @@ export default function HotelOptions() {
               </div>
             </div>
           )}
+
+          {/* Paid Room Options Tab */}
+          {activeTab === "roomPaidOptions" && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">Paid Room Options</h2>
+                <button
+                  onClick={() => openCreateModal("roomPaidOption")}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Option
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {roomPaidOptions.map((option) => (
+                  <div
+                    key={option.id}
+                    className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow flex flex-col justify-between"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{option.name}</h3>
+                      {option.category && (
+                        <p className="text-sm text-gray-500">{option.category}</p>
+                      )}
+                      {option.description && (
+                        <p className="text-sm text-gray-600 mt-1">{option.description}</p>
+                      )}
+                      <p className="mt-2 text-lg font-bold text-gray-900">
+                        {option.price === 0 ? "Free" : `$${option.price}`}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2 mt-4">
+                      <button
+                        onClick={() => handleEdit(option, "roomPaidOption")}
+                        className="text-gray-400 hover:text-blue-600"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(option.id, "roomPaidOption")}
+                        className="text-gray-400 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {roomPaidOptions.length === 0 && (
+                  <p className="text-gray-500">No paid room options configured.</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -763,6 +918,77 @@ export default function HotelOptions() {
           </div>
         </div>
       )}
+
+              {modalType === "roomPaidOption" && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Option Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.category || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            category: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Price ($)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        required
+                        value={formData.price ?? 0}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            price: Number.parseFloat(e.target.value),
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </>
+              )}
     </div>
   )
 }

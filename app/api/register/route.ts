@@ -51,9 +51,25 @@ export async function POST(request: Request) {
             const token = result.data.register.token;
             const response = NextResponse.json(result, { status: 200 });
 
+            // Persist the token and user on the session.  New
+            // registrations are inactive by default until an admin
+            // approves the associated business.  Copy the
+            // businessType so middleware can protect routes.  At this
+            // stage the user has no businessId yet; it will be set
+            // after the business is created on the business setup page.
             session.isLoggedIn = true;
             session.token = token;
             session.user = result.data.register.user;
+            // Set initial activity status to the value returned from
+            // the backend (should be false for new accounts).
+            if (session.user) {
+                session.user.isActive = result.data.register.user.isActive;
+            }
+            // Copy the business type so the middleware can enforce
+            // restrictions even before the business is created.
+            session.businessType = result.data.register.user.businessType;
+            // businessId remains undefined until the user creates their
+            // hotel/restaurant/salon in the business setup page.
 
             await session.save();
 

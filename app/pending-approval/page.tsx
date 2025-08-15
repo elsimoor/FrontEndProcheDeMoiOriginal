@@ -277,6 +277,28 @@ export default function PendingApprovalPage() {
     fetchStatus()
   }, [businessType, businessId, fetchHotelStatus, fetchRestaurantStatus, fetchSalonStatus])
 
+  // Poll for approval status every few seconds.  If the business is
+  // still pending we refetch its status from the server.  Once
+  // approved the redirect effect below will navigate away and the
+  // interval will be cleared automatically on unmount.
+  useEffect(() => {
+    if (!businessType || !businessId) return
+    const interval = setInterval(() => {
+      try {
+        if (businessType === "hotel") {
+          fetchHotelStatus({ variables: { id: businessId }, fetchPolicy: "network-only" })
+        } else if (businessType === "restaurant") {
+          fetchRestaurantStatus({ variables: { id: businessId }, fetchPolicy: "network-only" })
+        } else if (businessType === "salon") {
+          fetchSalonStatus({ variables: { id: businessId }, fetchPolicy: "network-only" })
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [businessType, businessId, fetchHotelStatus, fetchRestaurantStatus, fetchSalonStatus])
+
   // When the data for any business type arrives, determine if
   // approved and redirect accordingly.
   useEffect(() => {

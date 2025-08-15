@@ -28,3 +28,20 @@ export async function GET() {
     token: session.token || null,
   });
 }
+
+/**
+ * API endpoint for logging out the current user.  This handler destroys
+ * the server‑side session by calling the `destroy` method on the
+ * iron-session object.  After destroying the session a simple JSON
+ * response is returned.  Clients should perform any navigation after
+ * calling this endpoint.
+ */
+export async function DELETE() {
+  const session = await getSession();
+  // Destroy the session if it exists.  Destroy is idempotent so safe to
+  // call even when no session is present.
+  if (session) {
+    await session.destroy();
+  }
+  return NextResponse.json({ ok: true });
+}
