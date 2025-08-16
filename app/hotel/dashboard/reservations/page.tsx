@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import useTranslation from "@/hooks/useTranslation";
 
 /**
  * Reservation management page for hotel businesses.  This page allows the
@@ -198,6 +199,9 @@ export default function HotelReservationsPage() {
   // Mutations
   const [createReservation] = useMutation(CREATE_RESERVATION);
   const [deleteReservation] = useMutation(DELETE_RESERVATION);
+
+  // Translation hook for multi‑language support
+  const { t } = useTranslation();
 const [updateReservation] = useMutation(UPDATE_RESERVATION);
 
   // Form state
@@ -306,12 +310,12 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Reservations</h1>
+        <h1 className="text-3xl font-bold">{t("reservations")}</h1>
         <button
           onClick={() => setShowForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-colors"
         >
-          New Reservation
+          {t("newReservation")}
         </button>
       </div>
 
@@ -320,20 +324,20 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
         <div className="flex justify-between items-center mb-4">
             <div className="flex items-center space-x-4">
                 <Input
-                    placeholder="Search by name or email..."
+                    placeholder={t("searchByNameOrEmail")}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="max-w-sm"
                 />
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by status" />
+                <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder={t("filterByStatus")} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="all">{t("all")}</SelectItem>
+                        <SelectItem value="pending">{t("pending")}</SelectItem>
+                        <SelectItem value="confirmed">{t("confirmed")}</SelectItem>
+                        <SelectItem value="cancelled">{t("cancelled")}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -342,14 +346,14 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Guest</TableHead>
-                <TableHead>Room</TableHead>
-                <TableHead>Check-In</TableHead>
-                <TableHead>Check-Out</TableHead>
-                <TableHead>Guests</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead>{t("guest")}</TableHead>
+                <TableHead>{t("room")}</TableHead>
+                <TableHead>{t("checkIn")}</TableHead>
+                <TableHead>{t("checkOut")}</TableHead>
+                <TableHead>{t("guestsCountLabel")}</TableHead>
+                <TableHead>{t("amount")}</TableHead>
+                <TableHead>{t("status")}</TableHead>
+                <TableHead><span className="sr-only">{t("openMenu")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -378,16 +382,16 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
+                          <span className="sr-only">{t("openMenu")}</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleStatusChange(res, 'confirmed')}>Confirm</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(res, 'pending')}>Set to Pending</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(res, 'cancelled')}>Cancel</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(res, 'confirmed')}>{t("confirmReservation")}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(res, 'pending')}>{t("setToPending")}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(res, 'cancelled')}>{t("cancelReservation")}</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDelete(res.id)} className="text-red-600">
-                          Delete
+                          {t("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -397,7 +401,7 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
             </TableBody>
           </Table>
         ) : (
-          <p>No reservations found.</p>
+          <p>{t("noReservationsFound")}</p>
         )}
       </section>
 
@@ -405,28 +409,28 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
       <Sheet open={showForm} onOpenChange={setShowForm}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>New Reservation</SheetTitle>
+            <SheetTitle>{t("newReservation")}</SheetTitle>
           </SheetHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="guestName">Guest Name</Label>
+                <Label htmlFor="guestName">{t("guestName")}</Label>
                 <Input id="guestName" value={formState.guestName} onChange={(e) => setFormState({ ...formState, guestName: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="guestEmail">Guest Email</Label>
+                <Label htmlFor="guestEmail">{t("guestEmail")}</Label>
                 <Input id="guestEmail" type="email" value={formState.guestEmail} onChange={(e) => setFormState({ ...formState, guestEmail: e.target.value })} required />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="guestPhone">Guest Phone</Label>
+              <Label htmlFor="guestPhone">{t("guestPhone")}</Label>
               <Input id="guestPhone" value={formState.guestPhone} onChange={(e) => setFormState({ ...formState, guestPhone: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="roomId">Room</Label>
+              <Label htmlFor="roomId">{t("room")}</Label>
               <Select value={formState.roomId} onValueChange={(value) => setFormState({ ...formState, roomId: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a room" />
+                  <SelectValue placeholder={t("selectARoom")} />
                 </SelectTrigger>
                 <SelectContent>
                   {roomsData?.rooms?.map((room: any) => (
@@ -439,43 +443,43 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="checkIn">Check-In Date</Label>
+                <Label htmlFor="checkIn">{t("checkInDate")}</Label>
                 <Input id="checkIn" type="date" value={formState.checkIn} onChange={(e) => setFormState({ ...formState, checkIn: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="checkOut">Check-Out Date</Label>
+                <Label htmlFor="checkOut">{t("checkOutDate")}</Label>
                 <Input id="checkOut" type="date" value={formState.checkOut} onChange={(e) => setFormState({ ...formState, checkOut: e.target.value })} required />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="guests">Guests</Label>
+                <Label htmlFor="guests">{t("guestsCountLabel")}</Label>
                 <Input id="guests" type="number" value={formState.guests} onChange={(e) => setFormState({ ...formState, guests: e.target.value === "" ? "" : Number(e.target.value) })} min={1} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="totalAmount">Total Amount ({currencySymbol})</Label>
+                <Label htmlFor="totalAmount">{t("totalAmount")} ({currencySymbol})</Label>
                 <Input id="totalAmount" type="number" value={formState.totalAmount} onChange={(e) => setFormState({ ...formState, totalAmount: e.target.value === "" ? "" : Number(e.target.value) })} min={0} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t("status")}</Label>
               <Select value={formState.status} onValueChange={(value) => setFormState({ ...formState, status: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                <SelectValue placeholder={t("selectStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="pending">{t("pending")}</SelectItem>
+                  <SelectItem value="confirmed">{t("confirmed")}</SelectItem>
+                  <SelectItem value="cancelled">{t("cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex justify-end space-x-4">
               <Button type="button" variant="outline" onClick={resetForm}>
-                Cancel
+                {t("cancel")}
               </Button>
               <Button type="submit">
-                Create Reservation
+                {t("createReservation")}
               </Button>
             </div>
           </form>

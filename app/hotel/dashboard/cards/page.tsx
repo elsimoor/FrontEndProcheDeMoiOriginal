@@ -6,6 +6,10 @@ import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Translation hooks for localisation
+import useTranslation from "@/hooks/useTranslation";
+import { useLanguage } from "@/context/LanguageContext";
+
 // Query to fetch landing cards for the current hotel.  Filters by
 // businessType and businessId so only cards belonging to this
 // business are returned.
@@ -121,6 +125,10 @@ export default function HotelLandingCardsPage() {
   const currency: string = settingsData?.hotel?.settings?.currency || 'USD';
   const currencySymbol: string = currencySymbols[currency] ?? currency;
 
+  // Translation hook and language context
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
+
   const [createLandingCard, { loading: creating }] = useMutation(CREATE_LANDING_CARD, {
     onCompleted: () => {
       // Clear the form and refetch cards
@@ -191,16 +199,16 @@ export default function HotelLandingCardsPage() {
     await setFeaturedCard({ variables: { id, businessId, businessType: "hotel" } });
   };
 
-  if (loading) return <p>Loading landing cards…</p>;
-  if (error) return <p>Error loading cards.</p>;
+  if (loading) return <p>{t("loading")}</p>;
+  if (error) return <p>{t("errorOccurred")}</p>;
   const cards = data?.landingCards ?? [];
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Landing Cards</h1>
+      <h1 className="text-2xl font-bold mb-4">{t("landingCardsTitle")}</h1>
       {/* List of existing cards */}
       {cards.length === 0 ? (
-        <p>No landing cards yet. Create one below.</p>
+        <p>{t("noLandingCards")}</p>
       ) : (
         <ul className="space-y-4">
           {cards.map((card: any) => (
@@ -212,14 +220,20 @@ export default function HotelLandingCardsPage() {
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   {card.title}
                   {card.isFeatured && (
-                    <span className="text-xs font-medium text-blue-600 border border-blue-600 rounded-full px-2 py-0.5">Featured</span>
+                    <span className="text-xs font-medium text-blue-600 border border-blue-600 rounded-full px-2 py-0.5">
+                      {t("featured")}
+                    </span>
                   )}
                 </h3>
                 {card.description && <p className="text-sm text-gray-600 mt-1">{card.description}</p>}
-                {card.location && <p className="text-sm text-gray-600 mt-1">Location: {card.location}</p>}
+                {card.location && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {t("location")} : {card.location}
+                  </p>
+                )}
                 {card.price && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Price: {formatCurrency(card.price, currency)}
+                    {t("price")} : {formatCurrency(card.price, currency)}
                   </p>
                 )}
               </div>
@@ -230,14 +244,14 @@ export default function HotelLandingCardsPage() {
                     disabled={settingFeatured}
                     className="text-sm text-green-600 hover:text-green-800 disabled:opacity-50"
                   >
-                    {settingFeatured ? 'Setting...' : 'Select'}
+                    {settingFeatured ? t("setting") : t("select")}
                   </button>
                 )}
                 <button
                   onClick={() => handleDelete(card.id)}
                   className="text-sm text-red-600 hover:text-red-800"
                 >
-                  Delete
+                  {t("delete")}
                 </button>
               </div>
             </li>
@@ -246,10 +260,10 @@ export default function HotelLandingCardsPage() {
       )}
       {/* Form for creating a new card */}
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-2">Create a new landing card</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("createNewLandingCard")}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("titleLabel")}</label>
             <input
               type="text"
               required
@@ -259,7 +273,7 @@ export default function HotelLandingCardsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("descriptionLabel")}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -267,7 +281,7 @@ export default function HotelLandingCardsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("imageUrl")}</label>
             <input
               type="text"
               value={formData.image}
@@ -277,7 +291,7 @@ export default function HotelLandingCardsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{`${t("price")} (${currencySymbol})`}</label>
               <input
                 type="number"
                 value={formData.price}
@@ -286,7 +300,7 @@ export default function HotelLandingCardsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rating (0–5)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("ratingLabel")}</label>
               <input
                 type="number"
                 step="0.1"
@@ -299,7 +313,7 @@ export default function HotelLandingCardsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("location")}</label>
             <input
               type="text"
               value={formData.location}
@@ -309,7 +323,7 @@ export default function HotelLandingCardsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("tagsComma")}</label>
               <input
                 type="text"
                 value={formData.tags}
@@ -318,7 +332,7 @@ export default function HotelLandingCardsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amenities (comma separated)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("amenitiesComma")}</label>
               <input
                 type="text"
                 value={formData.amenities}
@@ -336,7 +350,7 @@ export default function HotelLandingCardsPage() {
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="specialOffer" className="ml-2 block text-sm text-gray-700">
-              Special offer
+              {t("specialOffer")}
             </label>
           </div>
           <button
@@ -344,7 +358,7 @@ export default function HotelLandingCardsPage() {
             disabled={creating}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {creating ? "Saving..." : "Create Card"}
+            {creating ? t("saving") : t("createCard")}
           </button>
         </form>
       </div>

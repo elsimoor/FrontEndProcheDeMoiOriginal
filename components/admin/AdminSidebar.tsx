@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 // Import icons from lucide-react for navigation items
 import {
   LayoutDashboard,
@@ -19,11 +21,14 @@ import {
  */
 export default function AdminSidebar() {
   const pathname = usePathname()
+  // Translation and language context
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
   const navigation = [
-    { name: "Overview", href: "/admin/overview", icon: LayoutDashboard },
-    { name: "Hotels", href: "/admin/hotels", icon: Hotel },
-    { name: "Restaurants", href: "/admin/restaurants", icon: UtensilsCrossed },
-    { name: "Salons", href: "/admin/salons", icon: Scissors },
+    { name: t("overview"), href: "/admin/overview", icon: LayoutDashboard },
+    { name: t("hotels"), href: "/admin/hotels", icon: Hotel },
+    { name: t("restaurants"), href: "/admin/restaurants", icon: UtensilsCrossed },
+    { name: t("salons"), href: "/admin/salons", icon: Scissors },
     // New approvals page where administrators review pending businesses
     { name: "Approvals", href: "/admin/approvals", icon: LayoutDashboard },
   ]
@@ -56,6 +61,21 @@ export default function AdminSidebar() {
               )
             })}
           </nav>
+          {/* Language toggle */}
+          <div className="px-4 mt-4 flex space-x-2">
+            <button
+              onClick={() => setLocale("en")}
+              className={`text-sm font-medium ${locale === "en" ? "font-semibold text-indigo-300" : "text-gray-400"}`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLocale("fr")}
+              className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-indigo-300" : "text-gray-400"}`}
+            >
+              FR
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -9,6 +9,9 @@ import { ArrowLeft, X } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Switch } from "@/components/ui/switch";
 
+// Translation hook
+import useTranslation from "@/hooks/useTranslation";
+
 /**
  * Detailed room management page.  This page fetches a single room by
  * filtering the list of rooms for the current hotel.  It displays
@@ -101,6 +104,7 @@ const UPDATE_ROOM = gql`
 `;
 
 export default function HotelRoomDetailsPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const roomId = params.roomId as string;
@@ -121,10 +125,10 @@ export default function HotelRoomDetailsPage() {
         if (data.businessType && data.businessType.toLowerCase() === "hotel" && data.businessId) {
           setHotelId(data.businessId);
         } else {
-          setSessionError("You are not associated with a hotel business.");
+          setSessionError(t("notAssociatedWithHotel"));
         }
       } catch (err) {
-        setSessionError("Failed to load session.");
+        setSessionError(t("failedToLoadSession"));
       } finally {
         setSessionLoading(false);
       }
@@ -186,7 +190,7 @@ export default function HotelRoomDetailsPage() {
   // Delete an image both from Firebase and the local form state.  We
   // confirm with the user before deletion.
   const handleDeleteImage = async (url: string) => {
-    if (!confirm("Remove this image?")) return;
+    if (!confirm(t("removeImageConfirm"))) return;
     try {
       await deleteImage(url);
       setFormState((prev) => ({
@@ -332,26 +336,26 @@ export default function HotelRoomDetailsPage() {
     };
     try {
       await updateRoom({ variables: { id: formState.id, input } });
-      alert("Room updated successfully!");
+      alert(t("roomUpdatedSuccess"));
       router.push("/hotel/dashboard/rooms");
     } catch (err) {
       console.error(err);
-      alert("Failed to update room.");
+      alert(t("roomUpdateFailed"));
     }
   };
 
   if (sessionLoading || roomsLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
   if (sessionError) {
     return <div className="p-6 text-red-600">{sessionError}</div>;
   }
   if (roomsError) {
-    return <div className="p-6 text-red-600">Failed to load room data.</div>;
+    return <div className="p-6 text-red-600">{t("failedLoadRoomData")}</div>;
   }
   // If the room could not be found, show a message
   if (!formState.id) {
-    return <div className="p-6 text-red-600">Room not found.</div>;
+    return <div className="p-6 text-red-600">{t("roomNotFound")}</div>;
   }
 
   return (
@@ -364,7 +368,7 @@ export default function HotelRoomDetailsPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-3xl font-bold text-gray-900">Room {formState.number}</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t("room")} {formState.number}</h1>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left column for room details form */}
@@ -372,7 +376,7 @@ export default function HotelRoomDetailsPage() {
           <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-lg shadow-sm border p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("room")} Number</label>
                 <input
                   type="text"
                   value={formState.number}
@@ -382,7 +386,7 @@ export default function HotelRoomDetailsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("roomTypes")}</label>
                 {/* When custom room types are defined for this hotel we populate
                     the select with those values.  Otherwise we fall back to a
                     small list of standard types. */}
@@ -426,7 +430,7 @@ export default function HotelRoomDetailsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("price") || "Price"}</label>
                 <input
                   type="number"
                   value={formState.price}
@@ -468,7 +472,7 @@ export default function HotelRoomDetailsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t("description")}</label>
               <textarea
                 value={formState.description}
                 onChange={(e) => setFormState({ ...formState, description: e.target.value })}
@@ -482,7 +486,7 @@ export default function HotelRoomDetailsPage() {
                 toggle options on or off for the current room. */}
             {hotelOptionsData?.hotel?.roomPaidOptions && hotelOptionsData.hotel.roomPaidOptions.length > 0 && (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Paid Options</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("paidRoomOptions")}</label>
                 <div className="space-y-2">
                   {hotelOptionsData.hotel.roomPaidOptions.map((opt: any) => {
                     const isSelected = formState.paidOptions.some((o: any) => o.name === opt.name);
@@ -497,7 +501,7 @@ export default function HotelRoomDetailsPage() {
                         <span className="flex-1">
                           <span className="font-medium text-gray-900">{opt.name}</span>
                           {opt.price !== undefined && (
-                            <span className="ml-2 text-sm text-gray-500">{opt.price > 0 ? `$${opt.price}` : "Free"}</span>
+                            <span className="ml-2 text-sm text-gray-500">{opt.price > 0 ? `$${opt.price}` : t("free")}</span>
                           )}
                           {opt.category && (
                             <span className="ml-2 text-xs text-gray-400">({opt.category})</span>
@@ -515,7 +519,7 @@ export default function HotelRoomDetailsPage() {
                 one or more view options for the current room. */}
             {hotelOptionsData?.hotel?.roomViewOptions && hotelOptionsData.hotel.roomViewOptions.length > 0 && (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">View Options</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("viewOptionsTab")}</label>
                 <div className="space-y-2">
                   {hotelOptionsData.hotel.roomViewOptions.map((opt: any) => {
                     const isSelected = formState.viewOptions.some((o: any) => o.name === opt.name);
@@ -530,7 +534,7 @@ export default function HotelRoomDetailsPage() {
                         <span className="flex-1">
                           <span className="font-medium text-gray-900">{opt.name}</span>
                           {opt.price !== undefined && (
-                            <span className="ml-2 text-sm text-gray-500">{opt.price > 0 ? `$${opt.price}` : "Free"}</span>
+                            <span className="ml-2 text-sm text-gray-500">{opt.price > 0 ? `$${opt.price}` : t("free")}</span>
                           )}
                           {opt.category && (
                             <span className="ml-2 text-xs text-gray-400">({opt.category})</span>
@@ -549,14 +553,14 @@ export default function HotelRoomDetailsPage() {
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
               >
-                Save Changes
+                {t("saveChanges")}
               </button>
               <button
                 type="button"
                 onClick={() => router.back()}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
               >
-                Cancel
+                {t("cancel")}
               </button>
             </div>
           </form>
@@ -598,7 +602,7 @@ export default function HotelRoomDetailsPage() {
                 onCheckedChange={(checked: boolean) => setUploadMultiple(checked)}
               />
               <label htmlFor="multiUpload" className="text-sm text-gray-700">
-                Allow multiple image selection
+                {t("allowMultipleImageSelection")}
               </label>
             </div>
             <ImageUpload onUpload={handleUpload} uploading={uploading} multiple={uploadMultiple} />

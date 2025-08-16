@@ -689,6 +689,7 @@ import { ImageUpload } from "@/components/ui/ImageUpload"
 import { uploadImage } from "@/app/lib/firebase"
 // Helpers to format prices according to the restaurant's selected currency
 import { formatCurrency, currencySymbols } from '@/lib/currency'
+import useTranslation from "@/hooks/useTranslation";
 
 interface MenuItem {
   id: string
@@ -704,6 +705,8 @@ interface MenuItem {
 }
 
 export default function RestaurantMenus() {
+  // Translation hook
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<string>("")
   const [searchTerm, setSearchTerm] = useState("")
   const [showModal, setShowModal] = useState(false)
@@ -728,10 +731,11 @@ export default function RestaurantMenus() {
         if (data.businessType && data.businessType.toLowerCase() === "restaurant" && data.businessId) {
           setRestaurantId(data.businessId)
         } else {
-          setSessionError("You are not associated with a restaurant business.")
+          // Store translation key rather than hard-coded message
+          setSessionError('notAssociatedWithRestaurant')
         }
       } catch {
-        setSessionError("Failed to load session.")
+        setSessionError('failedToLoadSession')
       } finally {
         setSessionLoading(false)
       }
@@ -907,7 +911,7 @@ export default function RestaurantMenus() {
       resetForm()
     } catch (err) {
       console.error(err)
-      alert("Failed to save menu item")
+      alert(t('saveMenuItemFailed'))
     }
   }
 
@@ -942,13 +946,13 @@ export default function RestaurantMenus() {
   }
 
   const handleDeleteItem = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this menu item?")) return
+    if (!confirm(t('deleteMenuItemConfirm'))) return
     try {
       await deleteMenuItem({ variables: { id } })
       await refetch()
     } catch (err) {
       console.error(err)
-      alert("Failed to delete menu item")
+      alert(t('deleteMenuItemFailed'))
     }
   }
 
@@ -959,7 +963,7 @@ export default function RestaurantMenus() {
       setFormData({ ...formData, images: [...(formData.images || []), ...urls] })
     } catch (err) {
       console.error(err)
-      alert("Failed to upload image")
+      alert(t('uploadImageFailed'))
     } finally {
       setUploading(false)
     }
@@ -973,13 +977,13 @@ export default function RestaurantMenus() {
 
   // Loading / error
   if (sessionLoading || loading) {
-    return <div className="p-6">Loading...</div>
+    return <div className="p-6">{t('loading')}</div>
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>
+    return <div className="p-6 text-red-600">{t(sessionError)}</div>
   }
   if (error) {
-    return <div className="p-6 text-red-600">Failed to load menu items.</div>
+    return <div className="p-6 text-red-600">{t('errorLoadingMenuItems')}</div>
   }
 
   return (
@@ -987,15 +991,15 @@ export default function RestaurantMenus() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
-          <p className="text-gray-600">Manage your restaurant menu items and categories</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('menuManagementTitle')}</h1>
+          <p className="text-gray-600">{t('menuManagementSubtitle')}</p>
         </div>
         <button
           onClick={openCreateModal}
           className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Menu Item
+          {t('addMenuItem')}
         </button>
       </div>
 
@@ -1007,7 +1011,7 @@ export default function RestaurantMenus() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search menu items..."
+                placeholder={t('searchMenuPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -1017,10 +1021,10 @@ export default function RestaurantMenus() {
           <div className="flex gap-4">
             <button className="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               <Filter className="h-5 w-5 mr-2" />
-              Filters
+              {t('filters')}
             </button>
             <button className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-              Export Menu
+              {t('exportMenu')}
             </button>
           </div>
         </div>
@@ -1030,7 +1034,7 @@ export default function RestaurantMenus() {
         {/* Categories Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Categories</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('categoriesTitle')}</h3>
             <div className="space-y-2">
               {categories.map((category) => (
                 <button
@@ -1053,7 +1057,7 @@ export default function RestaurantMenus() {
             <div className="mt-6 pt-6 border-t border-gray-200">
               <button className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Category
+                {t('addCategory')}
               </button>
             </div>
           </div>
@@ -1069,13 +1073,13 @@ export default function RestaurantMenus() {
                 </h3>
                 <div className="flex space-x-2">
                   <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                    Bulk Edit
+                    {t('bulkEdit')}
                   </button>
                   <button
                     onClick={openCreateModal}
                     className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                   >
-                    Add Item
+                    {t('addItem')}
                   </button>
                 </div>
               </div>
@@ -1100,7 +1104,7 @@ export default function RestaurantMenus() {
                                 {item.popular && (
                                   <span className="inline-flex items-center px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
                                     <Star className="h-3 w-3 mr-1" />
-                                    Popular
+                                    {t('popularLabel')}
                                   </span>
                                 )}
                                 <span
@@ -1108,7 +1112,7 @@ export default function RestaurantMenus() {
                                     item.available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                   }`}
                                 >
-                                  {item.available ? "Available" : "Out of Stock"}
+                                  {item.available ? t('availableLabel') : t('outOfStock')}
                                 </span>
                               </div>
                               <p className="text-gray-600 mt-1">{item.description}</p>
@@ -1141,7 +1145,7 @@ export default function RestaurantMenus() {
 
                             {item.allergens.length > 0 && (
                               <div className="flex items-center space-x-1">
-                                <span className="text-sm text-gray-500">Allergens:</span>
+                                <span className="text-sm text-gray-500">{t('allergensLabel')}</span>
                                 {item.allergens.map((allergen, index) => (
                                   <span
                                     key={index}
@@ -1165,15 +1169,15 @@ export default function RestaurantMenus() {
                   <div className="text-gray-400 mb-4">
                     <UtensilsCrossed className="h-12 w-12 mx-auto" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items found</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noMenuItemsFound')}</h3>
                   <p className="text-gray-600 mb-4">
-                    {searchTerm ? "Try adjusting your search terms" : "Start by adding your first menu item"}
+                    {searchTerm ? t('adjustSearchTerms') : t('startByAddingMenuItem')}
                   </p>
                   <button
                     onClick={openCreateModal}
                     className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
                   >
-                    Add Menu Item
+                    {t('addMenuItem')}
                   </button>
                 </div>
               )}
@@ -1188,7 +1192,7 @@ export default function RestaurantMenus() {
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingItem ? "Edit Menu Item" : "Create New Menu Item"}
+                {editingItem ? t('editMenuItem') : t('createNewMenuItem')}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="h-6 w-6" />
@@ -1198,7 +1202,7 @@ export default function RestaurantMenus() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('itemName')}</label>
                   <input
                     type="text"
                     required
@@ -1209,7 +1213,7 @@ export default function RestaurantMenus() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('priceWithCurrency', { currencySymbol })}</label>
                   <input
                     type="number"
                     min="0"
@@ -1222,7 +1226,7 @@ export default function RestaurantMenus() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('categoryField')}</label>
                   <select
                     required
                     value={formData.category || activeCategory}
@@ -1238,7 +1242,7 @@ export default function RestaurantMenus() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Prep Time (minutes)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('prepTimeMinutes')}</label>
                   <input
                     type="number"
                     min={1}
@@ -1250,7 +1254,7 @@ export default function RestaurantMenus() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('descriptionField')}</label>
                   <textarea
                     required
                     value={formData.description || ""}
@@ -1261,7 +1265,7 @@ export default function RestaurantMenus() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Allergens (comma-separated)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('allergensCommaSeparated')}</label>
                   <input
                     type="text"
                     value={formData.allergens?.join(", ") || ""}
@@ -1276,7 +1280,7 @@ export default function RestaurantMenus() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('imageField')}</label>
                   <ImageUpload onUpload={handleImageUpload} uploading={uploading} multiple />
                   <div className="mt-4 flex flex-wrap gap-4">
                     {formData.images?.map((image, index) => (
@@ -1302,7 +1306,7 @@ export default function RestaurantMenus() {
                       onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
                       className="mr-2"
                     />
-                    Available
+                    {t('availableField')}
                   </label>
                   <label className="flex items-center">
                     <input
@@ -1311,7 +1315,7 @@ export default function RestaurantMenus() {
                       onChange={(e) => setFormData({ ...formData, popular: e.target.checked })}
                       className="mr-2"
                     />
-                    Popular Item
+                    {t('popularItemField')}
                   </label>
                 </div>
 
@@ -1321,10 +1325,10 @@ export default function RestaurantMenus() {
                     onClick={() => setShowModal(false)}
                     className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   >
-                    Cancel
+                    {t('cancelButton')}
                   </button>
                   <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                    {editingItem ? "Update" : "Create"} Menu Item
+                    {editingItem ? t('updateMenuItem') : t('createMenuItem')}
                   </button>
                 </div>
               </div>{/* <-- closes the grid wrapper */}
@@ -1338,7 +1342,7 @@ export default function RestaurantMenus() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-red-600">{data?.menuItems?.length ?? 0}</p>
-            <p className="text-sm text-gray-600">Total Items</p>
+            <p className="text-sm text-gray-600">{t('totalItems')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -1346,7 +1350,7 @@ export default function RestaurantMenus() {
             <p className="text-2xl font-bold text-green-600">
               {data?.menuItems?.filter((item: any) => item.available).length ?? 0}
             </p>
-            <p className="text-sm text-gray-600">Available</p>
+            <p className="text-sm text-gray-600">{t('availableCount')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -1354,7 +1358,7 @@ export default function RestaurantMenus() {
             <p className="text-2xl font-bold text-yellow-600">
               {data?.menuItems?.filter((item: any) => item.popular).length ?? 0}
             </p>
-            <p className="text-sm text-gray-600">Popular Items</p>
+            <p className="text-sm text-gray-600">{t('popularItems')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -1372,7 +1376,7 @@ export default function RestaurantMenus() {
                 return formatCurrency(avg, currency)
               })()}
             </p>
-            <p className="text-sm text-gray-600">Avg. Price</p>
+            <p className="text-sm text-gray-600">{t('avgPrice')}</p>
           </div>
         </div>
       </div>

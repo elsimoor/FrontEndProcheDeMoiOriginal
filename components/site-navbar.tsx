@@ -13,16 +13,23 @@ import {
   SheetDescription,
   SheetClose,
 } from "@/components/ui/sheet"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function SiteNavbar() {
   const pathname = usePathname()
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
+  // Define navigation links with translation keys.  The hrefs
+  // remain constant, but the labels will be translated at render
+  // time via t().
   const links = [
-    { label: "Hotel", href: "/hotel" },
-    { label: "Restaurant", href: "/u/accueil" },
-    { label: "Salon", href: "/salon" },
-    { label: "Pricing", href: "/#pricing" },
-    { label: "FAQ", href: "/#faq" },
-    { label: "Contact", href: "/#contact" },
+    { key: "hotel", href: "/hotel" },
+    { key: "restaurant", href: "/u/accueil" },
+    { key: "salon", href: "/salon" },
+    { key: "pricingPage", href: "/#pricing" },
+    { key: "faq", href: "/#faq" },
+    { key: "contactPage", href: "/#contact" },
   ]
 
   return (
@@ -30,7 +37,7 @@ export default function SiteNavbar() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-md bg-gradient-to-br from-blue-600 to-purple-600" aria-hidden />
-          <span className="text-lg font-semibold tracking-tight text-gray-900">BusinessSuite</span>
+          <span className="text-lg font-semibold tracking-tight text-gray-900">{t("businessSuite")}</span>
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Main navigation">
@@ -45,19 +52,38 @@ export default function SiteNavbar() {
                   isActive ? "text-gray-900" : "text-gray-600"
                 }`}
               >
-                {l.label}
+                {t(l.key)}
               </Link>
             )
           })}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
+          {/* Language selector buttons for desktop */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setLocale("en")}
+              className={`text-sm font-medium transition-colors hover:text-gray-900 ${
+                locale === "en" ? "font-semibold text-blue-600" : "text-gray-700"
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLocale("fr")}
+              className={`text-sm font-medium transition-colors hover:text-gray-900 ${
+                locale === "fr" ? "font-semibold text-blue-600" : "text-gray-700"
+              }`}
+            >
+              FR
+            </button>
+          </div>
           <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-            Sign in
+            {t("signIn")}
           </Link>
           <Link href="/register">
             <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700">
-              Start free trial
+              {t("startFreeTrial")}
             </Button>
           </Link>
         </div>
@@ -65,14 +91,14 @@ export default function SiteNavbar() {
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="Open menu">
+              <Button variant="outline" size="icon" aria-label={t("openMenu") ?? "Open menu"}>
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80">
               <SheetHeader>
-                <SheetTitle>BusinessSuite</SheetTitle>
-                <SheetDescription>Navigate to a section</SheetDescription>
+                <SheetTitle>{t("businessSuite")}</SheetTitle>
+                <SheetDescription>{t("navigateToSection")}</SheetDescription>
               </SheetHeader>
               <nav className="mt-6 grid gap-2">
                 {links.map((l) => (
@@ -81,32 +107,51 @@ export default function SiteNavbar() {
                       href={l.href}
                       className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
                     >
-                      {l.label}
+                      {t(l.key)}
                     </Link>
                   </SheetClose>
                 ))}
                 <div className="mt-4 h-px w-full bg-gray-200" />
+                {/* Language selector for mobile */}
+                <div className="flex items-center justify-start space-x-4 px-3 py-2">
+                  <button
+                    onClick={() => setLocale("en")}
+                    className={`text-sm font-medium ${
+                      locale === "en" ? "font-semibold text-blue-600" : "text-gray-700"
+                    }`}
+                  >
+                    EN
+                  </button>
+                  <button
+                    onClick={() => setLocale("fr")}
+                    className={`text-sm font-medium ${
+                      locale === "fr" ? "font-semibold text-blue-600" : "text-gray-700"
+                    }`}
+                  >
+                    FR
+                  </button>
+                </div>
                 <div className="grid gap-2">
                   <SheetClose asChild>
                     <Link
                       href="/login"
                       className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
                     >
-                      Sign in
+                      {t("signIn")}
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
                     <Link href="/register">
                       <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700">
-                        Start free trial
+                        {t("startFreeTrial")}
                       </Button>
                     </Link>
                   </SheetClose>
                 </div>
                 <SheetClose asChild>
-                  <Button variant="ghost" className="mt-2 w-full" aria-label="Close menu">
+                  <Button variant="ghost" className="mt-2 w-full" aria-label={t("close") ?? "Close menu"}>
                     <X className="mr-2 h-4 w-4" />
-                    Close
+                    {t("close")}
                   </Button>
                 </SheetClose>
               </nav>

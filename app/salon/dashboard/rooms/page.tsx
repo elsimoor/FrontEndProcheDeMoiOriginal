@@ -6,6 +6,9 @@ import { Plus, Edit, Trash2, X } from "lucide-react"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 import { uploadImage, deleteImage } from "@/app/lib/firebase"
 
+// Translation hook for localised text
+import useTranslation from "@/hooks/useTranslation"
+
 interface Table {
   id: string
   number: number
@@ -29,6 +32,8 @@ interface Table {
  * name, e.g. "Room 1".
  */
 export default function SalonRooms() {
+  // Access translation function
+  const { t } = useTranslation()
   // state for session and rooms
   const [salonId, setSalonId] = useState<string | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
@@ -152,7 +157,7 @@ export default function SalonRooms() {
    * Prompt the user for confirmation before deletion.
    */
   const handleDeleteImage = async (url: string) => {
-    if (!confirm("Remove this image?")) return
+    if (!confirm(t("removeImagePrompt"))) return
     try {
       await deleteImage(url)
       setFormData((prev) => ({
@@ -213,7 +218,7 @@ export default function SalonRooms() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this room?")) return
+    if (!confirm(t("deleteRoomPrompt"))) return
     try {
       await deleteTable({ variables: { id } })
     } catch (err) {
@@ -222,20 +227,27 @@ export default function SalonRooms() {
     }
   }
 
-  if (sessionLoading) return <div>Loading...</div>
-  if (sessionError) return <div className="text-red-500">{sessionError}</div>
-  if (loading) return <div>Loading rooms...</div>
-  if (error) return <div className="text-red-500">Error loading rooms</div>
+  if (sessionLoading) return <div className="p-6 text-gray-600">{t("loadingRooms")}</div>
+  if (sessionError) {
+    // Show translated message when the user is not associated with a salon
+    return (
+      <div className="text-red-500">
+        {sessionError.includes('not associated') ? t('notAssociatedWithSalon') : t('failedToLoadSession')}
+      </div>
+    )
+  }
+  if (loading) return <div className="p-6 text-gray-600">{t("loadingRooms")}</div>
+  if (error) return <div className="text-red-500">{t("errorLoadingRooms")}</div>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Room Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("roomManagementTitle")}</h1>
         <button
           onClick={() => openModal()}
           className="inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
         >
-          <Plus className="h-5 w-5 mr-2" /> Add Room
+          <Plus className="h-5 w-5 mr-2" /> {t("addRoomButton")}
         </button>
       </div>
       <div className="bg-white rounded-lg shadow overflow-x-auto">
@@ -243,19 +255,19 @@ export default function SalonRooms() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room Name
+                {t("roomName")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Capacity
+                {t("capacityColumn")}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Equipment
+                {t("equipmentColumn")}
               </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Images
-            </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {t("imagesColumn")}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t("actionsLabel")}
               </th>
             </tr>
           </thead>
@@ -263,7 +275,7 @@ export default function SalonRooms() {
             {rooms.map((room) => (
               <tr key={room.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {room.location || `Room ${room.number}`}
+                  {room.location || `${t("roomName")} ${room.number}`}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{room.capacity}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -311,7 +323,7 @@ export default function SalonRooms() {
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                {editingRoom ? "Edit Room" : "Add Room"}
+                {editingRoom ? t("editRoom") : t("addRoomModal")}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">
                 <X className="h-5 w-5" />
@@ -319,7 +331,7 @@ export default function SalonRooms() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Room Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("roomName")}</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -328,7 +340,7 @@ export default function SalonRooms() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("capacityColumn")}</label>
                 <input
                   type="number"
                   min={1}
@@ -338,7 +350,7 @@ export default function SalonRooms() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Equipment (comma‑separated)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("equipmentCommaSeparated")}</label>
                 <input
                   type="text"
                   value={formData.equipment}
@@ -348,7 +360,7 @@ export default function SalonRooms() {
               </div>
               {/* Images uploader and preview */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("imagesColumn")}</label>
                 {/* Preview existing images */}
                 {formData.images && formData.images.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mb-2">
@@ -378,13 +390,13 @@ export default function SalonRooms() {
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
               >
-                Cancel
+                {t("cancelButton")}
               </button>
               <button
                 onClick={handleSave}
                 className="px-4 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-700"
               >
-                Save
+                {t("saveButtonLabel")}
               </button>
             </div>
           </div>

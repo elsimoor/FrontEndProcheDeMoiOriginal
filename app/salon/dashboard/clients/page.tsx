@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo } from "react"
 import { formatCurrency } from "@/lib/currency"
 import { gql, useQuery } from "@apollo/client"
 import { Search, Filter, Phone, Mail, Calendar, MapPin, Plus, Edit, Trash2, X } from "lucide-react"
+import useTranslation from "@/hooks/useTranslation"
 
 /**
  * Represents a derived client record aggregated from reservation data.  Because
@@ -32,6 +33,7 @@ interface Client {
 }
 
 export default function SalonClients() {
+  const { t } = useTranslation()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [showModal, setShowModal] = useState(false)
@@ -258,13 +260,19 @@ export default function SalonClients() {
 
   // Early return for loading or error states
   if (sessionLoading || reservationsLoading) {
-    return <div className="p-6 text-gray-600">Loading clients...</div>
+    return <div className="p-6 text-gray-600">{t('loadingClients')}</div>
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>
+    return (
+      <div className="p-6 text-red-600">
+        {sessionError.includes('not associated')
+          ? t('notAssociatedWithSalon')
+          : t('failedToLoadSession')}
+      </div>
+    )
   }
   if (reservationsError) {
-    return <div className="p-6 text-red-600">Error loading reservations</div>
+    return <div className="p-6 text-red-600">{t('errorLoadingClients')}</div>
   }
 
   return (
@@ -272,8 +280,8 @@ export default function SalonClients() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-          <p className="text-gray-600">View your salon clients and their history</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('clientsTitleHeading')}</h1>
+          <p className="text-gray-600">{t('clientsSubtitle')}</p>
         </div>
       </div>
 
@@ -285,7 +293,7 @@ export default function SalonClients() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name, email, or ID..."
+                placeholder={t('searchByNameEmailId')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
@@ -298,14 +306,14 @@ export default function SalonClients() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">{t('allStatus')}</option>
+              <option value="active">{t('active')}</option>
+              <option value="inactive">{t('inactive')}</option>
             </select>
             {/* Additional filters could be added here */}
             <button className="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               <Filter className="h-5 w-5 mr-2" />
-              More Filters
+              {t('moreFilters')}
             </button>
           </div>
         </div>
@@ -317,15 +325,15 @@ export default function SalonClients() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membership</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Visits</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Favourite Services</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preferred Stylist</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('clientLabel')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('membershipLabel')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('totalVisits')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('totalSpent')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('lastVisit')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('favouriteServices')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('preferredStylist')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('statusLabelColumn')}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actionsLabel')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -338,7 +346,7 @@ export default function SalonClients() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getMembershipColor(client.membershipLevel)}`}>
-                      {client.membershipLevel}
+                      {t(client.membershipLevel.toLowerCase() as any)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.totalVisits}</td>
@@ -358,7 +366,7 @@ export default function SalonClients() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.preferredStylist || "-"}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(client.status)}`}>
-                      {client.status}
+                      {t(client.status as any)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -366,7 +374,7 @@ export default function SalonClients() {
                       onClick={() => handleEdit(client)}
                       className="text-blue-600 hover:text-blue-900 flex items-center"
                     >
-                      <Edit className="h-4 w-4 mr-1" /> Edit
+                      <Edit className="h-4 w-4 mr-1" /> {t('edit')}
                     </button>
                     {/* You can add delete logic if needed; for now, we don't delete aggregated clients */}
                   </td>
@@ -393,10 +401,12 @@ export default function SalonClients() {
                   <div className="sm:flex sm:items-start">
                     <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                       <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                        Edit Client
+                        {t('editClient')}
                       </h3>
                       <div className="mt-2 space-y-4">
-                        <p className="text-sm text-gray-600">Add or update notes for {editingClient.name}.</p>
+                        <p className="text-sm text-gray-600">
+                          {t('notesForClient').replace('{client}', editingClient.name)}
+                        </p>
                         <textarea
                           rows={4}
                           value={editingClient.notes}
@@ -415,14 +425,14 @@ export default function SalonClients() {
                     type="submit"
                     className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-pink-600 text-base font-medium text-white hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:w-auto sm:text-sm"
                   >
-                    Save
+                    {t('saveButton')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
-                    Cancel
+                    {t('cancelButton')}
                   </button>
                 </div>
               </form>

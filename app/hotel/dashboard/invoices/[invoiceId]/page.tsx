@@ -16,6 +16,9 @@ import {
 // Currency helpers to format amounts according to the hotel's selected currency
 import { formatCurrency, currencySymbols } from "@/lib/currency";
 
+// Translation hook
+import useTranslation from "@/hooks/useTranslation";
+
 // GraphQL query to fetch the hotel's settings (namely the currency) for the current business
 const GET_HOTEL_SETTINGS = gql`
   query GetHotelSettings($id: ID!) {
@@ -58,6 +61,7 @@ const GENERATE_INVOICE_PDF = gql`
 `;
 
 export default function InvoiceDetailsPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const invoiceId = params.invoiceId as string;
@@ -86,10 +90,10 @@ export default function InvoiceDetailsPage() {
         if (data.businessType && data.businessType.toLowerCase() === "hotel" && data.businessId) {
           setHotelId(data.businessId);
         } else {
-          setSessionError("You are not associated with a hotel business.");
+          setSessionError(t("notAssociatedWithHotel"));
         }
       } catch (err) {
-        setSessionError("Failed to load session.");
+        setSessionError(t("failedToLoadSession"));
       } finally {
         setSessionLoading(false);
       }
@@ -118,7 +122,7 @@ export default function InvoiceDetailsPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to download invoice.");
+      alert(t("failedDownloadInvoice"));
     }
   };
 
@@ -127,10 +131,10 @@ export default function InvoiceDetailsPage() {
   // amounts are formatted.  If there is a session error we display
   // it below, otherwise we fall back to USD.
   if (loading || sessionLoading) {
-    return <div className="p-6">Loading…</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
   if (error) {
-    return <div className="p-6 text-red-600">Unable to load invoice details.</div>;
+    return <div className="p-6 text-red-600">{t("unableToLoadInvoice")}</div>;
   }
   if (sessionError) {
     // We still render the invoice details but amounts will default to USD
@@ -138,37 +142,37 @@ export default function InvoiceDetailsPage() {
   }
   const invoice = data?.invoice;
   if (!invoice) {
-    return <div className="p-6 text-red-600">Invoice not found.</div>;
+    return <div className="p-6 text-red-600">{t("invoiceNotFound")}</div>;
   }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Invoice {invoice.id}</h1>
-          <p className="text-sm text-gray-600">Date: {new Date(invoice.date).toLocaleDateString()}</p>
+          <h1 className="text-2xl font-semibold text-gray-900">{t("invoice")} {invoice.id}</h1>
+          <p className="text-sm text-gray-600">{t("date")}: {new Date(invoice.date).toLocaleDateString()}</p>
           {invoice.reservation && (
-            <p className="text-sm text-gray-600">Customer: {invoice.reservation.customerInfo?.name}</p>
+            <p className="text-sm text-gray-600">{t("customer")}: {invoice.reservation.customerInfo?.name}</p>
           )}
           {invoice.reservation?.checkIn && invoice.reservation?.checkOut && (
             <p className="text-sm text-gray-600">
-              Stay: {new Date(invoice.reservation.checkIn).toLocaleDateString()} – {new Date(invoice.reservation.checkOut).toLocaleDateString()}
+              {t("stay")}: {new Date(invoice.reservation.checkIn).toLocaleDateString()} – {new Date(invoice.reservation.checkOut).toLocaleDateString()}
             </p>
           )}
         </div>
         <div className="space-x-2">
-          <Button variant="outline" onClick={() => router.back()}>Back</Button>
-          <Button onClick={handleDownload}>Download</Button>
+          <Button variant="outline" onClick={() => router.back()}>{t("back")}</Button>
+          <Button onClick={handleDownload}>{t("download")}</Button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Description</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead>{t("description")}</TableHead>
+              <TableHead>{t("priceLabel")}</TableHead>
+              <TableHead>{t("quantity")}</TableHead>
+              <TableHead className="text-right">{t("total")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -184,7 +188,7 @@ export default function InvoiceDetailsPage() {
         </Table>
       </div>
       <div className="flex justify-end">
-        <div className="text-xl font-semibold">Total: {formatCurrency(invoice.total ?? 0, currency)}</div>
+        <div className="text-xl font-semibold">{t("total")}: {formatCurrency(invoice.total ?? 0, currency)}</div>
       </div>
     </div>
   );

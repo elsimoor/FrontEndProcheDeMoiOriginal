@@ -323,6 +323,8 @@ import { Menu, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 const GET_RESTAURANTS = gql`
   query GetRestaurants {
@@ -411,7 +413,8 @@ function EmptyState() {
 // Sub-Navbar focused on restaurant anchors and CTAs (below the global SiteNavbar)
 export function RestaurantSubnav({ title, restaurantId }: { title: string; restaurantId: string }) {
   const [open, setOpen] = useState(false);
-
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
   return (
     <header className="sticky top-0 z-50 w-full bg-white/70 backdrop-blur-md border-b">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -422,30 +425,46 @@ export function RestaurantSubnav({ title, restaurantId }: { title: string; resta
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-700">
           <Link href="#" className="hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 rounded">
-            Accueil
+            {t("home")}
           </Link>
           <Link href="#menus" className="hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 rounded">
-            Menus
+            {t("menus")}
           </Link>
           <Link href="#galerie" className="hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 rounded">
-            Galerie
+            {t("gallery")}
           </Link>
           <Link href="#contact" className="hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 rounded">
-            Contact
+            {t("contact")}
           </Link>
           <Link
             href={`/u/privatisation?restaurantId=${restaurantId}`}
             className="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition"
           >
-            Privatiser
+            {t("privatize")}
           </Link>
           <Link
             href={`/u/reserver?restaurantId=${restaurantId}`}
             className="px-4 py-2 rounded-full border border-red-600 text-red-600 hover:bg-red-50 transition"
           >
-            Réserver
+            {t("reserve")}
           </Link>
         </nav>
+
+        {/* Language selector on desktop */}
+        <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={() => setLocale("en")}
+            className={`text-sm font-medium ${locale === "en" ? "font-semibold text-red-600" : "text-gray-700"}`}
+          >
+            EN
+          </button>
+          <button
+            onClick={() => setLocale("fr")}
+            className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-red-600" : "text-gray-700"}`}
+          >
+            FR
+          </button>
+        </div>
 
         {/* Avatar placeholder */}
         <div className="hidden md:block w-8 h-8 rounded-full bg-gray-300" />
@@ -453,10 +472,10 @@ export function RestaurantSubnav({ title, restaurantId }: { title: string; resta
         {/* Mobile menu button */}
         <button
           className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-full border border-gray-300"
-          aria-label="Ouvrir le menu"
+          aria-label={t("openMenu")}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="sr-only">Open menu</span>
+          <span className="sr-only">{t("openMenu")}</span>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
@@ -467,23 +486,41 @@ export function RestaurantSubnav({ title, restaurantId }: { title: string; resta
       {open && (
         <div className="md:hidden border-t bg-white">
           <div className="mx-auto max-w-7xl px-4 py-4 flex flex-col gap-2">
-            <Link href="#" className="py-2 hover:text-red-600">Accueil</Link>
-            <Link href="#menus" className="py-2 hover:text-red-600">Menus</Link>
-            <Link href="#galerie" className="py-2 hover:text-red-600">Galerie</Link>
-            <Link href="#contact" className="py-2 hover:text-red-600">Contact</Link>
+            <Link href="#" className="py-2 hover:text-red-600">{t("home")}</Link>
+            <Link href="#menus" className="py-2 hover:text-red-600">{t("menus")}</Link>
+            <Link href="#galerie" className="py-2 hover:text-red-600">{t("gallery")}</Link>
+            <Link href="#contact" className="py-2 hover:text-red-600">{t("contact")}</Link>
             <div className="flex gap-3 pt-2">
               <Link
                 href={`/u/privatisation?restaurantId=${restaurantId}`}
                 className="flex-1 text-center px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700"
               >
-                Privatiser
+                {t("privatize")}
               </Link>
               <Link
                 href={`/u/reserver?restaurantId=${restaurantId}`}
                 className="flex-1 text-center px-4 py-2 rounded-full border border-red-600 text-red-600 hover:bg-red-50"
               >
-                Réserver
+                {t("reserve")}
               </Link>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setLocale("en")}
+                className={`flex-1 text-center text-sm font-medium ${
+                  locale === "en" ? "font-semibold text-red-600" : "text-gray-700"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`flex-1 text-center text-sm font-medium ${
+                  locale === "fr" ? "font-semibold text-red-600" : "text-gray-700"
+                }`}
+              >
+                FR
+              </button>
             </div>
           </div>
         </div>

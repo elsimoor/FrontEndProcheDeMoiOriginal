@@ -352,6 +352,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { gql, useQuery } from "@apollo/client"
 // Import currency helpers to format prices based on hotel settings
 import { formatCurrency, currencySymbols } from "@/lib/currency"
+// Translation and language hooks
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 // -------------------- Bed types (from your image) --------------------
 const BED_OPTIONS = [
@@ -522,6 +525,10 @@ export default function RoomsListPage() {
   const currency: string = settingsData?.hotel?.settings?.currency || 'USD'
   const currencySymbol: string = currencySymbols[currency] || '$'
 
+  // Translation and language context
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
+
   // Normalize
   const roomsArray: any[] = roomsData?.rooms ?? roomsData?.availableRooms ?? []
 
@@ -551,8 +558,20 @@ export default function RoomsListPage() {
 
   const roomTypes = Object.values(grouped)
 
-  const [activeTab, setActiveTab] = useState("Hôtels")
+  // Use translation keys for the active tab.  Defaults to the hotels tab.
+  const [activeTab, setActiveTab] = useState<string>("hotelsTab")
+  // Keep track of selected filter keys (e.g. boutique, luxury)
   const [hotelFilters, setHotelFilters] = useState<string[]>([])
+
+  // Define tab keys for translation.  Each key corresponds to a
+  // translation entry in the dictionary.  The activeTab state holds
+  // one of these keys rather than the translated label.
+  const tabKeys = ["hotelsTab", "experiencesTab", "accommodationsTab", "adventuresTab"]
+
+  // Define hotel filter keys.  These correspond to translation keys
+  // defined in the i18n dictionary.  We use the raw values to track
+  // selection and map them to room types when filtering.
+  const hotelFilterOptions = ["boutique", "luxury", "family", "romantic"]
 
   const handleSelect = (roomId: string) => {
     const booking = {
@@ -570,16 +589,21 @@ export default function RoomsListPage() {
     router.push(`/hotel/rooms/${roomId}`)
   }
 
-  const tabs = ["Hôtels", "Expériences", "Hébergements", "Aventures"]
-  const hotelFilterOptions = ["Boutique", "Luxe", "Familial", "Romantique"]
+  // Remove legacy tab and filter arrays.  These were replaced by the
+  // translation‑aware `tabKeys` and `hotelFilterOptions` above.  They are
+  // intentionally left undefined to avoid accidental reuse.
+  // const tabs = ["Hôtels", "Expériences", "Hébergements", "Aventures"]
+  // const hotelFilterOptions = ["Boutique", "Luxe", "Familial", "Romantique"]
 
   const filteredRoomTypes = roomTypes.filter((room: any) => {
     if (hotelFilters.length === 0) return true
     const roomType = (room.type || "").toLowerCase()
     const filters = hotelFilters.map((f) => f.toLowerCase())
-    if (filters.includes("luxe") && roomType.includes("deluxe")) return true
-    if (filters.includes("familial") && roomType.includes("suite")) return true
-    if (filters.includes("romantique") && roomType.includes("executive")) return true
+    // Match on english filter keys.  Luxury maps to deluxe rooms,
+    // family to suites, romantic to executive and boutique to standard.
+    if (filters.includes("luxury") && roomType.includes("deluxe")) return true
+    if (filters.includes("family") && roomType.includes("suite")) return true
+    if (filters.includes("romantic") && roomType.includes("executive")) return true
     if (filters.includes("boutique") && roomType.includes("standard")) return true
     return false
   })
@@ -592,22 +616,34 @@ export default function RoomsListPage() {
           <div className="flex items-center space-x-2">
             <span className="font-bold text-2xl text-gray-900">CozyStan</span>
           </div>
+          {/* Navigation links with translations */}
           <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
-            <a href="#" className="hover:text-blue-600 transition-colors">
-              Explore
-            </a>
-            <a href="#" className="hover:text-blue-600 transition-colors">
-              Wishlists
-            </a>
-            <a href="#" className="hover:text-blue-600 transition-colors">
-              Trips
-            </a>
-            <a href="#" className="hover:text-blue-600 transition-colors">
-              Messages
-            </a>
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("explore")}</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("wishlists")}</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("trips")}</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("messages")}</a>
           </nav>
           <div className="flex items-center space-x-4">
-            <button className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">🌐</button>
+            {/* Language selector */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setLocale("en")}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  locale === "en" ? "font-semibold text-blue-600" : "text-gray-700"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  locale === "fr" ? "font-semibold text-blue-600" : "text-gray-700"
+                }`}
+              >
+                FR
+              </button>
+            </div>
+            {/* Placeholder for user avatar */}
             <div className="w-8 h-8 rounded-full bg-orange-400"></div>
           </div>
         </div>
@@ -617,24 +653,24 @@ export default function RoomsListPage() {
         {/* Navigation Tabs */}
         <div className="mb-8">
           <div className="flex space-x-8 border-b">
-            {tabs.map((tab) => (
+            {tabKeys.map((key) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={key}
+                onClick={() => setActiveTab(key)}
                 className={`py-3 px-1 text-sm font-medium transition-colors ${
-                  activeTab === tab ? "text-black border-b-2 border-black" : "text-gray-500 hover:text-gray-700"
+                  activeTab === key ? "text-black border-b-2 border-black" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                {tab}
+                {t(key)}
               </button>
             ))}
           </div>
         </div>
 
         {/* Hotel Discovery Section */}
-        {activeTab === "Hôtels" && (
+        {activeTab === "hotelsTab" && (
           <div className="mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Découvrez nos hôtels</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">{t("discoverOurHotels")}</h2>
             <div className="flex flex-wrap gap-3">
               {hotelFilterOptions.map((filter) => (
                 <button
@@ -650,7 +686,7 @@ export default function RoomsListPage() {
                       : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  {filter}
+                  {t(`${filter}Filter`)}
                 </button>
               ))}
             </div>
@@ -659,14 +695,14 @@ export default function RoomsListPage() {
 
         {/* Available Rooms Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Chambres disponibles</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">{t("availableRoomsHeading")}</h1>
 
           {roomsLoading || hotelsLoading ? (
-            <p>Chargement des chambres…</p>
+            <p>{t("loadingRooms")}</p>
           ) : roomsError || hotelsError ? (
-            <p className="text-red-600">Impossible de charger les chambres.</p>
+            <p className="text-red-600">{t("unableToLoadRooms")}</p>
           ) : roomTypes.length === 0 ? (
-            <p>Aucune chambre disponible pour les dates sélectionnées.</p>
+            <p>{t("noRoomsAvailable")}</p>
           ) : (
             <div className="space-y-6">
               {filteredRoomTypes.map((room: any) => (
@@ -681,7 +717,7 @@ export default function RoomsListPage() {
                       <img src={room.image || "/placeholder.svg"} alt={room.type} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400">Pas d'image</span>
+                        <span className="text-gray-400">{t("noImage")}</span>
                       </div>
                     )}
                   </div>
@@ -689,11 +725,13 @@ export default function RoomsListPage() {
                   {/* Room Details */}
                   <div className="flex-1 p-6 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Chambre {room.type}</h3>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                        {t("roomLabel")} {room.type}
+                      </h3>
 
                       {/* Amenities */}
                       <p className="text-sm text-gray-600 mb-2">
-                        {room.amenities.length > 0 ? room.amenities.slice(0, 3).join(", ") : "Wifi, climatisation, TV"}
+                        {room.amenities.length > 0 ? room.amenities.slice(0, 3).join(", ") : t("defaultAmenities")}
                       </p>
 
                       {/* Bed Information (from bedType) */}
@@ -706,7 +744,7 @@ export default function RoomsListPage() {
                   {/* Price */}
                   <div className="w-32 p-6 flex flex-col justify-center items-end">
                     <span className="text-xl font-bold text-gray-900">
-                      {formatCurrency(room.price, currency)}/nuit
+                      {formatCurrency(room.price, currency)}{t("perNight")}
                     </span>
                   </div>
                 </div>
@@ -718,14 +756,17 @@ export default function RoomsListPage() {
         {/* Back to Search */}
         <div className="mt-12 text-center">
           <button type="button" onClick={() => router.push("/hotel/search")} className="text-blue-600 hover:underline">
-            ← Modifier la recherche
+            ← {t("modifySearch")}
           </button>
         </div>
       </main>
 
       <footer className="w-full bg-gray-100 mt-16 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500">
-          <p>&copy; {new Date().getFullYear()} CozyStan. Tous droits réservés.</p>
+          {/* Use translation for the rights reserved message. The brand can remain static or be localized separately */}
+          <p>
+            &copy; {new Date().getFullYear()} CozyStan. {t("rightsReserved")}
+          </p>
         </div>
       </footer>
     </div>

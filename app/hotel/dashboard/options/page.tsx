@@ -5,6 +5,9 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Plus, Edit, Trash2, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, X } from "lucide-react"
 
+// Import translation hook
+import { useTranslation } from "@/lib/i18n"
+
 // Apollo Client hooks for fetching and mutating data
 import { gql, useQuery, useMutation } from "@apollo/client"
 // Import helpers to format monetary amounts according to the selected currency
@@ -125,6 +128,8 @@ interface RoomViewOption {
 const cleanTypename = (arr: any[]) => arr.map(({ __typename, ...rest }) => rest);
 
 export default function HotelOptions() {
+  // Translation hook
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("services")
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
@@ -157,10 +162,10 @@ export default function HotelOptions() {
         if (data.businessType && data.businessType.toLowerCase() === "hotel" && data.businessId) {
           setHotelId(data.businessId);
         } else {
-          setSessionError("You are not associated with a hotel business.");
+          setSessionError(t("notAssociatedWithHotel"));
         }
       } catch (err) {
-        setSessionError("Failed to load session.")
+        setSessionError(t("failedToLoadSession"))
       } finally {
         setSessionLoading(false)
       }
@@ -490,7 +495,7 @@ export default function HotelOptions() {
     type: "service" | "amenity" | "policy" | "roomPaidOption" | "roomViewOption"
   ) => {
     if (!hotelId) return
-    if (confirm("Are you sure you want to delete this item?")) {
+    if (confirm(t("deleteItemConfirm"))) {
       let updatedServices = services
       let updatedAmenities = amenities
       let updatedPolicies = policies
@@ -555,13 +560,13 @@ export default function HotelOptions() {
   // queries before rendering the page.  If the user is not associated with a
   // hotel we show an error.  If GraphQL returns an error we also display it.
   if (sessionLoading || hotelLoading) {
-    return <div className="p-6">Loading...</div>
+    return <div className="p-6">{t("loading")}</div>
   }
   if (sessionError) {
     return <div className="p-6 text-red-600">{sessionError}</div>
   }
   if (hotelError) {
-    return <div className="p-6 text-red-600">Failed to load hotel data.</div>
+    return <div className="p-6 text-red-600">{t("failedLoadHotelData")}</div>
   }
 
   return (
@@ -569,9 +574,9 @@ export default function HotelOptions() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Hotel Services & Options</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("hotelServicesOptionsTitle")}</h1>
           <p className="text-gray-600">
-            Manage services, amenities, policies and paid room options
+            {t("hotelServicesOptionsSubtitle")}
           </p>
         </div>
       </div>
@@ -581,11 +586,11 @@ export default function HotelOptions() {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: "services", label: "Services" },
-              { id: "amenities", label: "Amenities" },
-              { id: "policies", label: "Policies" },
-              { id: "roomPaidOptions", label: "Paid Room Options" },
-              { id: "roomViewOptions", label: "View Options" },
+              { id: "services", label: t("servicesTab") },
+              { id: "amenities", label: t("amenitiesTab") },
+              { id: "policies", label: t("policiesTab") },
+              { id: "roomPaidOptions", label: t("paidRoomOptionsTab") },
+              { id: "roomViewOptions", label: t("viewOptionsTab") },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -606,13 +611,13 @@ export default function HotelOptions() {
           {activeTab === "services" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Hotel Services</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t("hotelServices")}</h2>
                 <button
                   onClick={() => openCreateModal("service")}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Service
+                  {t("addService")}
                 </button>
               </div>
 
@@ -657,7 +662,7 @@ export default function HotelOptions() {
                         <div>
                           <span className="text-lg font-bold text-gray-900">
                             {service.price === 0
-                              ? "Free"
+                              ? t("free")
                               : formatCurrency(service.price, currency)}
                           </span>
                         </div>
@@ -666,7 +671,7 @@ export default function HotelOptions() {
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${service.available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                               }`}
                           >
-                            {service.available ? "Available" : "Unavailable"}
+                            {service.available ? t("availableLabel") : t("unavailableLabel")}
                           </span>
                         </div>
                       </div>
@@ -681,13 +686,13 @@ export default function HotelOptions() {
           {activeTab === "amenities" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Room Amenities</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t("roomAmenities")}</h2>
                 <button
                   onClick={() => openCreateModal("amenity")}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Amenity
+                  {t("addAmenity")}
                 </button>
               </div>
 
@@ -726,13 +731,13 @@ export default function HotelOptions() {
                             : "bg-blue-100 text-blue-800"
                             }`}
                         >
-                          {amenity.included ? "Included" : "Premium"}
+                          {amenity.included ? t("includedLabel") : t("premiumLabel")}
                         </span>
                       </div>
                       <div>
                         <span className="text-lg font-bold text-gray-900">
                           {amenity.price === 0
-                            ? "Free"
+                            ? t("free")
                             : formatCurrency(amenity.price, currency)}
                         </span>
                       </div>
@@ -747,13 +752,13 @@ export default function HotelOptions() {
           {activeTab === "policies" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Hotel Policies</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t("hotelPolicies")}</h2>
                 <button
                   onClick={() => openCreateModal("policy")}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Policy
+                  {t("addPolicy")}
                 </button>
               </div>
 
@@ -793,13 +798,13 @@ export default function HotelOptions() {
           {activeTab === "roomPaidOptions" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Paid Room Options</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t("paidRoomOptions")}</h2>
                 <button
                   onClick={() => openCreateModal("roomPaidOption")}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Option
+                  {t("addOption")}
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -817,7 +822,7 @@ export default function HotelOptions() {
                         <p className="text-sm text-gray-600 mt-1">{option.description}</p>
                       )}
                       <p className="mt-2 text-lg font-bold text-gray-900">
-                        {option.price === 0 ? "Free" : formatCurrency(option.price, currency)}
+                        {option.price === 0 ? t("free") : formatCurrency(option.price, currency)}
                       </p>
                     </div>
                     <div className="flex space-x-2 mt-4">
@@ -837,7 +842,7 @@ export default function HotelOptions() {
                   </div>
                 ))}
                 {roomPaidOptions.length === 0 && (
-                  <p className="text-gray-500">No paid room options configured.</p>
+                  <p className="text-gray-500">{t("noPaidRoomOptions")}</p>
                 )}
               </div>
             </div>
@@ -847,13 +852,13 @@ export default function HotelOptions() {
         {activeTab === "roomViewOptions" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Room View Options</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t("roomViewOptions")}</h2>
               <button
                 onClick={() => openCreateModal("roomViewOption")}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add View
+                {t("addView")}
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -873,7 +878,7 @@ export default function HotelOptions() {
                     {/* Price may be undefined or zero; display Free when zero, otherwise formatted price */}
                     {option.price !== undefined && (
                       <p className="mt-2 text-lg font-bold text-gray-900">
-                        {option.price === 0 ? "Free" : formatCurrency(option.price, currency)}
+                        {option.price === 0 ? t("free") : formatCurrency(option.price, currency)}
                       </p>
                     )}
                   </div>
@@ -894,7 +899,7 @@ export default function HotelOptions() {
                 </div>
               ))}
               {roomViewOptions.length === 0 && (
-                <p className="text-gray-500">No view options configured.</p>
+                <p className="text-gray-500">{t("noViewOptions")}</p>
               )}
             </div>
           </div>
@@ -908,7 +913,9 @@ export default function HotelOptions() {
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingItem ? `Edit ${modalType}` : `Create New ${modalType}`}
+                {editingItem
+                  ? `${t("edit")} ${t(modalType as any)}`
+                  : `${t("create")} ${t(modalType as any)}`}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="h-6 w-6" />
@@ -919,7 +926,7 @@ export default function HotelOptions() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("serviceName")}</label>
                       <input
                         type="text"
                         required
@@ -929,7 +936,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
                       <input
                         type="text"
                         required
@@ -939,7 +946,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("priceLabelModal")} ({currencySymbol})</label>
                       <input
                         type="number"
                         min="0"
@@ -950,19 +957,19 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Available</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("available")}</label>
                       <select
                         value={formData.available ? "true" : "false"}
                         onChange={(e) => setFormData({ ...formData, available: e.target.value === "true" })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value="true">Available</option>
-                        <option value="false">Unavailable</option>
+                        <option value="true">{t("availableLabel")}</option>
+                        <option value="false">{t("unavailableLabel")}</option>
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("description")}</label>
                     <textarea
                       required
                       value={formData.description || ""}
@@ -977,7 +984,7 @@ export default function HotelOptions() {
               {modalType === "amenity" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Amenity Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("amenityName")}</label>
                     <input
                       type="text"
                       required
@@ -987,7 +994,7 @@ export default function HotelOptions() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
                     <input
                       type="text"
                       required
@@ -997,7 +1004,7 @@ export default function HotelOptions() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("priceLabelModal")} ({currencySymbol})</label>
                     <input
                       type="number"
                       min="0"
@@ -1008,14 +1015,14 @@ export default function HotelOptions() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("typeLabel")}</label>
                     <select
                       value={formData.included ? "included" : "premium"}
                       onChange={(e) => setFormData({ ...formData, included: e.target.value === "included" })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="included">Included</option>
-                      <option value="premium">Premium</option>
+                      <option value="included">{t("included")}</option>
+                      <option value="premium">{t("premium")}</option>
                     </select>
                   </div>
                 </div>
@@ -1025,7 +1032,7 @@ export default function HotelOptions() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Policy Title</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("policyTitle")}</label>
                       <input
                         type="text"
                         required
@@ -1035,7 +1042,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
                       <input
                         type="text"
                         required
@@ -1046,7 +1053,7 @@ export default function HotelOptions() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("description")}</label>
                     <textarea
                       required
                       value={formData.description || ""}
@@ -1063,7 +1070,7 @@ export default function HotelOptions() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Option Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("optionName")}</label>
                       <input
                         type="text"
                         required
@@ -1073,7 +1080,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
                       <input
                         type="text"
                         value={formData.category || ""}
@@ -1082,7 +1089,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("priceLabelModal")} ({currencySymbol})</label>
                       <input
                         type="number"
                         min="0"
@@ -1094,7 +1101,7 @@ export default function HotelOptions() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("description")}</label>
                     <textarea
                       value={formData.description || ""}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1110,7 +1117,7 @@ export default function HotelOptions() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">View Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("viewName")}</label>
                       <input
                         type="text"
                         required
@@ -1120,7 +1127,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
                       <input
                         type="text"
                         value={formData.category || ""}
@@ -1129,7 +1136,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t("priceLabelModal")} ({currencySymbol})</label>
                       <input
                         type="number"
                         min="0"
@@ -1143,7 +1150,7 @@ export default function HotelOptions() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t("description")}</label>
                     <textarea
                       value={formData.description || ""}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1161,10 +1168,10 @@ export default function HotelOptions() {
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t("cancelAction")}
                 </button>
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                  {editingItem ? "Update" : "Create"} {modalType}
+                  {editingItem ? t("update") : t("create")} {t(modalType as any)}
                 </button>
               </div>
             </form>

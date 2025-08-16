@@ -14,6 +14,7 @@ import {
   Pie,
   Cell,
 } from "recharts"
+import useTranslation from "@/hooks/useTranslation"
 // Import currency helpers to format amounts and perform conversions.  The
 // formatCurrency function converts a value from a base currency
 // (defaulting to USD) into a target currency and prepends the
@@ -70,6 +71,7 @@ interface StaffMember {
  * automatically when the underlying data changes.
  */
 export default function SalonDashboard() {
+  const { t } = useTranslation()
   // Session state: determine which salon (client) this dashboard
   // represents.  If the user does not belong to a salon business
   // then an error message is displayed.
@@ -326,16 +328,22 @@ export default function SalonDashboard() {
   }
 
   if (sessionLoading) {
-    return <div>Loading...</div>
+    // Show generic loading message
+    return <div>{t('loading')}</div>
   }
   if (sessionError) {
-    return <div className="text-red-500">{sessionError}</div>
+    // Translate known session errors
+    return (
+      <div className="text-red-500">
+        {sessionError.includes('not associated') ? t('notAssociatedWithSalon') : t('failedToLoadSession')}
+      </div>
+    )
   }
   if (reservationsLoading || servicesLoading || staffLoading) {
-    return <div>Loading dashboard data...</div>
+    return <div>{t('loading')}</div>
   }
   if (reservationsError || servicesError || staffError) {
-    return <div className="text-red-500">Error loading dashboard data.</div>
+    return <div className="text-red-500">{t('failedToLoadDashboardData')}</div>
   }
 
   // Derive display strings for service distribution (e.g. "Haircuts: 40%, Massages: 30%, UV: 30%")
@@ -361,14 +369,14 @@ export default function SalonDashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Overview of your business performance</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('salonDashboard')}</h1>
+          <p className="text-gray-600">{t('dashboardOverview')}</p>
         </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           {/* Date picker for filtering */}
           <div className="flex items-center space-x-2">
             <label htmlFor="salon-date" className="text-sm font-medium text-gray-700">
-              Date:
+              {t('dateLabel')}
             </label>
             <input
               id="salon-date"
@@ -391,7 +399,11 @@ export default function SalonDashboard() {
                 }`}
                 onClick={() => setTimeRange(range)}
               >
-                {range === "daily" ? "Daily" : range === "weekly" ? "Weekly" : "Monthly"}
+                {range === "daily"
+                  ? t('daily')
+                  : range === "weekly"
+                  ? t('weekly')
+                  : t('monthly')}
               </button>
             ))}
           </div>
@@ -403,14 +415,14 @@ export default function SalonDashboard() {
         {/* Total bookings */}
         <div className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+            <p className="text-sm font-medium text-gray-600">{t('totalBookings')}</p>
             <p className="mt-1 text-3xl font-bold text-gray-900">{analytics.totalBookings}</p>
           </div>
         </div>
         {/* Revenue */}
         <div className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">Revenue</p>
+            <p className="text-sm font-medium text-gray-600">{t('revenueLabel')}</p>
             <p className="mt-1 text-3xl font-bold text-gray-900">
               {
                 /*
@@ -428,14 +440,14 @@ export default function SalonDashboard() {
         {/* Occupancy Rate */}
         <div className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">Occupancy Rate</p>
+            <p className="text-sm font-medium text-gray-600">{t('occupancyRateLabel')}</p>
             <p className="mt-1 text-3xl font-bold text-gray-900">{analytics.occupancyRate.toFixed(0)}%</p>
           </div>
         </div>
         {/* Service Distribution */}
         <div className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">Service Distribution</p>
+            <p className="text-sm font-medium text-gray-600">{t('serviceDistributionLabel')}</p>
             <p className="mt-1 text-sm font-semibold text-gray-900 whitespace-pre-line">{distributionText}</p>
           </div>
         </div>
@@ -446,7 +458,7 @@ export default function SalonDashboard() {
         {/* Booking trends */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Booking Trends</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('bookingTrends')}</h3>
             <p className={`text-sm font-medium ${bookingChange >= 0 ? "text-green-600" : "text-red-600"}`}>
               {bookingChange >= 0 ? "+" : ""}
               {bookingChange.toFixed(0)}%
@@ -465,7 +477,7 @@ export default function SalonDashboard() {
         {/* Revenue by service type */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Revenue by Service Type</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('revenueByServiceType')}</h3>
             <p className={`text-sm font-medium ${revenueChange >= 0 ? "text-green-600" : "text-red-600"}`}>
               {revenueChange >= 0 ? "+" : ""}
               {revenueChange.toFixed(0)}%
@@ -500,18 +512,30 @@ export default function SalonDashboard() {
       {/* Recent bookings */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Bookings</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('recentBookings')}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('clientLabel')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('serviceLabel')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('dateLabelColumn')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('timeLabel')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('staffLabel')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {t('statusLabelColumn')}
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -546,7 +570,7 @@ export default function SalonDashboard() {
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {booking.status}
+                      {t(booking.status as any)}
                     </span>
                   </td>
                 </tr>

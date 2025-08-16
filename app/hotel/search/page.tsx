@@ -8,6 +8,10 @@ import { DateRangePicker } from "../../../components/ui/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
 
+// Import translation and language hooks
+import useTranslation from "@/hooks/useTranslation";
+import { useLanguage } from "@/context/LanguageContext";
+
 /*
  * Hotel reservation search page
  *
@@ -27,6 +31,10 @@ export default function HotelSearchPage() {
   });
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
+
+  // Translation and language context
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
 
   // When the component mounts, attempt to prefill the form from
   // existing booking data if present.  This makes it easy to
@@ -55,7 +63,7 @@ export default function HotelSearchPage() {
   // Persist the current search data and navigate to the rooms list
   const handleSearch = () => {
     if (!date?.from || !date?.to) {
-      alert("Please select both check-in and check-out dates");
+      alert(t("selectDatesAlert"));
       return;
     }
     const booking = {
@@ -83,15 +91,38 @@ export default function HotelSearchPage() {
         <div className="flex items-center space-x-2">
           <span className="font-bold text-2xl text-white">StayEase</span>
         </div>
+        {/* Navigation links with translations */}
         <nav className="hidden md:flex space-x-8 text-sm font-medium text-white">
-          <a href="#" className="hover:text-gray-200 transition-colors">Explore</a>
-          <a href="#" className="hover:text-gray-200 transition-colors">Wishlists</a>
-          <a href="#" className="hover:text-gray-200 transition-colors">Trips</a>
-          <a href="#" className="hover:text-gray-200 transition-colors">Messages</a>
+          <a href="#" className="hover:text-gray-200 transition-colors">{t("explore")}</a>
+          <a href="#" className="hover:text-gray-200 transition-colors">{t("wishlists")}</a>
+          <a href="#" className="hover:text-gray-200 transition-colors">{t("trips")}</a>
+          <a href="#" className="hover:text-gray-200 transition-colors">{t("messages")}</a>
         </nav>
         <div className="flex items-center space-x-4">
-          <a href="/login" className="inline-flex items-center px-4 py-2 border border-transparent rounded-full text-sm font-medium text-white bg-white/20 hover:bg-white/30 transition-colors">
-            Log in
+          {/* Language selector */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setLocale("en")}
+              className={`text-sm font-medium transition-colors hover:text-gray-200 ${
+                locale === "en" ? "underline" : ""
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLocale("fr")}
+              className={`text-sm font-medium transition-colors hover:text-gray-200 ${
+                locale === "fr" ? "underline" : ""
+              }`}
+            >
+              FR
+            </button>
+          </div>
+          <a
+            href="/login"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-full text-sm font-medium text-white bg-white/20 hover:bg-white/30 transition-colors"
+          >
+            {t("login")}
           </a>
         </div>
       </header>
@@ -106,10 +137,10 @@ export default function HotelSearchPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center">
           <h1 className="text-white text-4xl md:text-6xl font-bold tracking-tight">
-            Find Your Perfect Stay
+            {t("findYourPerfectStay")}
           </h1>
           <p className="text-white text-lg md:text-xl mt-4 max-w-2xl">
-            Book your next hotel stay with ease. We offer the best prices and a seamless booking experience.
+            {t("findStaySubtitle")}
           </p>
         </div>
       </div>
@@ -119,14 +150,14 @@ export default function HotelSearchPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select your dates
+              {t("selectYourDates")}
             </label>
             <DateRangePicker date={date} onDateChange={setDate} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Adults</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t("adultsLabel")}</label>
               <div className="flex items-center justify-between border rounded-lg p-2">
                 <button onClick={() => setAdults(a => Math.max(1, a - 1))} className="text-lg font-bold">-</button>
                 <span>{adults}</span>
@@ -134,7 +165,7 @@ export default function HotelSearchPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Children</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t("childrenLabel")}</label>
               <div className="flex items-center justify-between border rounded-lg p-2">
                 <button onClick={() => setChildren(c => Math.max(0, c - 1))} className="text-lg font-bold">-</button>
                 <span>{children}</span>
@@ -149,7 +180,7 @@ export default function HotelSearchPage() {
             onClick={handleSearch}
             className="w-full bg-blue-600 text-white rounded-lg py-3 text-lg font-semibold hover:bg-blue-700 transition-colors"
           >
-            Search Hotels
+            {t("searchHotels")}
           </button>
         </div>
       </div>

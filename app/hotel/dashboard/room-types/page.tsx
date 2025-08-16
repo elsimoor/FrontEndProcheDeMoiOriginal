@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useTranslation } from "@/lib/i18n"
 import { gql, useQuery, useMutation } from "@apollo/client"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -43,6 +44,7 @@ const DELETE_ROOM_TYPE = gql`
 `
 
 export default function RoomTypesPage() {
+  const { t } = useTranslation();
   // Determine which hotel the user manages by reading the server
   // session.  hotelId remains null until the session is resolved.
   const [hotelId, setHotelId] = useState<string | null>(null)
@@ -61,10 +63,10 @@ export default function RoomTypesPage() {
         if (data.businessType && data.businessType.toLowerCase() === "hotel" && data.businessId) {
           setHotelId(data.businessId)
         } else {
-          setSessionError("You are not associated with a hotel business.")
+          setSessionError(t("notAssociatedWithHotel"))
         }
       } catch (err) {
-        setSessionError("Failed to load session.")
+        setSessionError(t("failedToLoadSession"))
       } finally {
         setSessionLoading(false)
       }
@@ -103,7 +105,7 @@ export default function RoomTypesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this room type?")) {
+    if (confirm(t("deleteRoomTypeConfirm"))) {
       try {
         await deleteRoomType({ variables: { id } })
         refetchRoomTypes()
@@ -115,7 +117,7 @@ export default function RoomTypesPage() {
 
   if (sessionLoading || roomTypesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center text-gray-600">{t("loading")}</div>
     )
   }
   if (sessionError) {
@@ -125,7 +127,7 @@ export default function RoomTypesPage() {
   }
   if (roomTypesError) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">Error loading room types.</div>
+      <div className="min-h-screen flex items-center justify-center text-red-600">{t("errorOccurred")}</div>
     )
   }
 
@@ -134,13 +136,13 @@ export default function RoomTypesPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-3xl mx-auto px-4 space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900 text-center">Room Types Management</h1>
-        <p className="text-center text-gray-600">Define and organise your hotel's room categories.</p>
+        <h1 className="text-3xl font-bold text-gray-900 text-center">{t("roomTypesManagement")}</h1>
+        <p className="text-center text-gray-600">{t("defineRoomCategories")}</p>
 
         {/* Existing room types */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Existing Room Types</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t("existingRoomTypes")}</CardTitle>
           </CardHeader>
           <CardContent>
             {roomTypes.length > 0 ? (
@@ -159,7 +161,7 @@ export default function RoomTypesPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">No room types defined. Use the form below to add one.</p>
+              <p className="text-gray-500">{t("noRoomTypes")}</p>
             )}
           </CardContent>
         </Card>
@@ -167,7 +169,7 @@ export default function RoomTypesPage() {
         {/* Add new room type */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Add New Room Type</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t("addNewRoomType")}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreate} className="flex flex-col md:flex-row gap-4 items-start">
@@ -175,12 +177,12 @@ export default function RoomTypesPage() {
                 type="text"
                 value={newTypeName}
                 onChange={(e) => setNewTypeName(e.target.value)}
-                placeholder="e.g. Deluxe, Family Suite"
+                placeholder={t("placeholderRoomType")}
                 className="flex-1"
                 required
               />
               <Button type="submit" disabled={creating || !newTypeName.trim()}>
-                {creating ? "Creating..." : "Add Room Type"}
+                {creating ? t("creating") : t("addRoomType")}
               </Button>
             </form>
           </CardContent>

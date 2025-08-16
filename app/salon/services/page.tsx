@@ -6,6 +6,8 @@ import { gql, useQuery } from "@apollo/client";
 
 // Currency helper to format amounts according to the salon's selected currency
 import { formatCurrency } from "@/lib/currency";
+import useTranslation from "@/hooks/useTranslation";
+import { useLanguage } from "@/context/LanguageContext";
 
 // Fetch salons to determine which salon to use.  We pick the first salon
 // available for demonstration purposes.
@@ -62,8 +64,12 @@ export default function SalonServicesPage() {
   // Determine the currency from the salon's settings.  Default to USD if not set.
   const currency: string = (salonsData?.salons?.[0]?.settings?.currency as string) || 'USD';
 
+  // Translation and language context
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
+
   if (salonsLoading || !salonId) {
-    return <p className="py-10 text-center text-gray-500">Chargement...</p>;
+    return <p className="py-10 text-center text-gray-500">{t("loading")}</p>;
   }
 
   return (
@@ -71,32 +77,46 @@ export default function SalonServicesPage() {
       <header className="bg-white shadow-sm sticky top-0 z-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-xl text-pink-600">{salonsData.salons[0]?.name || "Salon"}</span>
+            <span className="font-bold text-xl text-pink-600">{salonsData.salons[0]?.name || t("salon")}</span>
           </div>
           <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
-            <Link href="/salon" className="hover:text-pink-600">Accueil</Link>
-            <Link href="/salon/services" className="hover:text-pink-600">Services</Link>
-            <Link href="/salon/about" className="hover:text-pink-600">À propos de nous</Link>
-            <Link href="/salon/contact" className="hover:text-pink-600">Contact</Link>
+            <Link href="/salon" className="hover:text-pink-600">{t("home")}</Link>
+            <Link href="/salon/services" className="hover:text-pink-600">{t("services")}</Link>
+            <Link href="/salon/about" className="hover:text-pink-600">{t("aboutUs")}</Link>
+            <Link href="/salon/contact" className="hover:text-pink-600">{t("contact")}</Link>
           </nav>
           <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setLocale("en")}
+                className={`text-sm font-medium ${locale === "en" ? "font-semibold text-pink-600" : "text-gray-700"}`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-pink-600" : "text-gray-700"}`}
+              >
+                FR
+              </button>
+            </div>
             <Link
               href="/salon/booking"
               className="hidden md:inline-block bg-pink-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-pink-700 transition-colors"
             >
-              Réserver maintenant
+              {t("bookNow")}
             </Link>
             <Link
               href="/login"
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
             >
-              Se connecter
+              {t("signIn")}
             </Link>
           </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">Nos Services</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">{t("ourServices")}</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {services.map((service: any) => (
             <div key={service.id} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">

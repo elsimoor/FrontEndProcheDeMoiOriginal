@@ -7,6 +7,9 @@ import { getBooking, clearBooking } from "../../../lib/booking";
 
 // Helper to format amounts according to the hotel's selected currency
 import { formatCurrency } from "@/lib/currency";
+// Translation hooks
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 /*
  * Checkout page
@@ -133,6 +136,10 @@ export default function CheckoutPage() {
   // options, view cost and taxes.
   const total = basePrice + extrasCost + paidOptionsCost + viewPrice + tax;
 
+  // Translation context
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
+
   const handleReserve = async () => {
     if (!room) return;
     try {
@@ -200,44 +207,66 @@ export default function CheckoutPage() {
       {/* Header */}
       <header className="sticky top-0 bg-white z-10 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-2xl text-gray-900">{t("stayEase")}</span>
+          </div>
+          <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("explore")}</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("wishlists")}</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("trips")}</a>
+            <a href="#" className="hover:text-blue-600 transition-colors">{t("messages")}</a>
+          </nav>
+          <div className="flex items-center space-x-4">
+            {/* Language selector */}
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-2xl text-gray-900">StayEase</span>
+              <button
+                onClick={() => setLocale("en")}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  locale === "en" ? "font-semibold text-blue-600" : "text-gray-700"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  locale === "fr" ? "font-semibold text-blue-600" : "text-gray-700"
+                }`}
+              >
+                FR
+              </button>
             </div>
-            <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
-              <a href="#" className="hover:text-blue-600 transition-colors">Explore</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Wishlists</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Trips</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Messages</a>
-            </nav>
-            <div className="flex items-center space-x-4">
-              <a href="/login" className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-                Log in
-              </a>
-            </div>
+            <a
+              href="/login"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              {t("signIn")}
+            </a>
+          </div>
         </div>
       </header>
       <main className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
-          Réserver votre séjour
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">{t("bookYourStay")}</h1>
         {loading ? (
-          <p>Loading…</p>
+          <p>{t("loading")}</p>
         ) : error || !room ? (
-          <p className="text-red-600">Unable to load reservation.</p>
+          <p className="text-red-600">{t("unableToLoadReservation")}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h2 className="text-lg font-semibold mb-2">Votre séjour</h2>
+              <h2 className="text-lg font-semibold mb-2">{t("yourStay")}</h2>
               <p className="mb-4">
-                {nights} night{nights > 1 ? "s" : ""} <br />
+                {nights} {nights === 1 ? t("nightSingular") : t("nightsPlural")}
+                <br />
                 {new Date(booking.checkIn!).toLocaleDateString()} – {new Date(booking.checkOut!).toLocaleDateString()}
               </p>
-              <h3 className="text-lg font-semibold mb-2">Chambre</h3>
+              <h3 className="text-lg font-semibold mb-2">{t("roomLabel")}</h3>
               <p className="mb-4">
-                {room.type} <br />
-                {booking.guests || booking.adults + booking.children || 1} guest{(booking.guests || booking.adults + booking.children || 1) > 1 ? "s" : ""}
+                {room.type}
+                <br />
+                {booking.guests || booking.adults + booking.children || 1} {t("guestsLabel")}
               </p>
-              <h3 className="text-lg font-semibold mb-2">Options</h3>
+              <h3 className="text-lg font-semibold mb-2">{t("options")}</h3>
               <div className="text-sm text-gray-700 space-y-1">
                 {/* List selected extras (amenities) */}
                 {extras && extras.length > 0 && (
@@ -266,48 +295,48 @@ export default function CheckoutPage() {
                   <div className="flex justify-between">
                     <span>{selectedView}</span>
                     <span>
-                      {viewPrice > 0 ? formatCurrency(viewPrice, currency) : "Included"}
+                      {viewPrice > 0 ? formatCurrency(viewPrice, currency) : t("included")}
                     </span>
                   </div>
                 )}
                 {/* If no options selected show a message */}
                 {!extras.length && !paidOptions.length && !selectedView && (
-                  <p>No extras selected</p>
+                  <p>{t("noExtrasSelected")}</p>
                 )}
               </div>
-              <h3 className="text-lg font-semibold mb-2 mt-4">Price</h3>
+              <h3 className="text-lg font-semibold mb-2 mt-4">{t("priceLabelCheckout")}</h3>
               <div className="text-sm text-gray-700 space-y-1 border-t pt-2">
                 <div className="flex justify-between">
-                  <span>Base price</span>
+                  <span>{t("basePriceLabel")}</span>
                   <span>{formatCurrency(basePrice, currency)}</span>
                 </div>
                 {/* Cost of selected amenities */}
                 {extrasCost > 0 && (
                   <div className="flex justify-between">
-                    <span>Extras</span>
+                    <span>{t("extrasLabel")}</span>
                     <span>{formatCurrency(extrasCost, currency)}</span>
                   </div>
                 )}
                 {/* Cost of selected paid room options */}
                 {paidOptionsCost > 0 && (
                   <div className="flex justify-between">
-                    <span>Paid options</span>
+                    <span>{t("paidOptionsCostLabel")}</span>
                     <span>{formatCurrency(paidOptionsCost, currency)}</span>
                   </div>
                 )}
                 {/* Cost of selected view */}
                 {viewPrice > 0 && (
                   <div className="flex justify-between">
-                    <span>View</span>
+                    <span>{t("viewLabel")}</span>
                     <span>{formatCurrency(viewPrice, currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Taxes & fees</span>
+                  <span>{t("taxesFeesLabel")}</span>
                   <span>{formatCurrency(tax, currency)}</span>
                 </div>
                 <div className="flex justify-between font-semibold mt-2 border-t pt-2">
-                  <span>Total price</span>
+                  <span>{t("totalPriceLabel")}</span>
                   <span>{formatCurrency(total, currency)}</span>
                 </div>
               </div>
@@ -332,7 +361,7 @@ export default function CheckoutPage() {
             className="bg-blue-600 text-white rounded-full px-6 py-3 font-medium hover:bg-blue-700"
             disabled={creating || !room}
           >
-            {creating ? "Processing…" : "Réserver"}
+            {creating ? t("processing") : t("bookYourStay")}
           </button>
         </div>
       </main>

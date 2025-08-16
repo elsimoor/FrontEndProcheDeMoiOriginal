@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { gql, useQuery, useMutation } from "@apollo/client"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, X } from "lucide-react"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 import { uploadImage } from "@/app/lib/firebase"
+import useTranslation from "@/hooks/useTranslation";
 
 interface Table {
   id: string
@@ -51,6 +52,7 @@ const DELETE_TABLE = gql`
 `
 
 export default function RestaurantTablesPage() {
+  const { t } = useTranslation();
   const [restaurantId, setRestaurantId] = useState<string | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
   const [sessionError, setSessionError] = useState<string | null>(null)
@@ -77,10 +79,10 @@ export default function RestaurantTablesPage() {
         if (data.businessType && data.businessType.toLowerCase() === "restaurant" && data.businessId) {
           setRestaurantId(data.businessId)
         } else {
-          setSessionError("You are not associated with a restaurant business.")
+          setSessionError('notAssociatedWithRestaurant')
         }
       } catch (err) {
-        setSessionError("Failed to load session.")
+        setSessionError('failedToLoadSession')
       } finally {
         setSessionLoading(false)
       }
@@ -104,7 +106,7 @@ export default function RestaurantTablesPage() {
       setFormData({ ...formData, images: [...(formData.images || []), ...urls] })
     } catch (err) {
       console.error(err)
-      alert("Failed to upload image")
+      alert(t('uploadImageFailed'))
     } finally {
       setUploading(false)
     }
@@ -135,7 +137,7 @@ export default function RestaurantTablesPage() {
       setFormData({ number: 0, capacity: 0, status: "available", location: "Main Dining", images: [] })
     } catch (err) {
       console.error(err)
-      alert("Failed to save table")
+      alert(t('saveTableFailed'))
     }
   }
 
@@ -152,25 +154,24 @@ export default function RestaurantTablesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this table?")) {
-      try {
-        await deleteTable({ variables: { id } })
-        refetch()
-      } catch (err) {
-        console.error(err)
-        alert("Failed to delete table")
-      }
+    if (!confirm(t('deleteTableConfirm'))) return
+    try {
+      await deleteTable({ variables: { id } })
+      refetch()
+    } catch (err) {
+      console.error(err)
+      alert(t('deleteTableFailed'))
     }
   }
 
-  if (sessionLoading || loading) return <p>Loading...</p>
-  if (sessionError) return <p className="text-red-600">{sessionError}</p>
-  if (error) return <p className="text-red-600">Error loading tables.</p>
+  if (sessionLoading || loading) return <p>{t('loading')}</p>
+  if (sessionError) return <p className="text-red-600">{t(sessionError)}</p>
+  if (error) return <p className="text-red-600">{t('errorLoadingTables')}</p>
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Tables Management</h1>
+        <h1 className="text-3xl font-bold">{t('tablesManagementTitle')}</h1>
         <button
           onClick={() => {
             setEditingTable(null)
@@ -180,7 +181,7 @@ export default function RestaurantTablesPage() {
           className="bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition-colors"
         >
           <Plus className="h-4 w-4 mr-2 inline" />
-          Add Table
+          {t('addTableButton')}
         </button>
       </div>
 
@@ -188,12 +189,12 @@ export default function RestaurantTablesPage() {
         <table className="min-w-full">
           <thead>
             <tr>
-              <th className="py-2">Number</th>
-              <th>Capacity</th>
-              <th>Status</th>
-              <th>Location</th>
-              <th>Images</th>
-              <th>Actions</th>
+              <th className="py-2">{t('numberColumn')}</th>
+              <th>{t('capacityColumn')}</th>
+              <th>{t('statusColumnHeader')}</th>
+              <th>{t('locationColumn')}</th>
+              <th>{t('imagesColumn')}</th>
+              <th>{t('actionsLabelTables')}</th>
             </tr>
           </thead>
           <tbody>
@@ -201,8 +202,16 @@ export default function RestaurantTablesPage() {
               <tr key={table.id}>
                 <td className="py-2">{table.number}</td>
                 <td>{table.capacity}</td>
-                <td>{table.status}</td>
-                <td>{table.location}</td>
+                <td>{(() => {
+                  const statusKeyMap: Record<string, string> = {
+                    available: 'availableStatus',
+                    occupied: 'occupiedStatus',
+                    reserved: 'reservedStatus',
+                    cleaning: 'cleaningStatus',
+                  }
+                    return t(statusKeyMap[table.status] || table.status)
+                })()}</td>
+                <td>{table.location === 'Main Dining' ? t('mainDiningLocation') : table.location}</td>
                 <td>
                   <div className="flex space-x-2">
                     {table.images.map((image, index) => (
@@ -227,10 +236,10 @@ export default function RestaurantTablesPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <h2 className="text-2xl font-bold mb-4">{editingTable ? "Edit Table" : "Add New Table"}</h2>
+            <h2 className="text-2xl font-bold mb-4">{editingTable ? t('editTable') : t('addNewTable')}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium">Table Number</label>
+                <label className="block text-sm font-medium">{t('tableNumberField')}</label>
                 <input
                   type="number"
                   value={formData.number}
@@ -240,7 +249,7 @@ export default function RestaurantTablesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium">Capacity</label>
+                <label className="block text-sm font-medium">{t('capacityField')}</label>
                 <input
                   type="number"
                   value={formData.capacity}
@@ -250,20 +259,20 @@ export default function RestaurantTablesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium">Status</label>
+                <label className="block text-sm font-medium">{t('statusField')}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full p-2 border rounded"
                 >
-                  <option value="available">Available</option>
-                  <option value="occupied">Occupied</option>
-                  <option value="reserved">Reserved</option>
-                  <option value="cleaning">Cleaning</option>
+                  <option value="available">{t('availableStatus')}</option>
+                  <option value="occupied">{t('occupiedStatus')}</option>
+                  <option value="reserved">{t('reservedStatus')}</option>
+                  <option value="cleaning">{t('cleaningStatus')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium">Location</label>
+                <label className="block text-sm font-medium">{t('locationField')}</label>
                 <input
                   type="text"
                   value={formData.location}
@@ -272,7 +281,7 @@ export default function RestaurantTablesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium">Images</label>
+                <label className="block text-sm font-medium">{t('imagesField')}</label>
                 <ImageUpload onUpload={handleImageUpload} uploading={uploading} multiple />
                 <div className="mt-4 flex flex-wrap gap-4">
                   {formData.images?.map((image, index) => (
@@ -291,10 +300,10 @@ export default function RestaurantTablesPage() {
               </div>
               <div className="flex justify-end space-x-4">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 rounded bg-gray-200">
-                  Cancel
+                  {t('cancelButton')}
                 </button>
                 <button type="submit" className="px-4 py-2 rounded bg-red-600 text-white">
-                  {editingTable ? "Update Table" : "Create Table"}
+                  {editingTable ? t('updateTable') : t('createTable')}
                 </button>
               </div>
             </form>

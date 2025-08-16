@@ -2,6 +2,8 @@
 
 import { Bell, Search, User } from "lucide-react"
 import { useState, useEffect } from "react"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 interface SessionUser {
   id: string
@@ -22,6 +24,10 @@ export default function SalonNavigation() {
   const [user, setUser] = useState<SessionUser | null>(null)
   const [search, setSearch] = useState("")
   const [menuOpen, setMenuOpen] = useState(false)
+
+  // Translation and language context
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
 
   useEffect(() => {
     async function fetchSession() {
@@ -61,7 +67,7 @@ export default function SalonNavigation() {
                 type="button"
                 className="bg-white p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-pink-500"
               >
-                <span className="sr-only">Open sidebar</span>
+                <span className="sr-only">{t("openSidebar")}</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
@@ -76,7 +82,7 @@ export default function SalonNavigation() {
                   </div>
                   <input
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
-                    placeholder="Search..."
+                    placeholder={t("searchPlaceholder")}
                     type="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -91,7 +97,7 @@ export default function SalonNavigation() {
               type="button"
               className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
             >
-              <span className="sr-only">View notifications</span>
+              <span className="sr-only">{t("viewNotifications")}</span>
               <Bell className="h-6 w-6" />
             </button>
 
@@ -114,13 +120,30 @@ export default function SalonNavigation() {
                       href="#"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Profile
+                      {t("profile")}
                     </a>
                     <button
                       onClick={handleSignOut}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Logout
+                      {t("logout")}
+                    </button>
+                    <div className="border-t border-gray-100 mt-1" />
+                    <button
+                      onClick={() => setLocale("en")}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                        locale === "en" ? "font-semibold text-pink-600" : "text-gray-700"
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      onClick={() => setLocale("fr")}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                        locale === "fr" ? "font-semibold text-pink-600" : "text-gray-700"
+                      }`}
+                    >
+                      Français
                     </button>
                   </div>
                 )}

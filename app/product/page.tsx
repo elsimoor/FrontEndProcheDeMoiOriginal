@@ -20,6 +20,9 @@ import {
   Smile,
 } from "lucide-react";
 
+import useTranslation from "@/hooks/useTranslation";
+import { useLanguage } from "@/context/LanguageContext";
+
 /**
  * The product overview page showcases the capabilities of the multi‑business
  * management platform.  Visitors can learn about the hotel, restaurant
@@ -29,6 +32,8 @@ import {
  * implemented at the root of the application.
  */
 export default function ProductPage() {
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -36,30 +41,41 @@ export default function ProductPage() {
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto">
+            {/* Language selector */}
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setLocale("en")}
+                className={`mr-2 text-sm font-medium ${locale === "en" ? "font-semibold text-blue-600" : "text-gray-700"}`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-blue-600" : "text-gray-700"}`}
+              >
+                FR
+              </button>
+            </div>
             <h1 className="text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              Complete Business
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {" "}
-                Management Suite
+                {t("completeBusinessSuite")}
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              Streamline your hotel, restaurant, and salon operations with our
-              comprehensive management platform. Everything you need to run
-              your business efficiently in one powerful solution.
+              {t("streamlineOperations")}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/register"
                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
               >
-                Start Free Trial
+                {t("startFreeTrial")}
               </Link>
               <Link
                 href="/login"
                 className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 hover:shadow-md transition-all duration-200"
               >
-                Sign In
+                {t("signIn")}
               </Link>
             </div>
           </div>
@@ -70,10 +86,9 @@ export default function ProductPage() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Three Powerful Solutions</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">{t("threePowerfulSolutions")}</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Whether you run a hotel, restaurant, or salon, we have the
-              perfect management solution tailored to your industry needs.
+              {t("industryNeeds")}
             </p>
           </div>
 
@@ -83,29 +98,27 @@ export default function ProductPage() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Hotel className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Hotel Management</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">{t("hotelManagement")}</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Complete hotel operations management with reservation system,
-                room management, guest services, and comprehensive
-                reporting.
+                {t("hotelManagementDesc")}
               </p>
 
               <div className="space-y-3 mb-8">
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Room & Reservation Management
+                  {t("hotelFeature1")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Guest Profile & History
+                  {t("hotelFeature2")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Housekeeping & Maintenance
+                  {t("hotelFeature3")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Revenue Analytics
+                  {t("hotelFeature4")}
                 </div>
               </div>
 
@@ -114,13 +127,13 @@ export default function ProductPage() {
                   href="/hotel"
                   className="block w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-6 rounded-xl text-center font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
                 >
-                  Learn More
+                  {t("learnMore")}
                 </Link>
                 <Link
                   href="/hotel/dashboard"
                   className="block w-full border-2 border-blue-500 text-blue-600 py-3 px-6 rounded-xl text-center font-medium hover:bg-blue-50 transition-all duration-200 group"
                 >
-                  Hotel Dashboard
+                  {t("hotelDashboard")}
                   <ArrowRight className="inline h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -131,29 +144,27 @@ export default function ProductPage() {
               <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <UtensilsCrossed className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Restaurant Management</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">{t("restaurantManagement")}</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Streamline your restaurant operations with table management,
-                menu control, staff scheduling, and customer relationship
-                tools.
+                {t("restaurantManagementDesc")}
               </p>
 
               <div className="space-y-3 mb-8">
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Table & Reservation System
+                  {t("restaurantFeature1")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Menu & Inventory Management
+                  {t("restaurantFeature2")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Staff Scheduling & Payroll
+                  {t("restaurantFeature3")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Customer Reviews & Feedback
+                  {t("restaurantFeature4")}
                 </div>
               </div>
 
@@ -162,13 +173,13 @@ export default function ProductPage() {
                   href="/restaurant"
                   className="block w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-6 rounded-xl text-center font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200"
                 >
-                  Learn More
+                  {t("learnMore")}
                 </Link>
                 <Link
                   href="/restaurant/dashboard"
                   className="block w-full border-2 border-red-500 text-red-600 py-3 px-6 rounded-xl text-center font-medium hover:bg-red-50 transition-all duration-200 group"
                 >
-                  Restaurant Dashboard
+                  {t("restaurantDashboard")}
                   <ArrowRight className="inline h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -179,28 +190,27 @@ export default function ProductPage() {
               <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Sparkles className="h-10 w-10 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Salon Management</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">{t("salonManagement")}</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Manage your beauty salon with appointment scheduling, client
-                profiles, service management, and stylist coordination.
+                {t("salonManagementDesc")}
               </p>
 
               <div className="space-y-3 mb-8">
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Appointment Scheduling
+                  {t("salonFeature1")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Client Management & History
+                  {t("salonFeature2")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Service & Pricing Management
+                  {t("salonFeature3")}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  Stylist Performance Tracking
+                  {t("salonFeature4")}
                 </div>
               </div>
 
@@ -209,13 +219,13 @@ export default function ProductPage() {
                   href="/salon"
                   className="block w-full bg-gradient-to-r from-pink-500 to-pink-600 text-white py-3 px-6 rounded-xl text-center font-medium hover:from-pink-600 hover:to-pink-700 transition-all duration-200"
                 >
-                  Learn More
+                  {t("learnMore")}
                 </Link>
                 <Link
                   href="/salon/dashboard"
                   className="block w-full border-2 border-pink-500 text-pink-600 py-3 px-6 rounded-xl text-center font-medium hover:bg-pink-50 transition-all duration-200 group"
                 >
-                  Salon Dashboard
+                  {t("salonDashboard")}
                   <ArrowRight className="inline h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -228,10 +238,9 @@ export default function ProductPage() {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Our Platform?</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">{t("whyChooseOurPlatform")}</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Built specifically for hospitality businesses with features that
-              matter most to your operations.
+              {t("featuresSubtitle")}
             </p>
           </div>
 
@@ -240,10 +249,9 @@ export default function ProductPage() {
               <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
                 <Calendar className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Smart Scheduling</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{t("featureSmartScheduling")}</h3>
               <p className="text-gray-600">
-                Advanced booking system with conflict detection and automated
-                confirmations.
+                {t("featureSmartSchedulingDesc")}
               </p>
             </div>
 
@@ -251,10 +259,9 @@ export default function ProductPage() {
               <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
                 <Users className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Customer Management</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{t("featureCustomerManagement")}</h3>
               <p className="text-gray-600">
-                Complete customer profiles with history, preferences, and
-                communication tools.
+                {t("featureCustomerManagementDesc")}
               </p>
             </div>
 
@@ -262,9 +269,9 @@ export default function ProductPage() {
               <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors">
                 <Shield className="h-8 w-8 text-purple-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Secure & Reliable</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{t("featureSecureReliable")}</h3>
               <p className="text-gray-600">
-                Enterprise-grade security with 99.9% uptime and automatic backups.
+                {t("featureSecureReliableDesc")}
               </p>
             </div>
 
@@ -272,10 +279,9 @@ export default function ProductPage() {
               <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-200 transition-colors">
                 <Clock className="h-8 w-8 text-orange-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">24/7 Support</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">{t("featureSupport")}</h3>
               <p className="text-gray-600">
-                Round-the-clock customer support to keep your business running
-                smoothly.
+                {t("featureSupportDesc")}
               </p>
             </div>
           </div>
@@ -286,29 +292,28 @@ export default function ProductPage() {
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Trusted by Businesses Worldwide</h2>
+            <h2 className="text-4xl font-bold mb-4">{t("trustedByBusinesses")}</h2>
             <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-              Join thousands of successful businesses that have transformed
-              their operations with our platform.
+              {t("trustedSubtitle")}
             </p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">10,000+</div>
-              <div className="text-blue-100">Active Businesses</div>
+              <div className="text-blue-100">{t("activeBusinesses")}</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">1M+</div>
-              <div className="text-blue-100">Bookings Processed</div>
+              <div className="text-blue-100">{t("bookingsProcessed")}</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">99.9%</div>
-              <div className="text-blue-100">Uptime Guarantee</div>
+              <div className="text-blue-100">{t("uptimeGuarantee")}</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">24/7</div>
-              <div className="text-blue-100">Customer Support</div>
+              <div className="text-blue-100">{t("customerSupport")}</div>
             </div>
           </div>
         </div>
@@ -318,10 +323,9 @@ export default function ProductPage() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Our Customers Say</h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">{t("whatOurCustomersSay")}</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Hear from hospitality professionals who trust our platform to
-              power their business.
+              {t("customersSaySubtitle")}
             </p>
           </div>
 

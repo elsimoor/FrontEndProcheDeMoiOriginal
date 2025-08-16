@@ -14,6 +14,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import useTranslation from "@/hooks/useTranslation";
 
 /**
  * Query to fetch invoice details by ID for salons.  It retrieves
@@ -58,6 +59,7 @@ const GENERATE_INVOICE_PDF = gql`
 `;
 
 export default function SalonInvoiceDetailsPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const invoiceId = params.invoiceId as string;
@@ -86,20 +88,20 @@ export default function SalonInvoiceDetailsPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to download invoice.");
+      alert(t('failedDownloadInvoice'));
     }
   };
 
   if (loading) {
-    return <div className="p-6">Loading…</div>;
+    return <div className="p-6">{t('loading')}</div>;
   }
   if (error) {
-    return <div className="p-6 text-red-600">Unable to load invoice details.</div>;
+    return <div className="p-6 text-red-600">{t('unableToLoadInvoice')}</div>;
   }
 
   const invoice = data?.invoice;
   if (!invoice) {
-    return <div className="p-6 text-red-600">Invoice not found.</div>;
+    return <div className="p-6 text-red-600">{t('invoiceNotFound')}</div>;
   }
 
   // Fetch the current salon's currency via session and settings.  We
@@ -149,39 +151,61 @@ export default function SalonInvoiceDetailsPage() {
   });
   const currency = settingsData?.salon?.settings?.currency || 'USD';
 
+  // Display session loading and error states after invoice has been loaded
+  if (sessionLoading) {
+    return <div className="p-6">{t('loading')}</div>;
+  }
+  if (sessionError) {
+    return (
+      <div className="p-6 text-red-600">
+        {sessionError.toLowerCase().includes('not associated')
+          ? t('notAssociatedWithSalon')
+          : t('failedToLoadSession')}
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Invoice {invoice.id}</h1>
-          <p className="text-sm text-gray-600">Date: {new Date(invoice.date).toLocaleDateString()}</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            {t('invoice')} {invoice.id}
+          </h1>
+          <p className="text-sm text-gray-600">
+            {t('invoiceDate')}: {new Date(invoice.date).toLocaleDateString()}
+          </p>
           {invoice.reservation && (
-            <p className="text-sm text-gray-600">Customer: {invoice.reservation.customerInfo?.name}</p>
+            <p className="text-sm text-gray-600">
+              {t('customer')}: {invoice.reservation.customerInfo?.name}
+            </p>
           )}
           {/* For salons the reservation may use a single date or a checkIn/out pair.  We display whichever is available. */}
           {invoice.reservation?.checkIn && invoice.reservation?.checkOut ? (
             <p className="text-sm text-gray-600">
-              Stay: {new Date(invoice.reservation.checkIn).toLocaleDateString()} – {new Date(invoice.reservation.checkOut).toLocaleDateString()}
+              {t('stay')}: {new Date(invoice.reservation.checkIn).toLocaleDateString()} – {new Date(invoice.reservation.checkOut).toLocaleDateString()}
             </p>
           ) : invoice.reservation?.date ? (
-            <p className="text-sm text-gray-600">Date: {new Date(invoice.reservation.date).toLocaleDateString()}</p>
+            <p className="text-sm text-gray-600">
+              {t('invoiceDate')}: {new Date(invoice.reservation.date).toLocaleDateString()}
+            </p>
           ) : null}
         </div>
         <div className="space-x-2">
           <Button variant="outline" onClick={() => router.back()}>
-            Back
+            {t('back')}
           </Button>
-          <Button onClick={handleDownload}>Download</Button>
+          <Button onClick={handleDownload}>{t('download')}</Button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Description</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead>{t('description')}</TableHead>
+              <TableHead>{t('priceLabel')}</TableHead>
+              <TableHead>{t('quantity')}</TableHead>
+              <TableHead className="text-right">{t('total')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -190,7 +214,9 @@ export default function SalonInvoiceDetailsPage() {
                 <TableCell>{item.description}</TableCell>
                 <TableCell>{formatCurrency(item.price ?? 0, currency)}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell className="text-right">{formatCurrency(item.total ?? 0, currency)}</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(item.total ?? 0, currency)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -198,7 +224,7 @@ export default function SalonInvoiceDetailsPage() {
       </div>
       <div className="flex justify-end">
         <div className="text-xl font-semibold">
-          Total: {formatCurrency(invoice.total ?? 0, currency)}
+          {t('total')}: {formatCurrency(invoice.total ?? 0, currency)}
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useMemo } from "react"
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery, useMutation } from "@apollo/client"
 // Helpers to format prices according to the salon's selected currency
 import { formatCurrency, currencySymbols } from "@/lib/currency"
@@ -52,6 +53,7 @@ interface Service {
  * creating and editing services.
  */
 export default function SalonServices() {
+  const { t } = useTranslation()
   const [activeCategory, setActiveCategory] = useState<string>("")
   const [searchTerm, setSearchTerm] = useState("")
   const [showModal, setShowModal] = useState(false)
@@ -364,16 +366,23 @@ const GET_SALON_SETTINGS = gql`
   }, [services, activeCategory, searchTerm])
 
   if (sessionLoading) {
-    return <div>Loading...</div>
+    return <div>{t('loading')}</div>
   }
   if (sessionError) {
-    return <div className="text-red-500">{sessionError}</div>
+    // Display any session error using generic translation if possible
+    // If the error message matches known keys, use the translation; otherwise display as is
+    const errorMessage = sessionError === "You are not associated with a salon business."
+      ? t('notAssociatedWithSalon')
+      : sessionError === "Failed to load session."
+      ? t('failedToLoadSession')
+      : sessionError
+    return <div className="text-red-500">{errorMessage}</div>
   }
   if (servicesLoading) {
-    return <div>Loading services...</div>
+    return <div>{t('loadingServices')}</div>
   }
   if (servicesError) {
-    return <div className="text-red-500">Error loading services.</div>
+    return <div className="text-red-500">{t('errorLoadingServices')}</div>
   }
 
   return (
@@ -381,15 +390,15 @@ const GET_SALON_SETTINGS = gql`
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Services</h1>
-          <p className="text-gray-600">Manage your salon services and offerings</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('servicesTitleHeading')}</h1>
+          <p className="text-gray-600">{t('servicesSubtitle')}</p>
         </div>
         <button
           onClick={openCreateModal}
           className="bg-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-700 transition-colors flex items-center"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New Service
+          {t('newServiceButton')}
         </button>
       </div>
 
@@ -416,7 +425,7 @@ const GET_SALON_SETTINGS = gql`
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search services..."
+            placeholder={t('searchServices')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
@@ -441,11 +450,11 @@ const GET_SALON_SETTINGS = gql`
                 <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
                 {service.popular && (
                   <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                    Popular
+                    {t('popularLabel')}
                   </span>
                 )}
               </div>
-              <p className="mt-2 text-sm text-gray-600">{service.description || "No description"}</p>
+              <p className="mt-2 text-sm text-gray-600">{service.description || t('noDescription')}</p>
               <div className="mt-4 space-y-1 text-sm text-gray-500">
                 <div className="flex items-center">
                   <Clock className="h-4 w-4 mr-2 text-pink-600" />
@@ -468,18 +477,18 @@ const GET_SALON_SETTINGS = gql`
                 onClick={() => handleEdit(service)}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                <Edit className="h-4 w-4 mr-1" /> Edit
+                <Edit className="h-4 w-4 mr-1" /> {t('edit')}
               </button>
               <button
                 onClick={() => handleDelete(service.id)}
                 className="inline-flex items-center px-3 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50"
               >
-                <Trash2 className="h-4 w-4 mr-1" /> Delete
+                <Trash2 className="h-4 w-4 mr-1" /> {t('delete')}
               </button>
             </div>
           </div>
         ))}
-        {filteredServices.length === 0 && <p className="text-gray-500">No services found.</p>}
+        {filteredServices.length === 0 && <p className="text-gray-500">{t('noServicesFound')}</p>}
       </div>
 
       {/* Modal for Create/Edit Service */}
@@ -488,7 +497,7 @@ const GET_SALON_SETTINGS = gql`
         <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">
-                {editingService ? "Edit Service" : "New Service"}
+                {editingService ? t('editService') : t('newService')}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-gray-700">
                 <X className="h-5 w-5" />
@@ -496,7 +505,7 @@ const GET_SALON_SETTINGS = gql`
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('nameField')}</label>
                 <input
                   type="text"
                   name="name"
@@ -507,7 +516,7 @@ const GET_SALON_SETTINGS = gql`
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('categoryField')}</label>
                 <input
                   type="text"
                   name="category"
@@ -518,7 +527,7 @@ const GET_SALON_SETTINGS = gql`
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('descriptionField')}</label>
                 <textarea
                   name="description"
                   value={formData.description || ""}
@@ -529,7 +538,7 @@ const GET_SALON_SETTINGS = gql`
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('durationField')}</label>
                   <input
                     type="number"
                     name="duration"
@@ -540,7 +549,7 @@ const GET_SALON_SETTINGS = gql`
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{`${t('priceFieldLabel')} (${currencySymbol})`}</label>
                   <input
                     type="number"
                     name="price"
@@ -560,7 +569,7 @@ const GET_SALON_SETTINGS = gql`
                     onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">Available</span>
+                  <span className="text-sm text-gray-700">{t('availableField')}</span>
                 </label>
                 <label className="flex items-center">
                   <input
@@ -569,11 +578,11 @@ const GET_SALON_SETTINGS = gql`
                     onChange={(e) => setFormData({ ...formData, popular: e.target.checked })}
                     className="mr-2"
                   />
-                    <span className="text-sm text-gray-700">Popular</span>
+                    <span className="text-sm text-gray-700">{t('popularField')}</span>
                 </label>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Staff Required (comma separated)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('staffRequired')}</label>
                 <input
                   type="text"
                   name="staffRequired"
@@ -586,14 +595,14 @@ const GET_SALON_SETTINGS = gql`
               {/* Default employee selection */}
               {staffData?.staff && staffData.staff.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Default employee</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('defaultEmployee')}</label>
                   <select
                     name="defaultEmployee"
                     value={formData.defaultEmployee || ""}
                     onChange={(e) => setFormData({ ...formData, defaultEmployee: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
-                    <option value="">None</option>
+                    <option value="">{t('none')}</option>
                     {staffData.staff.map((emp: any) => (
                       <option key={emp.id} value={emp.id}>
                         {emp.name} {emp.role ? `– ${emp.role}` : ""}
@@ -606,14 +615,14 @@ const GET_SALON_SETTINGS = gql`
               {/* Default room selection */}
               {roomsData?.tables && roomsData.tables.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Default room</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('defaultRoom')}</label>
                   <select
                     name="defaultRoom"
                     value={formData.defaultRoom || ""}
                     onChange={(e) => setFormData({ ...formData, defaultRoom: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
-                    <option value="">None</option>
+                    <option value="">{t('none')}</option>
                     {roomsData.tables.map((room: any) => (
                       <option key={room.id} value={room.id}>
                         {room.location || room.id}
@@ -631,12 +640,12 @@ const GET_SALON_SETTINGS = gql`
                   onChange={(e) => setFormData({ ...formData, allowClientChoose: e.target.checked })}
                   className="h-4 w-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
                 />
-                <span className="text-sm text-gray-700">Allow client to choose stylist/room</span>
+                <span className="text-sm text-gray-700">{t('allowClientChooseStylistRoom')}</span>
               </div>
 
               {/* Images uploader */}
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Images</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('imagesField')}</label>
                 {formData.images && formData.images.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mb-2">
                     {(formData.images as string[]).map((img) => (
@@ -665,13 +674,13 @@ const GET_SALON_SETTINGS = gql`
                   onClick={() => setShowModal(false)}
                   className="mr-3 inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
                 >
-                  Cancel
+                  {t('cancelButton')}
                 </button>
                 <button
                   type="submit"
                   className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-pink-600 border border-transparent rounded-md hover:bg-pink-700"
                 >
-                  {editingService ? "Update" : "Create"}
+                  {editingService ? t('updateButton') : t('createButton')}
                 </button>
               </div>
             </form>

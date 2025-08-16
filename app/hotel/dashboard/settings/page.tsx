@@ -15,6 +15,9 @@ import { gql, useQuery, useMutation } from "@apollo/client"
 import { uploadImage } from "@/app/lib/firebase"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 
+// Translation hook
+import { useTranslation } from "@/hooks/useTranslation"
+
 /**
  * GraphQL query to fetch a single hotel by its identifier.  We request
  * basic identification, contact, address and settings information.  This
@@ -66,6 +69,7 @@ const UPDATE_HOTEL = gql`
 `
 
 export default function HotelSettings() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("general")
 
   // Business identifier derived from the session.  See the options page for
@@ -89,10 +93,10 @@ export default function HotelSettings() {
         if (data.businessType && data.businessType.toLowerCase() === "hotel" && data.businessId) {
           setHotelId(data.businessId);
         } else {
-          setSessionError("You are not associated with a hotel business.");
+          setSessionError(t("notAssociatedWithHotel"));
         }
       } catch (err) {
-        setSessionError("Failed to load session.")
+        setSessionError(t("failedToLoadSession"))
       } finally {
         setSessionLoading(false)
       }
@@ -244,22 +248,22 @@ export default function HotelSettings() {
     try {
       await updateHotel({ variables: { id: hotelId, input } })
       await refetchHotel()
-      alert("Settings saved successfully!")
+      alert(t("settingsSavedSuccess"))
     } catch (err) {
       console.error(err)
-      alert("Failed to save settings.")
+      alert(t("settingsSaveFailed"))
     }
   }
 
   // Display loading and error states
   if (sessionLoading || hotelLoading) {
-    return <div className="p-6">Loading...</div>
+    return <div className="p-6">{t("loading")}</div>
   }
   if (sessionError) {
     return <div className="p-6 text-red-600">{sessionError}</div>
   }
   if (hotelError) {
-    return <div className="p-6 text-red-600">Failed to load hotel data.</div>
+    return <div className="p-6 text-red-600">{t("failedLoadHotelData")}</div>
   }
 
   return (
@@ -267,15 +271,15 @@ export default function HotelSettings() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Hotel Settings</h1>
-          <p className="text-gray-600">Configure your hotel preferences and policies</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("hotelSettings")}</h1>
+          <p className="text-gray-600">{t("configureHotelPreferences")}</p>
         </div>
         <button
           onClick={handleSave}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
         >
           <Save className="h-4 w-4 mr-2" />
-          Save Changes
+          {t("saveChanges")}
         </button>
       </div>
 
@@ -285,10 +289,10 @@ export default function HotelSettings() {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: "general", label: "General", icon: Building },
-              { id: "notifications", label: "Notifications", icon: Bell },
-              { id: "payments", label: "Payments", icon: CreditCard },
-              { id: "policies", label: "Policies", icon: Shield },
+              { id: "general", label: t("generalTab"), icon: Building },
+              { id: "notifications", label: t("notificationsTab"), icon: Bell },
+              { id: "payments", label: t("paymentsTab"), icon: CreditCard },
+              { id: "policies", label: t("policiesTab"), icon: Shield },
             ].map((tab) => {
               const Icon = tab.icon
               return (
@@ -313,19 +317,19 @@ export default function HotelSettings() {
           {/* General Settings */}
           {activeTab === "general" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">General Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t("generalInformation")}</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Profile image upload */}
                 <div className="md:col-span-2 space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("profileImage")}</label>
                   {uploadedImage && (
                     <img src={uploadedImage} alt="Profile" className="h-20 w-20 rounded-full object-cover mb-2" />
                   )}
                   <ImageUpload onUpload={handleImageUpload} uploading={imageUploading} multiple={false} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Hotel Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("hotelName")}</label>
                   <input
                     type="text"
                     value={general.hotelName}
@@ -334,7 +338,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("phoneNumber")}</label>
                   <input
                     type="tel"
                     value={general.phone}
@@ -343,7 +347,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("addressLabel")}</label>
                   <input
                     type="text"
                     value={general.address}
@@ -352,7 +356,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("emailLabel")}</label>
                   <input
                     type="email"
                     value={general.email}
@@ -361,7 +365,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("websiteLabel")}</label>
                   <input
                     type="url"
                     value={general.website}
@@ -370,7 +374,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Check-in Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("checkInTimeLabel")}</label>
                   <input
                     type="time"
                     value={settingsState.checkInTime}
@@ -379,7 +383,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Check-out Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("checkOutTimeLabel")}</label>
                   <input
                     type="time"
                     value={settingsState.checkOutTime}
@@ -388,7 +392,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("currencyLabelSetting")}</label>
                   <select
                     value={settingsState.currency}
                     onChange={(e) => handleSettingsChange("currency", e.target.value)}
@@ -402,7 +406,7 @@ export default function HotelSettings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("timezoneLabel")}</label>
                   <select
                     value={settingsState.timezone}
                     onChange={(e) => handleSettingsChange("timezone", e.target.value)}
@@ -415,7 +419,7 @@ export default function HotelSettings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax Rate (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("taxRatePercentage")}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -425,7 +429,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Service Fee (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("serviceFeePercentage")}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -441,13 +445,13 @@ export default function HotelSettings() {
           {/* Notifications Settings */}
           {activeTab === "notifications" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Notification Preferences</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t("notificationPreferences")}</h2>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div>
-                    <h3 className="font-medium text-gray-900">Email Notifications</h3>
-                    <p className="text-sm text-gray-500">Receive notifications via email</p>
+                    <h3 className="font-medium text-gray-900">{t("emailNotifications")}</h3>
+                    <p className="text-sm text-gray-500">{t("emailNotificationsDesc")}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -462,8 +466,8 @@ export default function HotelSettings() {
 
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div>
-                    <h3 className="font-medium text-gray-900">SMS Notifications</h3>
-                    <p className="text-sm text-gray-500">Receive notifications via SMS</p>
+                    <h3 className="font-medium text-gray-900">{t("smsNotifications")}</h3>
+                    <p className="text-sm text-gray-500">{t("smsNotificationsDesc")}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -478,8 +482,8 @@ export default function HotelSettings() {
 
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div>
-                    <h3 className="font-medium text-gray-900">Booking Confirmations</h3>
-                    <p className="text-sm text-gray-500">Send confirmation emails for new bookings</p>
+                    <h3 className="font-medium text-gray-900">{t("bookingConfirmationsSetting")}</h3>
+                    <p className="text-sm text-gray-500">{t("bookingConfirmationsDesc")}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -494,8 +498,8 @@ export default function HotelSettings() {
 
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div>
-                    <h3 className="font-medium text-gray-900">Payment Reminders</h3>
-                    <p className="text-sm text-gray-500">Send payment reminder notifications</p>
+                    <h3 className="font-medium text-gray-900">{t("paymentRemindersSetting")}</h3>
+                    <p className="text-sm text-gray-500">{t("paymentRemindersDesc")}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -514,15 +518,15 @@ export default function HotelSettings() {
           {/* Payment Settings */}
           {activeTab === "payments" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Payment Methods</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t("paymentMethods")}</h2>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <CreditCard className="h-5 w-5 text-gray-400" />
                     <div>
-                      <h3 className="font-medium text-gray-900">Credit Cards</h3>
-                      <p className="text-sm text-gray-500">Accept Visa, MasterCard, American Express</p>
+                      <h3 className="font-medium text-gray-900">{t("creditCards")}</h3>
+                      <p className="text-sm text-gray-500">{t("creditCardsDesc")}</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -540,8 +544,8 @@ export default function HotelSettings() {
                   <div className="flex items-center space-x-3">
                     <CreditCard className="h-5 w-5 text-gray-400" />
                     <div>
-                      <h3 className="font-medium text-gray-900">Debit Cards</h3>
-                      <p className="text-sm text-gray-500">Accept debit card payments</p>
+                      <h3 className="font-medium text-gray-900">{t("debitCards")}</h3>
+                      <p className="text-sm text-gray-500">{t("debitCardsDesc")}</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -559,8 +563,8 @@ export default function HotelSettings() {
                   <div className="flex items-center space-x-3">
                     <Globe className="h-5 w-5 text-gray-400" />
                     <div>
-                      <h3 className="font-medium text-gray-900">PayPal</h3>
-                      <p className="text-sm text-gray-500">Accept PayPal payments</p>
+                      <h3 className="font-medium text-gray-900">{t("paypalLabel")}</h3>
+                      <p className="text-sm text-gray-500">{t("paypalDesc")}</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -576,12 +580,12 @@ export default function HotelSettings() {
               </div>
 
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Deposit Settings</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t("depositSettings")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-gray-900">Require Deposit</h4>
-                      <p className="text-sm text-gray-500">Require deposit for bookings</p>
+                      <h4 className="font-medium text-gray-900">{t("requireDeposit")}</h4>
+                      <p className="text-sm text-gray-500">{t("requireDepositDesc")}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -594,7 +598,7 @@ export default function HotelSettings() {
                     </label>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Deposit Amount ($)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("depositAmountLabel")}</label>
                     <input
                       type="number"
                       value={settingsState.depositAmount}
@@ -611,11 +615,11 @@ export default function HotelSettings() {
           {/* Policies Settings */}
           {activeTab === "policies" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Hotel Policies</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t("hotelPolicies")}</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cancellation Period (hours)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("cancellationPeriodHours")}</label>
                   <input
                     type="number"
                     value={settingsState.cancellationHours}
@@ -624,7 +628,7 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Guests per Room</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("maxGuestsPerRoomLabel")}</label>
                   <input
                     type="number"
                     value={settingsState.maxGuestsPerRoom}
@@ -633,27 +637,27 @@ export default function HotelSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Pet Policy</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("petPolicy")}</label>
                   <select
                     value={settingsState.petPolicy}
                     onChange={(e) => handleSettingsChange("petPolicy", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="allowed">Pets Allowed</option>
-                    <option value="not-allowed">Pets Not Allowed</option>
-                    <option value="restricted">Restricted (Small pets only)</option>
+                    <option value="allowed">{t("petsAllowed")}</option>
+                    <option value="not-allowed">{t("petsNotAllowed")}</option>
+                    <option value="restricted">{t("restrictedSmallPetsOnly")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Smoking Policy</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("smokingPolicy")}</label>
                   <select
                     value={settingsState.smokingPolicy}
                     onChange={(e) => handleSettingsChange("smokingPolicy", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="no-smoking">No Smoking</option>
-                    <option value="designated-areas">Designated Areas Only</option>
-                    <option value="smoking-rooms">Smoking Rooms Available</option>
+                    <option value="no-smoking">{t("noSmoking")}</option>
+                    <option value="designated-areas">{t("designatedAreasOnly")}</option>
+                    <option value="smoking-rooms">{t("smokingRoomsAvailable")}</option>
                   </select>
                 </div>
               </div>

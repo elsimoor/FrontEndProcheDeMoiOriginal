@@ -25,6 +25,7 @@ import {
 
 import { useState, useEffect, useMemo } from "react";
 import { gql, useQuery } from "@apollo/client";
+import useTranslation from "@/hooks/useTranslation";
 
 // Query to fetch reservations for a restaurant.  We request
 // minimal fields needed to compute statistics and render the
@@ -90,6 +91,8 @@ const getLastSixMonths = (referenceDate?: Date) => {
 const DISH_COLORS = ["#EF4444", "#F59E0B", "#10B981", "#8B5CF6", "#3B82F6", "#F97316"];
 
 export default function RestaurantDashboard() {
+  // Acquire translation function
+  const { t } = useTranslation();
   // Business context derived from the session.  A null restaurantId
   // indicates loading or unauthorised access.
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
@@ -230,16 +233,17 @@ export default function RestaurantDashboard() {
   }, [menuData]);
 
   if (sessionLoading || reservationsLoading || menuLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('loading')}</div>;
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>;
+    // Translate known session errors when possible
+    return <div className="p-6 text-red-600">{t('notAssociatedWithRestaurant') ?? sessionError}</div>;
   }
   if (reservationsError) {
-    return <div className="p-6 text-red-600">Error loading reservations.</div>;
+    return <div className="p-6 text-red-600">{t('errorLoadingReservations')}</div>;
   }
   if (menuError) {
-    return <div className="p-6 text-red-600">Error loading menu items.</div>;
+    return <div className="p-6 text-red-600">{t('errorLoadingMenuItems')}</div>;
   }
 
   return (
@@ -247,13 +251,13 @@ export default function RestaurantDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Restaurant Dashboard</h1>
-          <p className="text-gray-600">Welcome back! Here's what's happening at your restaurant.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('restaurantDashboardTitle')}</h1>
+          <p className="text-gray-600">{t('restaurantDashboardSubtitle')}</p>
         </div>
         {/* Date Picker */}
         <div className="flex items-center space-x-2">
           <label htmlFor="restaurant-date" className="text-sm font-medium text-gray-700">
-            Date:
+            {t('dateLabel')}
           </label>
           <input
             id="restaurant-date"
@@ -276,7 +280,7 @@ export default function RestaurantDashboard() {
               <Calendar className="h-6 w-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Today's Reservations</p>
+              <p className="text-sm font-medium text-gray-600">{t('todaysReservationsRestaurant')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats?.todays.length ?? 0}</p>
             </div>
           </div>
@@ -287,7 +291,7 @@ export default function RestaurantDashboard() {
               <Users className="h-6 w-6 text-orange-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Current Diners</p>
+              <p className="text-sm font-medium text-gray-600">{t('currentDiners')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats?.current.length ?? 0}</p>
             </div>
           </div>
@@ -298,7 +302,7 @@ export default function RestaurantDashboard() {
               <UtensilsCrossed className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Orders Completed</p>
+              <p className="text-sm font-medium text-gray-600">{t('ordersCompleted')}</p>
               <p className="text-2xl font-bold text-gray-900">{stats?.completed.length ?? 0}</p>
             </div>
           </div>
@@ -309,7 +313,7 @@ export default function RestaurantDashboard() {
               <DollarSign className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Revenue Today</p>
+              <p className="text-sm font-medium text-gray-600">{t('revenueTodayRestaurant')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 ${stats ? stats.revenueToday.toLocaleString() : 0}
               </p>
@@ -327,7 +331,7 @@ export default function RestaurantDashboard() {
               <Clock className="h-6 w-6 text-yellow-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending</p>
+              <p className="text-sm font-medium text-gray-600">{t('pendingStatus')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats?.statusCounts?.pending ?? 0}
               </p>
@@ -341,7 +345,7 @@ export default function RestaurantDashboard() {
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Confirmed</p>
+              <p className="text-sm font-medium text-gray-600">{t('confirmedStatus')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats?.statusCounts?.confirmed ?? 0}
               </p>
@@ -355,7 +359,7 @@ export default function RestaurantDashboard() {
               <XCircle className="h-6 w-6 text-red-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Cancelled</p>
+              <p className="text-sm font-medium text-gray-600">{t('cancelledStatus')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats?.statusCounts?.cancelled ?? 0}
               </p>
@@ -369,7 +373,7 @@ export default function RestaurantDashboard() {
               <AlertTriangle className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">No Shows</p>
+              <p className="text-sm font-medium text-gray-600">{t('noShowStatus')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats?.statusCounts?.["no-show"] ?? 0}
               </p>
@@ -381,19 +385,19 @@ export default function RestaurantDashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('monthlyRevenueChartTitle')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={stats?.monthlyRevenue ?? []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, "Revenue"]} />
+              <Tooltip formatter={(value: any) => [`$${Number(value).toLocaleString()}`, t('revenueLabel') ?? 'Revenue']} />
               <Bar dataKey="revenue" fill="#EF4444" />
             </BarChart>
           </ResponsiveContainer>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Popular Dishes</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('popularDishesChartTitle')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -409,7 +413,7 @@ export default function RestaurantDashboard() {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: any) => [`${value}`, "Orders"]} />
+              <Tooltip formatter={(value: any) => [`${value}`, t('ordersLabel')]} />
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap justify-center mt-4 space-x-4">
@@ -453,10 +457,10 @@ export default function RestaurantDashboard() {
               {stats?.todays.map((reservation: any) => (
                 <tr key={reservation.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {reservation.customerInfo?.name || "Guest"}
+                    {reservation.customerInfo?.name || t('guestFallback')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {reservation.tableId?.number ? `Table ${reservation.tableId.number}` : "–"}
+                    {reservation.tableId?.number ? `${t('tableLabel')} ${reservation.tableId.number}` : "–"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {reservation.time || "–"}
@@ -478,7 +482,7 @@ export default function RestaurantDashboard() {
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {reservation.status}
+                      {t(reservation.status) || reservation.status}
                     </span>
                   </td>
                 </tr>
@@ -486,7 +490,7 @@ export default function RestaurantDashboard() {
               {stats?.todays.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                    No reservations today.
+                    {t('noReservationsTodayRestaurant')}
                   </td>
                 </tr>
               )}

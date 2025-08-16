@@ -24,31 +24,34 @@ import {
   Image,
   CreditCard,
 } from "lucide-react"
+import useTranslation from "@/hooks/useTranslation"
 
 export default function HotelSidebar({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void }) {
   // Determine the current path to highlight the active navigation entry
   const pathname = usePathname()
+  // Access the translation function and current locale
+  const { t } = useTranslation()
   // Define the navigation items with associated icons.  These entries mirror
   // the links previously rendered in the top navigation bar but are now
   // displayed vertically in a sidebar.  Icons help users quickly
   // recognise each section.
   const navigation = [
-    { name: "Dashboard", href: "/hotel/dashboard", icon: LayoutDashboard },
-    { name: "Reservations", href: "/hotel/dashboard/reservations", icon: Calendar },
-    { name: "Guests", href: "/hotel/dashboard/guests", icon: Users },
-    { name: "Rooms", href: "/hotel/dashboard/rooms", icon: BedDouble },
-    { name: "Room Types", href: "/hotel/dashboard/room-types", icon: Tag },
-    { name: "Options", href: "/hotel/dashboard/options", icon: Cog },
-    { name: "Opening Hours", href: "/hotel/dashboard/opening-hours", icon: Clock },
-    { name: "Pricing", href: "/hotel/dashboard/pricing", icon: ShoppingCart },
-    { name: "Reviews", href: "/hotel/dashboard/reviews", icon: Star },
-    { name: "Invoices", href: "/hotel/dashboard/invoices", icon: FileText },
+    { name: t("dashboard"), href: "/hotel/dashboard", icon: LayoutDashboard },
+    { name: t("reservations"), href: "/hotel/dashboard/reservations", icon: Calendar },
+    { name: t("guests"), href: "/hotel/dashboard/guests", icon: Users },
+    { name: t("rooms"), href: "/hotel/dashboard/rooms", icon: BedDouble },
+    { name: t("roomTypes"), href: "/hotel/dashboard/room-types", icon: Tag },
+    { name: t("options"), href: "/hotel/dashboard/options", icon: Cog },
+    { name: t("openingHours"), href: "/hotel/dashboard/opening-hours", icon: Clock },
+    { name: t("pricing"), href: "/hotel/dashboard/pricing", icon: ShoppingCart },
+    { name: t("reviews"), href: "/hotel/dashboard/reviews", icon: Star },
+    { name: t("invoices"), href: "/hotel/dashboard/invoices", icon: FileText },
     // Provide a payments view so owners can track completed transactions
-    { name: "Payments", href: "/hotel/dashboard/payments", icon: CreditCard },
+    { name: t("payments"), href: "/hotel/dashboard/payments", icon: CreditCard },
     // { name: "Landing Cards", href: "/hotel/dashboard/cards", icon: Image },
     // Expose the settings page for hotel owners.  This page allows them
     // to update general information, notification preferences and policies.
-    { name: "Settings", href: "/hotel/dashboard/settings", icon: Cog },
+    { name: t("settings"), href: "/hotel/dashboard/settings", icon: Cog },
   ]
   return (
     <>
@@ -92,7 +95,7 @@ export default function HotelSidebar({ sidebarOpen, setSidebarOpen }: { sidebarO
                       className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <span className="sr-only">Close sidebar</span>
+                      <span className="sr-only">{t("closeSidebar")}</span>
                       <X className="h-6 w-6 text-white" aria-hidden="true" />
                     </button>
                   </div>
@@ -100,7 +103,7 @@ export default function HotelSidebar({ sidebarOpen, setSidebarOpen }: { sidebarO
                 <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
                   <div className="flex items-center flex-shrink-0 px-4">
                     <HotelIcon className="h-8 w-8 text-white" />
-                    <span className="ml-2 text-white text-lg font-semibold">Hotel Dashboard</span>
+                    <span className="ml-2 text-white text-lg font-semibold">{t("hotelDashboard")}</span>
                   </div>
                   <nav className="mt-5 flex-1 px-2 space-y-1">
                     {navigation.map((item) => {
@@ -138,7 +141,7 @@ export default function HotelSidebar({ sidebarOpen, setSidebarOpen }: { sidebarO
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <div className="flex items-center flex-shrink-0 px-4">
               <HotelIcon className="h-8 w-8 text-white" />
-              <span className="ml-2 text-white text-lg font-semibold">Hotel Dashboard</span>
+              <span className="ml-2 text-white text-lg font-semibold">{t("hotelDashboard")}</span>
             </div>
             <nav className="mt-5 flex-1 px-2 space-y-1">
               {navigation.map((item) => {

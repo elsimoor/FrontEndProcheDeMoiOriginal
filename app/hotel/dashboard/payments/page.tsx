@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { gql, useQuery } from "@apollo/client";
 // Import currency helper to format payment amounts consistently
 import { formatCurrency } from "@/lib/currency";
@@ -61,6 +62,7 @@ const GET_PAYMENTS = gql`
 `;
 
 export default function HotelPaymentsPage() {
+  const { t } = useTranslation();
   // Business context from the session.  We derive the current hotel id
   // by calling the /api/session endpoint.  Errors are displayed if the
   // user is not associated with a hotel.
@@ -80,10 +82,10 @@ export default function HotelPaymentsPage() {
         if (data.businessType && data.businessType.toLowerCase() === "hotel" && data.businessId) {
           setBusinessId(data.businessId);
         } else {
-          setSessionError("You are not associated with a hotel business.");
+          setSessionError(t("notAssociatedWithHotel"));
         }
       } catch (err) {
-        setSessionError("Failed to load session.");
+        setSessionError(t("failedToLoadSession"));
       } finally {
         setSessionLoading(false);
       }
@@ -106,30 +108,30 @@ export default function HotelPaymentsPage() {
   const currency: string = settingsData?.hotel?.settings?.currency || 'USD';
 
   if (sessionLoading || loading) {
-    return <div className="p-6">Loading…</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
   if (sessionError) {
     return <div className="p-6 text-red-600">{sessionError}</div>;
   }
   if (error) {
-    return <div className="p-6 text-red-600">Failed to load payments.</div>;
+    return <div className="p-6 text-red-600">{t("failedLoadPayments")}</div>;
   }
 
   const payments = data?.payments ?? [];
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Payments</h1>
+      <h1 className="text-2xl font-bold">{t("payments")}</h1>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Reservation</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Currency</TableHead>
-            <TableHead>Method</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>{t("reservationColumn")}</TableHead>
+            <TableHead>{t("customerColumn")}</TableHead>
+            <TableHead>{t("amountColumn")}</TableHead>
+            <TableHead>{t("currencyColumn")}</TableHead>
+            <TableHead>{t("methodColumn")}</TableHead>
+            <TableHead>{t("paymentStatus")}</TableHead>
+            <TableHead>{t("dateColumn")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -157,7 +159,7 @@ export default function HotelPaymentsPage() {
                 {/* Display the hotel's currency code for clarity */}
                 <TableCell>{currency?.toUpperCase()}</TableCell>
                 <TableCell>{payment.paymentMethod || ""}</TableCell>
-                <TableCell>{payment.status}</TableCell>
+                <TableCell>{t(payment.status.toLowerCase()) || payment.status}</TableCell>
                 <TableCell>{dateStr}</TableCell>
               </TableRow>
             );
@@ -165,7 +167,7 @@ export default function HotelPaymentsPage() {
         </TableBody>
       </Table>
       {payments.length === 0 && (
-        <p className="text-gray-600">No payments found.</p>
+        <p className="text-gray-600">{t("noPaymentsFound")}</p>
       )}
     </div>
   );

@@ -17,6 +17,7 @@ import {
 // Import currency helpers to format amounts based on hotel settings
 import { formatCurrency, currencySymbols, convertAmount } from "@/lib/currency";
 import { Calendar, Users, Bed, DollarSign } from "lucide-react";
+import useTranslation from "@/hooks/useTranslation";
 
 /**
  * This page renders the main dashboard for hotel businesses.  It pulls
@@ -128,6 +129,9 @@ export default function HotelDashboardPage() {
     return now.toISOString().split("T")[0];
   });
 
+  // Use translation hook to retrieve text labels based on the current locale.
+  const { t } = useTranslation();
+
   useEffect(() => {
     async function fetchSession() {
       try {
@@ -141,10 +145,10 @@ export default function HotelDashboardPage() {
           setHotelId(data.businessId);
           setBusinessType(data.businessType);
         } else {
-          setSessionError("You are not associated with a hotel business.");
+          setSessionError(t("notAssociatedWithHotel"));
         }
       } catch (err) {
-        setSessionError("Failed to load session.");
+        setSessionError(t("failedToLoadSession"));
       } finally {
         setSessionLoading(false);
       }
@@ -273,13 +277,13 @@ export default function HotelDashboardPage() {
 
   // Loading and error states
   if (sessionLoading || roomsLoading || reservationsLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
   if (sessionError) {
     return <div className="p-6 text-red-600">{sessionError}</div>;
   }
   if (roomsError || reservationsError || !stats) {
-    return <div className="p-6 text-red-600">Failed to load dashboard data.</div>;
+    return <div className="p-6 text-red-600">{t("failedToLoadDashboardData")}</div>;
   }
 
   // Helper to get status color classes
@@ -301,12 +305,12 @@ export default function HotelDashboardPage() {
     <div className="p-6 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Hotel Dashboard</h1>
-        <p className="text-gray-600">Overview of your hotel’s performance</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t("hotelDashboard")}</h1>
+        <p className="text-gray-600">{t("hotelDashboardSubtitle")}</p>
         {/* Date filter: select a specific day to view statistics */}
         <div className="mt-2 flex items-center space-x-2">
           <label htmlFor="hotel-date-filter" className="text-sm text-gray-600">
-            Filter Date:
+            {t("filterDate")}:
           </label>
           <input
             id="hotel-date-filter"
@@ -322,7 +326,7 @@ export default function HotelDashboardPage() {
         {/* Today’s Bookings */}
         <div className="bg-white rounded-lg shadow-sm border p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">Today’s Bookings</p>
+            <p className="text-sm text-gray-500">{t("todaysBookings")}</p>
             <p className="text-2xl font-semibold text-gray-900">{stats.todaysBookingsCount}</p>
           </div>
           <Calendar className="h-8 w-8 text-blue-500" />
@@ -330,7 +334,7 @@ export default function HotelDashboardPage() {
         {/* Current Guests */}
         <div className="bg-white rounded-lg shadow-sm border p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">Guests Checked‑in</p>
+            <p className="text-sm text-gray-500">{t("currentGuests")}</p>
             <p className="text-2xl font-semibold text-gray-900">{stats.currentGuestsCount}</p>
           </div>
           <Users className="h-8 w-8 text-green-500" />
@@ -338,7 +342,7 @@ export default function HotelDashboardPage() {
         {/* Occupancy Rate */}
         <div className="bg-white rounded-lg shadow-sm border p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">Occupancy Rate</p>
+            <p className="text-sm text-gray-500">{t("occupancyRate")}</p>
             <p className="text-2xl font-semibold text-gray-900">{stats.occupancyRate}%</p>
           </div>
           <Bed className="h-8 w-8 text-yellow-500" />
@@ -346,7 +350,7 @@ export default function HotelDashboardPage() {
         {/* Revenue Today */}
         <div className="bg-white rounded-lg shadow-sm border p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">Revenue Today</p>
+            <p className="text-sm text-gray-500">{t("revenueToday")}</p>
             <p className="text-2xl font-semibold text-gray-900">{formatCurrency(stats.revenueToday, currency)}</p>
           </div>
           <DollarSign className="h-8 w-8 text-purple-500" />
@@ -356,7 +360,7 @@ export default function HotelDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Monthly Revenue Bar Chart */}
         <div className="bg-white rounded-lg shadow-sm border p-4">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Monthly Revenue</h2>
+          <h2 className="text-lg font-medium text-gray-900 mb-4">{t("monthlyRevenue")}</h2>
           <div className="w-full h-80">
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.monthlyRevenue.map((m: any) => ({ ...m, revenue: convertAmount(m.revenue, 'USD', currency) }))}>
@@ -370,7 +374,7 @@ export default function HotelDashboardPage() {
         </div>
         {/* Room Type Pie Chart */}
         <div className="bg-white rounded-lg shadow-sm border p-4">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Room Type Distribution</h2>
+          <h2 className="text-lg font-medium text-gray-900 mb-4">{t("roomTypeDistribution")}</h2>
           <div className="w-full h-80 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -396,26 +400,26 @@ export default function HotelDashboardPage() {
       </div>
       {/* Today’s Reservations Table */}
       <div className="bg-white rounded-lg shadow-sm border p-4">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Today’s Reservations</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4">{t("todaysReservations")}</h2>
         {stats.todaysReservations.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-left">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 font-medium text-gray-700">Guest</th>
-                  <th className="px-4 py-2 font-medium text-gray-700">Room</th>
-                  <th className="px-4 py-2 font-medium text-gray-700">Check‑In</th>
-                  <th className="px-4 py-2 font-medium text-gray-700">Check‑Out</th>
-                  <th className="px-4 py-2 font-medium text-gray-700">Guests</th>
-                  <th className="px-4 py-2 font-medium text-gray-700">Amount</th>
-                  <th className="px-4 py-2 font-medium text-gray-700">Status</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t("guest")}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t("room")}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t("checkIn")}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t("checkOut")}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t("guestsCount")}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t("amount")}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t("status")}</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.todaysReservations.map((r: any) => (
                   <tr key={r.id} className="border-t">
-                    <td className="px-4 py-2">{r.customerInfo?.name || "N/A"}</td>
-                    <td className="px-4 py-2">{r.roomId?.number || "N/A"}</td>
+                    <td className="px-4 py-2">{r.customerInfo?.name || t("na")}</td>
+                    <td className="px-4 py-2">{r.roomId?.number || t("na")}</td>
                     <td className="px-4 py-2">
                       {parseDate(r.checkIn)?.toLocaleDateString() || ""}
                     </td>
@@ -426,7 +430,7 @@ export default function HotelDashboardPage() {
                     <td className="px-4 py-2">{formatCurrency(r.totalAmount ?? 0, currency)}</td>
                     <td className="px-4 py-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClasses(r.status)}`}>
-                        {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+                        {t(r.status.toLowerCase())}
                       </span>
                     </td>
                   </tr>
@@ -435,7 +439,7 @@ export default function HotelDashboardPage() {
             </table>
           </div>
         ) : (
-          <p>No reservations today.</p>
+          <p>{t("noReservationsToday")}</p>
         )}
       </div>
     </div>

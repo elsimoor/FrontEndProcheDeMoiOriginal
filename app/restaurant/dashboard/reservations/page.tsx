@@ -6,6 +6,8 @@ import { useState, useEffect, useMemo } from "react"
 import { gql, useQuery, useMutation } from "@apollo/client"
 import { Search, Filter, Calendar, Clock, Phone, Mail, Plus, Edit, Trash2, X, Users } from "lucide-react"
 
+import useTranslation from "@/hooks/useTranslation";
+
 interface Reservation {
   id: string
   customerInfo: {
@@ -36,6 +38,7 @@ interface TableOption {
 }
 
 export default function RestaurantReservations() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("today")
@@ -61,10 +64,10 @@ export default function RestaurantReservations() {
           setRestaurantId(data.businessId)
           setBusinessType(data.businessType.toLowerCase())
         } else {
-          setSessionError("You are not associated with a restaurant business.")
+          setSessionError('notAssociatedWithRestaurant')
         }
       } catch (err) {
-        setSessionError("Failed to load session.")
+        setSessionError('failedToLoadSession')
       } finally {
         setSessionLoading(false)
       }
@@ -275,7 +278,7 @@ export default function RestaurantReservations() {
       resetForm()
     } catch (err) {
       console.error(err)
-      alert("Failed to save reservation")
+      alert(t('saveReservationFailed'))
     }
   }
 
@@ -313,13 +316,14 @@ export default function RestaurantReservations() {
   }
 
   const handleDeleteReservation = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this reservation?")) return
+    // Confirm deletion using translated message
+    if (!confirm(t('deleteReservationConfirm'))) return
     try {
       await deleteReservation({ variables: { id } })
       await refetchReservations()
     } catch (err) {
       console.error(err)
-      alert("Failed to delete reservation")
+      alert(t('deleteReservationFailed'))
     }
   }
 
@@ -330,19 +334,27 @@ export default function RestaurantReservations() {
   }
 
   return (
+    // Handle loading and error states
+    sessionLoading || reservationsLoading || tablesLoading ? (
+      <p>{t('loading')}</p>
+    ) : sessionError ? (
+      <p>{t(sessionError)}</p>
+    ) : reservationsError || tablesError ? (
+      <p>{t('errorLoadingReservations')}</p>
+    ) : (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reservations</h1>
-          <p className="text-gray-600">Manage all restaurant reservations and bookings</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('reservationsTitle')}</h1>
+          <p className="text-gray-600">{t('reservationsSubtitle')}</p>
         </div>
         <button
           onClick={openCreateModal}
           className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New Reservation
+          {t('newReservation')}
         </button>
       </div>
 
@@ -351,7 +363,7 @@ export default function RestaurantReservations() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-red-600">{filteredReservations.length}</p>
-            <p className="text-sm text-gray-600">Total Reservations</p>
+            <p className="text-sm text-gray-600">{t('totalReservationsCard')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -359,7 +371,7 @@ export default function RestaurantReservations() {
             <p className="text-2xl font-bold text-green-600">
               {filteredReservations.filter((r) => r.status === "confirmed").length}
             </p>
-            <p className="text-sm text-gray-600">Confirmed</p>
+            <p className="text-sm text-gray-600">{t('confirmedReservation')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -367,7 +379,7 @@ export default function RestaurantReservations() {
             <p className="text-2xl font-bold text-blue-600">
               {filteredReservations.filter((r) => r.status === "seated").length}
             </p>
-            <p className="text-sm text-gray-600">Seated</p>
+            <p className="text-sm text-gray-600">{t('seatedReservation')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -375,7 +387,7 @@ export default function RestaurantReservations() {
             <p className="text-2xl font-bold text-gray-900">
               {filteredReservations.reduce((sum, r) => sum + (r.partySize || 0), 0)}
             </p>
-            <p className="text-sm text-gray-600">Total Guests</p>
+            <p className="text-sm text-gray-600">{t('totalGuests')}</p>
           </div>
         </div>
       </div>
@@ -388,7 +400,7 @@ export default function RestaurantReservations() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by customer name, email, or reservation ID..."
+                placeholder={t('searchReservationPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -401,26 +413,27 @@ export default function RestaurantReservations() {
               onChange={(e) => setDateFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              <option value="all">All Dates</option>
-              <option value="today">Today</option>
-              <option value="tomorrow">Tomorrow</option>
-              <option value="week">This Week</option>
+              <option value="all">{t('allDates')}</option>
+              <option value="today">{t('todayDate')}</option>
+              <option value="tomorrow">{t('tomorrowDate')}</option>
+              <option value="week">{t('thisWeekDate')}</option>
             </select>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="seated">Seated</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t('allStatusLabel')}</option>
+              <option value="pending">{t('pendingReservation')}</option>
+              <option value="confirmed">{t('confirmedReservation')}</option>
+              <option value="seated">{t('seatedReservation')}</option>
+              <option value="completed">{t('completedReservation')}</option>
+              <option value="cancelled">{t('cancelledReservation')}</option>
+              <option value="no-show">{t('noShowReservation')}</option>
             </select>
             <button className="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               <Filter className="h-5 w-5 mr-2" />
-              More Filters
+              {t('moreFilters')}
             </button>
           </div>
         </div>
@@ -433,22 +446,22 @@ export default function RestaurantReservations() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reservation
+                  {t('reservationColumn')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer Details
+                  {t('customerDetailsColumn')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date & Time
+                  {t('dateTimeColumn')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Party & Table
+                  {t('partyTableColumn')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  {t('statusColumnHeader')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  {t('actions')}
                 </th>
               </tr>
             </thead>
@@ -458,10 +471,12 @@ export default function RestaurantReservations() {
                 const tableNumber = tablesData?.tables?.find((t: any) => t.id === reservation.tableId?.id)?.number
                 return (
                   <tr key={reservation.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{reservation.id}</div>
-                        <div className="text-sm text-gray-500">Created: {reservation.createdAt?.slice(0, 10)}</div>
+                        <div className="text-sm text-gray-500">
+                          {t('createdAtLabel')} {reservation.createdAt?.slice(0, 10)}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -493,10 +508,10 @@ export default function RestaurantReservations() {
                       <div>
                         <div className="text-sm font-medium text-gray-900 flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          {reservation.partySize || 0} guests
+                          {t('partyGuests', { count: reservation.partySize || 0 })}
                         </div>
                         <div className="text-sm text-gray-500">
-                          Table: {tableNumber ?? reservation.tableId?.number ?? "-"}
+                          {t('tableField')}: {tableNumber ?? reservation.tableId?.number ?? "-"}
                         </div>
                       </div>
                     </td>
@@ -506,7 +521,18 @@ export default function RestaurantReservations() {
                           reservation.status,
                         )}`}
                       >
-                        {reservation.status}
+                        {(() => {
+                          const statusKeyMap: Record<string, string> = {
+                            pending: 'pendingReservation',
+                            confirmed: 'confirmedReservation',
+                            seated: 'seatedReservation',
+                            completed: 'completedReservation',
+                            cancelled: 'cancelledReservation',
+                            'no-show': 'noShowReservation',
+                          }
+                          const key = statusKeyMap[reservation.status] || reservation.status
+                          return t(key)
+                        })()}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -536,7 +562,7 @@ export default function RestaurantReservations() {
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingReservation ? "Edit Reservation" : "Create New Reservation"}
+                {editingReservation ? t('updateReservation') : t('createReservation')}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="h-6 w-6" />
@@ -545,7 +571,7 @@ export default function RestaurantReservations() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('customerNameField')}</label>
                   <input
                     type="text"
                     required
@@ -555,7 +581,7 @@ export default function RestaurantReservations() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('emailField')}</label>
                   <input
                     type="email"
                     required
@@ -565,7 +591,7 @@ export default function RestaurantReservations() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('phoneField')}</label>
                   <input
                     type="tel"
                     required
@@ -575,7 +601,7 @@ export default function RestaurantReservations() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('reservationDateField')}</label>
                   <input
                     type="date"
                     required
@@ -585,7 +611,7 @@ export default function RestaurantReservations() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('reservationTimeField')}</label>
                   <input
                     type="time"
                     required
@@ -595,7 +621,7 @@ export default function RestaurantReservations() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Party Size</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('partySizeField')}</label>
                   <input
                     type="number"
                     min="1"
@@ -607,37 +633,37 @@ export default function RestaurantReservations() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Table</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('tableField')}</label>
                   <select
                     value={formData.tableId || ""}
                     onChange={(e) => setFormData({ ...formData, tableId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    <option value="">No Table</option>
+                    <option value="">{t('noTableOption')}</option>
                     {tablesData?.tables?.map((table: any) => (
                       <option key={table.id} value={table.id}>
-                        Table {table.number} ({table.capacity} seats)
+                        {t('tableOptionFormat', { number: table.number, capacity: table.capacity })}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('reservationStatusField')}</label>
                   <select
                     value={formData.status || "pending"}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="seated">Seated</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="no-show">No Show</option>
+                    <option value="pending">{t('pendingReservation')}</option>
+                    <option value="confirmed">{t('confirmedReservation')}</option>
+                    <option value="seated">{t('seatedReservation')}</option>
+                    <option value="completed">{t('completedReservation')}</option>
+                    <option value="cancelled">{t('cancelledReservation')}</option>
+                    <option value="no-show">{t('noShowReservation')}</option>
                   </select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Special Requests</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('specialRequests')}</label>
                   <textarea
                     value={formData.specialRequests || ""}
                     onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
@@ -646,7 +672,7 @@ export default function RestaurantReservations() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('notesField')}</label>
                   <textarea
                     value={formData.notes || ""}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -661,10 +687,10 @@ export default function RestaurantReservations() {
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('cancelButton')}
                 </button>
                 <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                  {editingReservation ? "Update" : "Create"} Reservation
+                  {editingReservation ? t('updateReservation') : t('createReservation')}
                 </button>
               </div>
             </form>
@@ -672,5 +698,6 @@ export default function RestaurantReservations() {
         </div>
       )}
     </div>
+    )
   )
 }

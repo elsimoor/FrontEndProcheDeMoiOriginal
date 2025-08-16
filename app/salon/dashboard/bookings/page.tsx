@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useMemo } from "react"
+import useTranslation from "@/hooks/useTranslation"
 // Currency helpers for formatting amounts according to the salon's chosen currency
 import { formatCurrency, currencySymbols } from "@/lib/currency"
 import { gql, useQuery, useMutation } from "@apollo/client"
@@ -69,6 +70,7 @@ interface StaffMember {
 }
 
 export default function SalonBookings() {
+  const { t } = useTranslation()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("today")
@@ -456,7 +458,8 @@ export default function SalonBookings() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this appointment?")) {
+    // Confirm deletion using a translated prompt
+    if (confirm(t('deleteAppointmentConfirm'))) {
       try {
         await deleteReservation({ variables: { id } })
         await refetchReservations()
@@ -515,13 +518,20 @@ export default function SalonBookings() {
 
   // Early return for loading or error states
   if (sessionLoading || reservationsLoading || servicesLoading || staffLoading) {
-    return <div className="p-6 text-gray-600">Loading appointments...</div>
+    return <div className="p-6 text-gray-600">{t('loadingAppointments')}</div>
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>
+    // Display translated session error messages
+    return (
+      <div className="p-6 text-red-600">
+        {sessionError.toLowerCase().includes('not associated')
+          ? t('notAssociatedWithSalon')
+          : t('failedToLoadSession')}
+      </div>
+    )
   }
   if (reservationsError || servicesError || staffError) {
-    return <div className="p-6 text-red-600">Error loading data</div>
+    return <div className="p-6 text-red-600">{t('errorLoadingData')}</div>
   }
 
   return (
@@ -529,8 +539,8 @@ export default function SalonBookings() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Appointments</h1>
-          <p className="text-gray-600">Manage all salon appointments and bookings</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('appointmentsTitle')}</h1>
+          <p className="text-gray-600">{t('appointmentsSubtitle')}</p>
         </div>
         <button
           onClick={() => {
@@ -541,7 +551,7 @@ export default function SalonBookings() {
           className="bg-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-700 transition-colors flex items-center"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New Appointment
+          {t('newAppointment')}
         </button>
       </div>
 
@@ -550,37 +560,37 @@ export default function SalonBookings() {
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-pink-600">{stats.total}</p>
-            <p className="text-sm text-gray-600">Total</p>
+            <p className="text-sm text-gray-600">{t('totalLabel')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-green-600">{stats.confirmed}</p>
-            <p className="text-sm text-gray-600">Confirmed</p>
+            <p className="text-sm text-gray-600">{t('confirmed')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
-            <p className="text-sm text-gray-600">In Progress</p>
+            <p className="text-sm text-gray-600">{t('inProgress')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-purple-600">{stats.completed}</p>
-            <p className="text-sm text-gray-600">Completed</p>
+            <p className="text-sm text-gray-600">{t('completed')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.revenue, currency)}</p>
-            <p className="text-sm text-gray-600">Revenue</p>
+            <p className="text-sm text-gray-600">{t('revenueShort')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            <p className="text-sm text-gray-600">Pending Payment</p>
+            <p className="text-sm text-gray-600">{t('pendingPaymentLabel')}</p>
           </div>
         </div>
       </div>
@@ -593,7 +603,7 @@ export default function SalonBookings() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by client, service, stylist, or ID..."
+                placeholder={t('searchByClientService')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
@@ -606,27 +616,27 @@ export default function SalonBookings() {
               onChange={(e) => setDateFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             >
-              <option value="all">All Dates</option>
-              <option value="today">Today</option>
-              <option value="tomorrow">Tomorrow</option>
-              <option value="week">This Week</option>
+              <option value="all">{t('allDates')}</option>
+              <option value="today">{t('today')}</option>
+              <option value="tomorrow">{t('tomorrow')}</option>
+              <option value="week">{t('thisWeek')}</option>
             </select>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="no-show">No Show</option>
+              <option value="all">{t('allStatus')}</option>
+              <option value="pending">{t('pending')}</option>
+              <option value="confirmed">{t('confirmed')}</option>
+              <option value="in-progress">{t('inProgress')}</option>
+              <option value="completed">{t('completed')}</option>
+              <option value="cancelled">{t('cancelled')}</option>
+              <option value="no-show">{t('noShow')}</option>
             </select>
             <button className="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               <Filter className="h-5 w-5 mr-2" />
-              More Filters
+              {t('moreFilters')}
             </button>
           </div>
         </div>
@@ -638,14 +648,14 @@ export default function SalonBookings() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stylist</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('clientLabel')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('serviceLabel')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('stylist')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('dateLabelColumn')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('timeLabel')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('statusLabelColumn')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('payment')}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actionsLabel')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -656,25 +666,25 @@ export default function SalonBookings() {
                     <div className="text-gray-500 text-xs">{booking.customerInfo.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {booking.serviceId?.name || "N/A"}
+                    {booking.serviceId?.name || t('na')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {booking.staffId?.name || "Unassigned"}
+                    {booking.staffId?.name || t('unassigned')}
                   </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {booking.date ? booking.date.slice(0, 10) : "N/A"}
+                      {booking.date ? booking.date.slice(0, 10) : t('na')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {booking.time || "N/A"}
+                      {booking.time || t('na')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                        {booking.status}
+                        {t(booking.status as any)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(booking.paymentStatus || "pending")}`}>
-                        {booking.paymentStatus || "pending"}
+                        {t((booking.paymentStatus || 'pending') as any)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -682,19 +692,19 @@ export default function SalonBookings() {
                         onClick={() => handleView(booking)}
                         className="text-blue-600 hover:text-blue-900 flex items-center"
                       >
-                        <Eye className="h-4 w-4 mr-1" /> View
+                        <Eye className="h-4 w-4 mr-1" /> {t('view')}
                       </button>
                       <button
                         onClick={() => handleEdit(booking)}
                         className="text-blue-600 hover:text-blue-900 flex items-center"
                       >
-                        <Edit className="h-4 w-4 mr-1" /> Edit
+                        <Edit className="h-4 w-4 mr-1" /> {t('edit')}
                       </button>
                       <button
                         onClick={() => handleDelete(booking.id)}
                         className="text-red-600 hover:text-red-900 flex items-center"
                       >
-                        <Trash2 className="h-4 w-4 mr-1" /> Delete
+                        <Trash2 className="h-4 w-4 mr-1" /> {t('delete')}
                       </button>
                     </td>
                 </tr>
@@ -720,12 +730,12 @@ export default function SalonBookings() {
                   <div className="sm:flex sm:items-start">
                     <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                       <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                        {editingReservation ? "Edit Appointment" : "New Appointment"}
+                        {editingReservation ? t('editAppointment') : t('addAppointment')}
                       </h3>
                       <div className="mt-2 space-y-4">
                         {/* Customer details */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Client Name</label>
+                          <label className="block text-sm font-medium text-gray-700">{t('clientName')}</label>
                           <input
                             type="text"
                             required
@@ -736,7 +746,7 @@ export default function SalonBookings() {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('clientEmail')}</label>
                             <input
                               type="email"
                               required
@@ -746,7 +756,7 @@ export default function SalonBookings() {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Phone</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('clientPhone')}</label>
                             <input
                               type="tel"
                               required
@@ -759,14 +769,14 @@ export default function SalonBookings() {
                         {/* Service & staff selection */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Service</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('appointmentService')}</label>
                             <select
                               required
                               value={formData.serviceId}
                               onChange={(e) => handleServiceChange(e.target.value)}
                               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             >
-                              <option value="">Select service</option>
+                              <option value="">{t('selectService')}</option>
                               {services.map((service) => (
                                 <option key={service.id} value={service.id}>
                                   {service.name}
@@ -775,13 +785,13 @@ export default function SalonBookings() {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Stylist</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('appointmentStylist')}</label>
                             <select
                               value={formData.staffId}
                               onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
                               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             >
-                              <option value="">Unassigned</option>
+                              <option value="">{t('unassigned')}</option>
                               {staffOptions.map((staff) => (
                                 <option key={staff.id} value={staff.id}>
                                   {staff.name}
@@ -793,7 +803,7 @@ export default function SalonBookings() {
                         {/* Date & time */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Date</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('appointmentDate')}</label>
                             <input
                               type="date"
                               required
@@ -803,7 +813,7 @@ export default function SalonBookings() {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Time</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('appointmentTime')}</label>
                             <input
                               type="time"
                               required
@@ -816,7 +826,7 @@ export default function SalonBookings() {
                         {/* Duration & price (auto-filled) */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('durationMinutes')}</label>
                             <input
                               type="number"
                               min="0"
@@ -827,7 +837,7 @@ export default function SalonBookings() {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Price ({currencySymbol})</label>
+                            <label className="block text-sm font-medium text-gray-700">{`${t('priceField')} (${currencySymbol})`}</label>
                             <input
                               type="number"
                               min="0"
@@ -841,36 +851,36 @@ export default function SalonBookings() {
                         {/* Status & payment status */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Status</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('statusField')}</label>
                             <select
                               value={formData.status}
                               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             >
-                              <option value="pending">Pending</option>
-                              <option value="confirmed">Confirmed</option>
-                              <option value="in-progress">In Progress</option>
-                              <option value="completed">Completed</option>
-                              <option value="cancelled">Cancelled</option>
-                              <option value="no-show">No Show</option>
+                              <option value="pending">{t('pending')}</option>
+                              <option value="confirmed">{t('confirmed')}</option>
+                              <option value="in-progress">{t('inProgress')}</option>
+                              <option value="completed">{t('completed')}</option>
+                              <option value="cancelled">{t('cancelled')}</option>
+                              <option value="no-show">{t('noShow')}</option>
                             </select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Payment Status</label>
+                            <label className="block text-sm font-medium text-gray-700">{t('paymentStatusField')}</label>
                             <select
                               value={formData.paymentStatus}
                               onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
                               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             >
-                              <option value="pending">Pending</option>
-                              <option value="paid">Paid</option>
-                              <option value="refunded">Refunded</option>
+                              <option value="pending">{t('pending')}</option>
+                              <option value="paid">{t('paid')}</option>
+                              <option value="refunded">{t('refunded')}</option>
                             </select>
                           </div>
                         </div>
                         {/* Notes & special requests */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Notes</label>
+                          <label className="block text-sm font-medium text-gray-700">{t('notesField')}</label>
                           <textarea
                             rows={3}
                             value={formData.notes}
@@ -879,7 +889,7 @@ export default function SalonBookings() {
                           ></textarea>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Special Requests</label>
+                          <label className="block text-sm font-medium text-gray-700">{t('specialRequestsField')}</label>
                           <textarea
                             rows={2}
                             value={formData.specialRequests}
@@ -896,14 +906,14 @@ export default function SalonBookings() {
                     type="submit"
                     className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-pink-600 text-base font-medium text-white hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:w-auto sm:text-sm"
                   >
-                    {editingReservation ? "Update" : "Create"}
+                    {editingReservation ? t('update') : t('create')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
-                    Cancel
+                    {t('cancelAction')}
                   </button>
                 </div>
               </form>
@@ -927,23 +937,25 @@ export default function SalonBookings() {
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                      Appointment Details
+                      {t('appointmentDetails')}
                     </h3>
                     <div className="mt-4 space-y-2 text-sm text-gray-600">
-                      <p><strong>Client:</strong> {viewingReservation.customerInfo.name}</p>
-                      <p><strong>Email:</strong> {viewingReservation.customerInfo.email}</p>
-                      <p><strong>Phone:</strong> {viewingReservation.customerInfo.phone}</p>
-                      <p><strong>Service:</strong> {viewingReservation.serviceId?.name || "N/A"}</p>
-                      <p><strong>Stylist:</strong> {viewingReservation.staffId?.name || "Unassigned"}</p>
-                      <p><strong>Date:</strong> {viewingReservation.date ? viewingReservation.date.slice(0, 10) : "N/A"}</p>
-                      <p><strong>Time:</strong> {viewingReservation.time || "N/A"}</p>
-                      <p><strong>Duration:</strong> {viewingReservation.duration ?? viewingReservation.serviceId?.duration ?? "N/A"} minutes</p>
-                      <p><strong>Price:</strong> {formatCurrency(viewingReservation.serviceId?.price ?? 0, currency)}</p>
-                      <p><strong>Status:</strong> {viewingReservation.status}</p>
-                      <p><strong>Payment Status:</strong> {viewingReservation.paymentStatus || "pending"}</p>
-                      {viewingReservation.notes && <p><strong>Notes:</strong> {viewingReservation.notes}</p>}
-                      {viewingReservation.specialRequests && <p><strong>Special Requests:</strong> {viewingReservation.specialRequests}</p>}
-                      <p><strong>Created:</strong> {new Date(viewingReservation.createdAt).toLocaleString()}</p>
+                      <p><strong>{t('clientLabel')}:</strong> {viewingReservation.customerInfo.name}</p>
+                      <p><strong>{t('clientEmail')}:</strong> {viewingReservation.customerInfo.email}</p>
+                      <p><strong>{t('clientPhone')}:</strong> {viewingReservation.customerInfo.phone}</p>
+                      <p><strong>{t('appointmentService')}:</strong> {viewingReservation.serviceId?.name || t('na')}</p>
+                      <p><strong>{t('appointmentStylist')}:</strong> {viewingReservation.staffId?.name || t('unassigned')}</p>
+                      <p><strong>{t('appointmentDate')}:</strong> {viewingReservation.date ? viewingReservation.date.slice(0, 10) : t('na')}</p>
+                      <p><strong>{t('appointmentTime')}:</strong> {viewingReservation.time || t('na')}</p>
+                      <p>
+                        <strong>{t('durationMinutes')}:</strong> {viewingReservation.duration ?? viewingReservation.serviceId?.duration ?? t('na')}
+                      </p>
+                      <p><strong>{t('priceField')}:</strong> {formatCurrency(viewingReservation.serviceId?.price ?? 0, currency)}</p>
+                      <p><strong>{t('statusField')}:</strong> {t(viewingReservation.status as any)}</p>
+                      <p><strong>{t('paymentStatusField')}:</strong> {t((viewingReservation.paymentStatus || 'pending') as any)}</p>
+                      {viewingReservation.notes && <p><strong>{t('notesField')}:</strong> {viewingReservation.notes}</p>}
+                      {viewingReservation.specialRequests && <p><strong>{t('specialRequestsField')}:</strong> {viewingReservation.specialRequests}</p>}
+                      <p><strong>{t('createdLabel')}:</strong> {new Date(viewingReservation.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -954,7 +966,7 @@ export default function SalonBookings() {
                   onClick={() => setShowViewModal(false)}
                   className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:w-auto sm:text-sm"
                 >
-                  Close
+                  {t('closeDialog')}
                 </button>
               </div>
             </div>

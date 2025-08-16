@@ -6,6 +6,9 @@ import { gql, useQuery, useMutation } from "@apollo/client"
 import { formatCurrency, currencySymbols } from "@/lib/currency"
 import { Plus } from "lucide-react"
 
+// Translation hook for multi‑language support
+import useTranslation from "@/hooks/useTranslation"
+
 interface ServiceOption {
   name: string
   price?: number
@@ -26,6 +29,9 @@ interface Service {
  * individual options is not currently supported.
  */
 export default function SalonOptions() {
+  // Translation helper
+  const { t } = useTranslation()
+
   const [salonId, setSalonId] = useState<string | null>(null)
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
@@ -237,39 +243,49 @@ export default function SalonOptions() {
     }
   }
 
-  if (sessionLoading) return <div>Loading...</div>
-  if (sessionError) return <div className="text-red-500">{sessionError}</div>
-  if (servicesLoading) return <div>Loading services...</div>
-  if (servicesError) return <div className="text-red-500">Error loading services</div>
+  // Loading and error states
+  if (sessionLoading || servicesLoading) {
+    return <div className="p-6 text-gray-600">{t("loadingOptions")}</div>
+  }
+  if (sessionError) {
+    return (
+      <div className="text-red-500">
+        {sessionError.includes('not associated') ? t('notAssociatedWithSalon') : t('failedToLoadSession')}
+      </div>
+    )
+  }
+  if (servicesError) {
+    return <div className="text-red-500">{t("errorLoadingOptions")}</div>
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Options supplémentaires</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t("additionalOptions")}</h1>
       {/* Existing options table */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Options existantes</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t("existingOptions")}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nom
+                  {t("nameColumn")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Prix
+                  {t("priceColumn")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Impact sur la durée
+                  {t("durationImpactColumn")}
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {allOptions.length === 0 && (
+                {allOptions.length === 0 && (
                 <tr>
                   <td className="px-6 py-4 text-sm text-gray-500" colSpan={3}>
-                    No options defined yet.
+                    {t("noOptionsDefined")}
                   </td>
                 </tr>
               )}
@@ -291,10 +307,10 @@ export default function SalonOptions() {
 
       {/* Add new option */}
       <div className="bg-white rounded-lg shadow p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Ajouter une nouvelle option</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t("addNewOption")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l'option</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("optionName")}</label>
             <input
               type="text"
               value={newOption.name}
@@ -303,7 +319,7 @@ export default function SalonOptions() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prix ({currencySymbol})</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{`${t("priceFieldLabel")} (${currencySymbol})`}</label>
             <input
               type="number"
               value={newOption.price}
@@ -312,7 +328,7 @@ export default function SalonOptions() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Impact sur la durée (minutes)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("durationImpactMinutes")}</label>
             <input
               type="number"
               value={newOption.durationImpact}
@@ -323,13 +339,13 @@ export default function SalonOptions() {
         </div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ajouter à un service</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("addToService")}</label>
             <select
               value={selectedServiceForNew}
               onChange={(e) => setSelectedServiceForNew(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
             >
-              <option value="">Sélectionner un service</option>
+              <option value="">{t("selectService")}</option>
               {services.map((svc) => (
                 <option key={svc.id} value={svc.id}>
                   {svc.name}
@@ -342,7 +358,7 @@ export default function SalonOptions() {
               onClick={handleAddOption}
               className="w-full inline-flex items-center justify-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
             >
-              <Plus className="h-4 w-4 mr-2" /> Ajouter l'option
+              <Plus className="h-4 w-4 mr-2" /> {t("addOptionButton")}
             </button>
           </div>
         </div>
@@ -350,16 +366,16 @@ export default function SalonOptions() {
 
       {/* Assign options to a service */}
       <div className="bg-white rounded-lg shadow p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Association des options aux services</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t("optionsToServices")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("serviceFieldLabel")}</label>
             <select
               value={selectedServiceForAssign}
               onChange={(e) => setSelectedServiceForAssign(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
             >
-              <option value="">Sélectionner un service</option>
+              <option value="">{t("selectService")}</option>
               {services.map((svc) => (
                 <option key={svc.id} value={svc.id}>
                   {svc.name}
@@ -368,7 +384,7 @@ export default function SalonOptions() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Options disponibles</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t("availableOptions")}</label>
             <select
               multiple
               value={selectedOptionNames}
@@ -391,7 +407,7 @@ export default function SalonOptions() {
             onClick={handleAssignOptions}
             className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
           >
-            Associer les options
+            {t("associateOptions")}
           </button>
         </div>
       </div>

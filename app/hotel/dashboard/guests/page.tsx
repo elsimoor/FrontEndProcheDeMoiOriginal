@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { gql, useQuery, useMutation } from "@apollo/client";
 
 /**
@@ -69,6 +70,8 @@ interface GuestFormState {
 }
 
 export default function HotelGuestsPage() {
+  // Translation hook
+  const { t } = useTranslation();
   // Retrieve business context from the session API
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessType, setBusinessType] = useState<string | null>(null);
@@ -90,10 +93,10 @@ export default function HotelGuestsPage() {
           setBusinessId(data.businessId);
           setBusinessType(data.businessType);
         } else {
-          setSessionError("You are not associated with a hotel business.");
+          setSessionError(t("notAssociatedWithHotel"));
         }
       } catch (err) {
-        setSessionError("Failed to load session.");
+        setSessionError(t("failedToLoadSession"));
       } finally {
         setSessionLoading(false);
       }
@@ -176,34 +179,34 @@ export default function HotelGuestsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this guest?")) {
+    if (confirm(t("deleteGuestConfirm"))) {
       await deleteGuest({ variables: { id } });
       refetchGuests();
     }
   };
 
   // Render loading/error states
-  if (sessionLoading || guestsLoading) return <p>Loading...</p>;
+  if (sessionLoading || guestsLoading) return <p>{t("loading")}</p>;
   if (sessionError) return <p>{sessionError}</p>;
-  if (guestsError) return <p>Error loading guests.</p>;
+  if (guestsError) return <p>{t("errorOccurred")}</p>;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold mb-4">Guest Management</h1>
+      <h1 className="text-2xl font-bold mb-4">{t("guestManagement")}</h1>
 
       {/* List of guests */}
       <section className="space-y-2">
-        <h2 className="text-xl font-semibold">Existing Guests</h2>
+        <h2 className="text-xl font-semibold">{t("existingGuests")}</h2>
         {guestsData?.guests && guestsData.guests.length > 0 ? (
           <table className="min-w-full bg-white border border-gray-200">
             <thead>
               <tr className="bg-gray-100">
-                <th className="px-4 py-2 text-left text-sm font-medium">Name</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">Email</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">Phone</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">Membership</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">Status</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">Actions</th>
+                <th className="px-4 py-2 text-left text-sm font-medium">{t("name")}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium">{t("email")}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium">{t("phone")}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium">{t("membership")}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium">{t("statusLabel")}</th>
+                <th className="px-4 py-2 text-left text-sm font-medium">{t("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -213,19 +216,19 @@ export default function HotelGuestsPage() {
                   <td className="px-4 py-2">{guest.email}</td>
                   <td className="px-4 py-2">{guest.phone}</td>
                   <td className="px-4 py-2">{guest.membershipLevel}</td>
-                  <td className="px-4 py-2 capitalize">{guest.status}</td>
+                  <td className="px-4 py-2 capitalize">{t(guest.status)}</td>
                   <td className="px-4 py-2 space-x-2">
                     <button
                       className="px-2 py-1 text-sm bg-blue-500 text-white rounded"
                       onClick={() => handleEdit(guest)}
                     >
-                      Edit
+                      {t("edit")}
                     </button>
                     <button
                       className="px-2 py-1 text-sm bg-red-500 text-white rounded"
                       onClick={() => handleDelete(guest.id)}
                     >
-                      Delete
+                      {t("delete")}
                     </button>
                   </td>
                 </tr>
@@ -233,18 +236,18 @@ export default function HotelGuestsPage() {
             </tbody>
           </table>
         ) : (
-          <p>No guests found.</p>
+          <p>{t("noGuestsFound")}</p>
         )}
       </section>
 
       {/* Form for adding/editing a guest */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
-          {editingId ? "Edit Guest" : "Add Guest"}
+          {editingId ? t("editGuest") : t("addGuest")}
         </h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium">Name</label>
+            <label className="block text-sm font-medium">{t("name")}</label>
             <input
               type="text"
               value={formState.name}
@@ -254,7 +257,7 @@ export default function HotelGuestsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Email</label>
+            <label className="block text-sm font-medium">{t("email")}</label>
             <input
               type="email"
               value={formState.email}
@@ -264,7 +267,7 @@ export default function HotelGuestsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Phone</label>
+            <label className="block text-sm font-medium">{t("phone")}</label>
             <input
               type="text"
               value={formState.phone}
@@ -273,7 +276,7 @@ export default function HotelGuestsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Membership Level</label>
+            <label className="block text-sm font-medium">{t("membershipLevel")}</label>
             <input
               type="text"
               value={formState.membershipLevel}
@@ -282,14 +285,14 @@ export default function HotelGuestsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Status</label>
+            <label className="block text-sm font-medium">{t("statusLabel")}</label>
             <select
               value={formState.status}
               onChange={(e) => setFormState({ ...formState, status: e.target.value })}
               className="w-full p-2 border rounded"
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t("active")}</option>
+              <option value="inactive">{t("inactive")}</option>
             </select>
           </div>
           <div className="md:col-span-2">
@@ -297,7 +300,7 @@ export default function HotelGuestsPage() {
               type="submit"
               className="px-4 py-2 bg-green-500 text-white rounded"
             >
-              {editingId ? "Update Guest" : "Create Guest"}
+              {editingId ? t("updateGuest") : t("createGuest")}
             </button>
             {editingId && (
               <button
@@ -305,7 +308,7 @@ export default function HotelGuestsPage() {
                 onClick={resetForm}
                 className="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded"
               >
-                Cancel
+                {t("cancelAction")}
               </button>
             )}
           </div>

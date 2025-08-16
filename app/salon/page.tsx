@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { gql, useQuery } from "@apollo/client"
 import { useState, useEffect, useMemo } from "react"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 import { useRouter } from "next/navigation"
 import {
   Carousel,
@@ -83,6 +85,10 @@ export default function SalonLanding() {
   if (salonsLoading || servicesLoading) return <p>Loading...</p>
   if (salonsError || servicesError) return <p>Error :(</p>
 
+  // Translation and language for this page
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Navbar */}
@@ -92,23 +98,42 @@ export default function SalonLanding() {
             <span className="font-bold text-xl text-pink-600">{salon.name || "Salon Zenith"}</span>
           </div>
           <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
-            <Link href="/salon" className="hover:text-pink-600">Accueil</Link>
-            <Link href="/salon/services" className="hover:text-pink-600">Services</Link>
-            <Link href="/salon/about" className="hover:text-pink-600">À propos de nous</Link>
-            <Link href="/salon/contact" className="hover:text-pink-600">Contact</Link>
+            <Link href="/salon" className="hover:text-pink-600">{t("home")}</Link>
+            <Link href="/salon/services" className="hover:text-pink-600">{t("services")}</Link>
+            <Link href="/salon/about" className="hover:text-pink-600">{t("aboutUs")}</Link>
+            <Link href="/salon/contact" className="hover:text-pink-600">{t("contact")}</Link>
           </nav>
           <div className="flex items-center space-x-4">
+            {/* Language selector on salon landing page */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setLocale("en")}
+                className={`text-sm font-medium ${
+                  locale === "en" ? "font-semibold text-pink-600" : "text-gray-700"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`text-sm font-medium ${
+                  locale === "fr" ? "font-semibold text-pink-600" : "text-gray-700"
+                }`}
+              >
+                FR
+              </button>
+            </div>
             <Link
               href="/salon/booking"
               className="hidden md:inline-block bg-pink-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-pink-700 transition-colors"
             >
-              Réserver maintenant
+              {t("bookNow")}
             </Link>
             <Link
               href="/login"
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
             >
-              Se connecter
+              {t("signIn")}
             </Link>
           </div>
         </div>

@@ -32,6 +32,9 @@ import {
 
 // Currency helper to format amounts according to the hotel's selected currency
 import { formatCurrency } from "@/lib/currency";
+// Translation hooks
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 
 /*
@@ -267,30 +270,70 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
     router.push("/hotel/checkout");
   };
 
+
+  // Grab translation and language context
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
+
   return (
     <div className="bg-background font-sans ">
-     <header className="sticky top-0 bg-white z-10 shadow-md">
+      {/* Header with navigation and language selector */}
+      <header className="sticky top-0 bg-white z-10 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-2xl text-gray-900">
+              {/* Brand name translation */}
+              {t("stayEase")}
+            </span>
+          </div>
+          <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
+            <a href="#" className="hover:text-blue-600 transition-colors">
+              {t("explore")}
+            </a>
+            <a href="#" className="hover:text-blue-600 transition-colors">
+              {t("wishlists")}
+            </a>
+            <a href="#" className="hover:text-blue-600 transition-colors">
+              {t("trips")}
+            </a>
+            <a href="#" className="hover:text-blue-600 transition-colors">
+              {t("messages")}
+            </a>
+          </nav>
+          <div className="flex items-center space-x-4">
+            {/* Language selector */}
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-2xl text-gray-900">StayEase</span>
+              <button
+                onClick={() => setLocale("en")}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  locale === "en" ? "font-semibold text-blue-600" : "text-gray-700"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                  locale === "fr" ? "font-semibold text-blue-600" : "text-gray-700"
+                }`}
+              >
+                FR
+              </button>
             </div>
-            <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
-              <a href="#" className="hover:text-blue-600 transition-colors">Explore</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Wishlists</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Trips</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Messages</a>
-            </nav>
-            <div className="flex items-center space-x-4">
-              <a href="/login" className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-                Log in
-              </a>
-            </div>
+            {/* Login link */}
+            <a
+              href="/login"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              {t("signIn")}
+            </a>
+          </div>
         </div>
       </header>
-      
+
       <main className="max-w-[1040px] mx-auto px-4 sm:px-16 lg:px-8 py-10">
-        {loading && <p>Loading room…</p>}
-        {error && <p className="text-red-600">Unable to load room details.</p>}
+        {loading && <p>{t("loadingRoom")}</p>}
+        {error && <p className="text-red-600">{t("unableToLoadRoomDetails")}</p>}
         {room && (
           <div className="space-y-10">
             {/* Breadcrumb trail */}
@@ -298,7 +341,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
               <Breadcrumb className="text-sm text-gray-500">
                 <BreadcrumbList>
                   <BreadcrumbItem>
-                    <BreadcrumbLink href="/hotel/search">Stays</BreadcrumbLink>
+                    <BreadcrumbLink href="/hotel/search">{t("stays")}</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator />
                   <BreadcrumbItem>
@@ -316,7 +359,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
             {/* Page heading */}
             <section>
               <h1 className="text-3xl lg:text-4xl font-bold font-serif mb-2">
-                {`Charming Apartment with ${room.type} View`}
+                {t("charmingApartmentWith")} {room.type} {t("view")}
               </h1>
             </section>
 
@@ -398,14 +441,14 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                 <section>
                   <h2 className="text-lg font-semibold mb-4">About this stay</h2>
                   <p className="text-sm text-gray-700 max-w-[600px]">
-                    {room.description || "A comfortable and well-equipped room to make your stay memorable."}
+                    {room.description || t("noDescriptionAvailable")}
                   </p>
                 </section>
 
                 {/* Paid room options */}
                 {paidOptions && paidOptions.length > 0 && (
                   <section>
-                    <h2 className="text-lg font-semibold mb-4">Paid options</h2>
+                    <h2 className="text-lg font-semibold mb-4">{t("paidOptionsHeading")}</h2>
                     <div className="space-y-6">
                       {Object.entries(
                         paidOptions.reduce((acc: Record<string, PaidOption[]>, option: PaidOption) => {
@@ -433,7 +476,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                                   </label>
                                 </div>
                                 <span className="text-sm text-gray-600">
-                                  {option.price !== undefined ? formatCurrency(option.price || 0, currency) : "Free"}
+                                  {option.price !== undefined ? formatCurrency(option.price || 0, currency) : t("free")}
                                 </span>
                               </div>
                             ))}
@@ -446,7 +489,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
 
                 {/* What this place offers */}
                 <section>
-                  <h2 className="text-lg font-semibold mb-4">What this place offers</h2>
+                  <h2 className="text-lg font-semibold mb-4">{t("whatThisPlaceOffers")}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
                     {amenities
                       .filter((a: Amenity) => a.included)
@@ -467,7 +510,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
 
                 {/* Select your view */}
                 <section>
-                  <h2 className="text-lg font-semibold mb-4">Select your view</h2>
+                  <h2 className="text-lg font-semibold mb-4">{t("selectYourView")}</h2>
                   {viewOptions && viewOptions.length > 0 ? (
                     <ToggleGroup
                       type="single"
@@ -487,20 +530,20 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                           {view.name}
                           {view.price !== undefined && (
                             <span className="ml-1 text-xs text-gray-200 md:text-gray-300">
-                              {view.price > 0 ? ` (${formatCurrency(view.price, currency)})` : " (Free)"}
+                              {view.price > 0 ? ` (${formatCurrency(view.price, currency)})` : ` (${t("free")})`}
                             </span>
                           )}
                         </ToggleGroupItem>
                       ))}
                     </ToggleGroup>
                   ) : (
-                    <p className="text-sm text-gray-600">No view options available for this room.</p>
+                    <p className="text-sm text-gray-600">{t("noViewOptions")}</p>
                   )}
                 </section>
 
                 {/* Add-ons */}
                 <section>
-                  <h2 className="text-lg font-semibold mb-4">Add-ons</h2>
+                  <h2 className="text-lg font-semibold mb-4">{t("addOns")}</h2>
                   <div className="space-y-6">
                     {Object.entries(
                       amenities
@@ -540,34 +583,37 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
 
               <div className="mt-10 lg:mt-0 space-y-8">
                 {/* Summary Cards */}
+                {/* Summary Cards */}
                 <Card className="w-full">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Your stay</CardTitle>
+                    <CardTitle className="text-lg font-semibold">{t("yourStay")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Dates</span>
-                      <span className="font-medium">{`${booking.checkIn} to ${booking.checkOut}`}</span>
+                      <span className="text-gray-500">{t("datesLabel")}</span>
+                      <span className="font-medium">{`${booking.checkIn} → ${booking.checkOut}`}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between">
-                      <span className="text-gray-500">View</span>
+                      <span className="text-gray-500">{t("viewLabel")}</span>
                       <span className="font-medium">{selectedView}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Parking</span>
-                      <span className="font-medium">{extras["Parking"] ? "Yes" : "No"}</span>
+                      <span className="text-gray-500">{t("parking")}</span>
+                      <span className="font-medium">{extras["Parking"] ? t("yes") : t("no")}</span>
                     </div>
                   </CardContent>
                 </Card>
                 <Card className="w-full">
                   <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Price summary</CardTitle>
+                    <CardTitle className="text-lg font-semibold">{t("priceSummary")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span>{`${nights} night${nights > 1 ? "s" : ""}`}</span>
+                      <span>
+                        {`${nights} ${nights === 1 ? t("nightSingular") : t("nightsPlural")}`}
+                      </span>
                       <span>{formatCurrency(basePrice, currency)}</span>
                     </div>
                     {amenities
@@ -596,7 +642,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                     )}
                     <Separator />
                     <div className="flex justify-between font-bold text-base">
-                      <span>Total</span>
+                      <span>{t("totalPrice")}</span>
                       <span>{formatCurrency(total, currency)}</span>
                     </div>
                   </CardContent>
@@ -606,10 +652,14 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
 
             {/* Add to cart Button */}
             <div className="fixed bottom-0 left-0 w-full p-4 bg-white/80 backdrop-blur-sm border-t md:hidden">
-              <Button size="lg" className="w-full" onClick={handleAddToCart}>Add to cart</Button>
+              <Button size="lg" className="w-full" onClick={handleAddToCart}>
+                {t("addToCart")}
+              </Button>
             </div>
             <div className="hidden md:block fixed bottom-8 right-8">
-              <Button size="lg" className="rounded-full px-8 shadow-lg" onClick={handleAddToCart}>Add to cart</Button>
+              <Button size="lg" className="rounded-full px-8 shadow-lg" onClick={handleAddToCart}>
+                {t("addToCart")}
+              </Button>
             </div>
           </div>
         )}

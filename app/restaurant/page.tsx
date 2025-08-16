@@ -190,6 +190,8 @@
 import Link from "next/link"
 import { gql, useQuery } from "@apollo/client"
 import { useState, useRef } from "react"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 const GET_RESTAURANTS = gql`
   query GetRestaurants {
@@ -317,6 +319,7 @@ function MiniCarousel({
  * Landing page for the restaurant service. Highlights the cuisine and atmosphere.
  */
 const RestaurantSection = ({ restaurant }: { restaurant: any }) => {
+  const { t } = useTranslation();
   const { data: menuItemsData, loading: menuItemsLoading, error: menuItemsError } = useQuery(GET_MENU_ITEMS, {
     variables: { restaurantId: restaurant.id },
   })
@@ -354,14 +357,14 @@ const RestaurantSection = ({ restaurant }: { restaurant: any }) => {
             href={`/restaurant/booking?restaurantId=${restaurant.id}`}
             className="inline-block bg-red-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-red-700 transition-transform transform hover:scale-105"
           >
-            Réserver une table
+            {t("bookTable")}
           </Link>
         </div>
       </div>
 
       {/* -------- Menu with image carousels -------- */}
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-4xl font-bold text-gray-900 mb-10 text-center">Notre Menu</h2>
+        <h2 className="text-4xl font-bold text-gray-900 mb-10 text-center">{t("ourMenu")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {menuItems.slice(0, 6).map((item: any) => (
             <div
@@ -380,7 +383,7 @@ const RestaurantSection = ({ restaurant }: { restaurant: any }) => {
                     href={`/restaurant/menus?restaurantId=${restaurant.id}`}
                     className="text-red-600 font-semibold hover:underline"
                   >
-                    Voir le menu
+                    {t("viewMenu")}
                   </Link>
                 </div>
               </div>
@@ -392,12 +395,12 @@ const RestaurantSection = ({ restaurant }: { restaurant: any }) => {
       {/* Tables */}
       <section className="bg-gray-100 py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-10">Nos Tables</h2>
+        <h2 className="text-4xl font-bold text-gray-900 mb-10">{t("ourTables")}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {tables.map((table: any) => (
               <div key={table.id} className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-2xl font-bold mb-2">Table {table.number}</h3>
-                <p className="text-gray-600">Capacité: {table.capacity}</p>
+                <h3 className="text-2xl font-bold mb-2">{t("table")} {table.number}</h3>
+                <p className="text-gray-600">{t("capacity")}: {table.capacity}</p>
               </div>
             ))}
           </div>
@@ -408,6 +411,8 @@ const RestaurantSection = ({ restaurant }: { restaurant: any }) => {
 }
 
 export default function RestaurantLanding() {
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
   const { data: restaurantsData, loading: restaurantsLoading, error: restaurantsError } = useQuery(GET_RESTAURANTS)
 
   if (restaurantsLoading) return <p>Loading...</p>
@@ -424,23 +429,38 @@ export default function RestaurantLanding() {
             <span className="font-bold text-xl text-red-600">Gastronomie</span>
           </div>
           <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">
-            <Link href="/restaurant" className="hover:text-red-600">Accueil</Link>
-            <Link href="/restaurant/menus" className="hover:text-red-600">Menus</Link>
-            <Link href="/restaurant/gallery" className="hover:text-red-600">Galerie</Link>
-            <Link href="/restaurant/contact" className="hover:text-red-600">Contact</Link>
+            <Link href="/restaurant" className="hover:text-red-600">{t("home")}</Link>
+            <Link href="/restaurant/menus" className="hover:text-red-600">{t("menus")}</Link>
+            <Link href="/restaurant/gallery" className="hover:text-red-600">{t("gallery")}</Link>
+            <Link href="/restaurant/contact" className="hover:text-red-600">{t("contact")}</Link>
           </nav>
           <div className="flex items-center space-x-4">
+            {/* Language selector */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setLocale("en")}
+                className={`text-sm font-medium ${locale === "en" ? "font-semibold text-red-600" : "text-gray-700"}`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLocale("fr")}
+                className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-red-600" : "text-gray-700"}`}
+              >
+                FR
+              </button>
+            </div>
             <Link
               href="/restaurant/booking"
               className="hidden md:inline-block bg-red-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-red-700 transition-colors"
             >
-              Réserver
+              {t("reserve")}
             </Link>
             <Link
               href="/login"
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
             >
-              Se connecter
+              {t("signIn")}
             </Link>
           </div>
         </div>

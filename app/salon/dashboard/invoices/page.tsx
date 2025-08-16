@@ -28,6 +28,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+// Translation hook for localising strings
+import useTranslation from "@/hooks/useTranslation";
+
 /**
  * GraphQL query to list invoices for a given salon business.  It
  * retrieves invoice metadata along with the associated reservation and
@@ -95,6 +98,8 @@ const GENERATE_INVOICE_PDF = gql`
 `;
 
 export default function SalonInvoicesPage() {
+  // Translation function
+  const { t } = useTranslation();
   // Session context.  We fetch the user's session to determine the
   // current salon's ID and verify the user belongs to a salon.  If
   // they are not associated with a salon, we display an error.
@@ -197,10 +202,10 @@ export default function SalonInvoicesPage() {
       setShowForm(false);
       setSelectedReservationId("");
       await refetchInvoices();
-      alert("Invoice created successfully!");
+      alert(t("invoiceCreatedSuccess"));
     } catch (err) {
       console.error(err);
-      alert("Failed to create invoice.");
+      alert(t("invoiceCreateFailed"));
     }
   };
 
@@ -221,18 +226,22 @@ export default function SalonInvoicesPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to download invoice.");
+      alert(t("failedDownloadInvoice"));
     }
   };
 
   if (sessionLoading || invoicesLoading) {
-    return <div className="p-6">Loading…</div>;
+    return <div className="p-6">{t("loadingInvoices")}</div>;
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>;
+    return (
+      <div className="p-6 text-red-600">
+        {sessionError.includes('not associated') ? t('notAssociatedWithSalon') : t('failedToLoadSession')}
+      </div>
+    );
   }
   if (invoicesError) {
-    return <div className="p-6 text-red-600">Failed to load invoices.</div>;
+    return <div className="p-6 text-red-600">{t("errorLoadingInvoices")}</div>;
   }
 
   const invoices = invoicesData?.invoices ?? [];
@@ -241,18 +250,18 @@ export default function SalonInvoicesPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
-        <Button onClick={() => setShowForm(true)}>Create Invoice</Button>
+        <h1 className="text-2xl font-semibold text-gray-900">{t("invoicesTitle")}</h1>
+        <Button onClick={() => setShowForm(true)}>{t("createInvoice")}</Button>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice ID</TableHead>
-              <TableHead>Reservation</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>{t("invoiceId")}</TableHead>
+              <TableHead>{t("reservation")}</TableHead>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead className="text-right">{t("total")}</TableHead>
+              <TableHead>{t("actionsLabel")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -268,9 +277,9 @@ export default function SalonInvoicesPage() {
                     size="sm"
                     onClick={() => (window.location.href = `/salon/dashboard/invoices/${inv.id}`)}
                   >
-                    View
+                    {t("view")}
                   </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>Download</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>{t("download")}</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -281,15 +290,15 @@ export default function SalonInvoicesPage() {
       {/* Dialog for creating an invoice */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Invoice</DialogTitle>
+      <DialogHeader>
+            <DialogTitle>{t("createInvoice")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reservation">Select Reservation</Label>
+              <Label htmlFor="reservation">{t("selectReservation")}</Label>
               <Select value={selectedReservationId} onValueChange={(value) => setSelectedReservationId(value)}>
-                <SelectTrigger id="reservation">
-                  <SelectValue placeholder="Choose reservation" />
+              <SelectTrigger id="reservation">
+                  <SelectValue placeholder={t("chooseReservation")} />
                 </SelectTrigger>
                 <SelectContent>
                   {reservations.map((res: any) => (
@@ -307,10 +316,10 @@ export default function SalonInvoicesPage() {
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="secondary" onClick={() => setShowForm(false)}>
-                Cancel
+                {t("cancel")}
               </Button>
               <Button onClick={handleCreateInvoice} disabled={!selectedReservationId}>
-                Create
+                {t("create")}
               </Button>
             </div>
           </div>

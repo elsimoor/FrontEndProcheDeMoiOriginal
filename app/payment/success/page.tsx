@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import useTranslation from "@/hooks/useTranslation";
+import { useLanguage } from "@/context/LanguageContext";
 
 /**
  * Generic success page displayed after a user completes a payment on
@@ -15,11 +17,31 @@ import { Button } from "@/components/ui/button";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
+  // Translation hook and language context.  Use t() to resolve keys
+  // into the current language and provide a language toggle.
+  const { t } = useTranslation();
+  const { locale, setLocale } = useLanguage();
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-4">Payment Successful</h1>
-      <p className="mb-8 text-gray-700">Thank you for your payment. Your transaction has been completed.</p>
-      <Button onClick={() => router.push("/")}>Return to Home</Button>
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
+      {/* Language toggle */}
+      <div className="absolute top-4 right-4 flex space-x-2">
+        <button
+          onClick={() => setLocale("en")}
+          className={`text-sm font-medium ${locale === "en" ? "font-semibold text-blue-600" : "text-gray-700"}`}
+        >
+          EN
+        </button>
+        <button
+          onClick={() => setLocale("fr")}
+          className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-blue-600" : "text-gray-700"}`}
+        >
+          FR
+        </button>
+      </div>
+      <h1 className="text-3xl font-bold mb-4">{t("paymentSuccessful")}</h1>
+      <p className="mb-8 text-gray-700 text-center max-w-lg">{t("paymentSuccessfulMsg")}</p>
+      <Button onClick={() => router.push("/")}>{t("returnHome")}</Button>
     </div>
   );
 }

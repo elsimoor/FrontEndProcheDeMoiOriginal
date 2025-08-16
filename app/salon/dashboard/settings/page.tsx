@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import useTranslation from "@/hooks/useTranslation"
 import { Save, Bell, CreditCard, Shield, Image as ImageIcon } from "lucide-react"
 import { gql, useQuery, useMutation } from "@apollo/client"
 // Firebase image upload helper
@@ -61,6 +62,7 @@ const UPDATE_SALON = gql`
 `
 
 export default function SalonSettings() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState("general")
 
   // State for the current salon id retrieved from the session.  We
@@ -238,22 +240,30 @@ export default function SalonSettings() {
     try {
       await updateSalon({ variables: { id: salonId, input } })
       await refetchSalon()
-      alert("Settings saved successfully!")
+      // Show translated success message
+      alert(t('settingsSavedSuccess'))
     } catch (err) {
       console.error(err)
-      alert("Failed to save settings.")
+      alert(t('settingsSaveFailed'))
     }
   }
 
   // Render loading or error states
   if (sessionLoading || salonLoading) {
-    return <div className="p-6">Loading...</div>
+    return <div className="p-6">{t('loading')}</div>
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>
+    // Show translated error based on known session errors
+    return (
+      <div className="p-6 text-red-600">
+        {sessionError.includes('not associated')
+          ? t('notAssociatedWithSalon')
+          : t('failedToLoadSession')}
+      </div>
+    )
   }
   if (salonError) {
-    return <div className="p-6 text-red-600">Failed to load salon data.</div>
+    return <div className="p-6 text-red-600">{t('failedToLoadSalonData')}</div>
   }
 
   return (
@@ -261,15 +271,15 @@ export default function SalonSettings() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Salon Settings</h1>
-          <p className="text-gray-600">Configure your salon preferences and policies</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('salonSettings')}</h1>
+          <p className="text-gray-600">{t('settingsSubtitle')}</p>
         </div>
         <button
           onClick={handleSave}
           className="bg-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-700 transition-colors flex items-center"
         >
           <Save className="h-4 w-4 mr-2" />
-          Save Changes
+          {t('saveChanges')}
         </button>
       </div>
 
@@ -279,10 +289,10 @@ export default function SalonSettings() {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: "general", label: "General", icon: ImageIcon },
-              { id: "notifications", label: "Notifications", icon: Bell },
-              { id: "payments", label: "Payments", icon: CreditCard },
-              { id: "policies", label: "Policies", icon: Shield },
+              { id: "general", label: t('generalTab'), icon: ImageIcon },
+              { id: "notifications", label: t('notificationsTab'), icon: Bell },
+              { id: "payments", label: t('paymentsTab'), icon: CreditCard },
+              { id: "policies", label: t('policiesTab'), icon: Shield },
             ].map((tab) => {
               const Icon = tab.icon
               return (
@@ -307,11 +317,11 @@ export default function SalonSettings() {
           {/* General Settings */}
           {activeTab === "general" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">General Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('generalInformation')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Profile Image Upload */}
                 <div className="md:col-span-2 space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('profileImage')}</label>
                   {uploadedImage && (
                     <img
                       src={uploadedImage}
@@ -322,7 +332,7 @@ export default function SalonSettings() {
                   <ImageUpload onUpload={handleImageUpload} uploading={imageUploading} multiple={false} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Salon Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('salonName')}</label>
                   <input
                     type="text"
                     value={general.salonName}
@@ -331,7 +341,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('phoneNumber')}</label>
                   <input
                     type="tel"
                     value={general.phone}
@@ -340,7 +350,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('addressField')}</label>
                   <input
                     type="text"
                     value={general.address}
@@ -349,7 +359,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('emailField')}</label>
                   <input
                     type="email"
                     value={general.email}
@@ -358,7 +368,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('websiteField')}</label>
                   <input
                     type="url"
                     value={general.website}
@@ -367,7 +377,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('currencyField')}</label>
                   <select
                     value={settingsState.currency}
                     onChange={(e) => handleSettingsChange("currency", e.target.value)}
@@ -381,7 +391,7 @@ export default function SalonSettings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('timezoneField')}</label>
                   <select
                     value={settingsState.timezone}
                     onChange={(e) => handleSettingsChange("timezone", e.target.value)}
@@ -394,7 +404,7 @@ export default function SalonSettings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tax Rate (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('taxRate')}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -404,7 +414,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Service Fee (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('serviceFee')}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -414,7 +424,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cancellation Period (hours)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('cancellationPeriod')}</label>
                   <input
                     type="number"
                     value={settingsState.cancellationHours}
@@ -429,28 +439,28 @@ export default function SalonSettings() {
           {/* Notifications Settings */}
           {activeTab === "notifications" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Notification Preferences</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('notificationPreferences')}</h2>
               <div className="space-y-4">
                 {[
                   {
-                    title: "Email Notifications",
-                    description: "Receive notifications via email",
-                    field: "emailNotifications",
+                    title: t('emailNotifications'),
+                    description: t('emailNotificationsDesc'),
+                    field: 'emailNotifications',
                   },
                   {
-                    title: "SMS Notifications",
-                    description: "Receive notifications via SMS",
-                    field: "smsNotifications",
+                    title: t('smsNotifications'),
+                    description: t('smsNotificationsDesc'),
+                    field: 'smsNotifications',
                   },
                   {
-                    title: "Appointment Confirmations",
-                    description: "Send confirmation emails for new appointments",
-                    field: "appointmentConfirmations",
+                    title: t('appointmentConfirmations'),
+                    description: t('appointmentConfirmationsDesc'),
+                    field: 'appointmentConfirmations',
                   },
                   {
-                    title: "Reminder Notifications",
-                    description: "Send reminder notifications to clients",
-                    field: "reminderNotifications",
+                    title: t('appointmentReminders'),
+                    description: t('appointmentRemindersDesc'),
+                    field: 'reminderNotifications',
                   },
                 ].map((item) => (
                   <div
@@ -479,28 +489,28 @@ export default function SalonSettings() {
           {/* Payment Settings */}
           {activeTab === "payments" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Payment Methods</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('paymentMethods')}</h2>
               <div className="space-y-4">
                 {[
                   {
-                    title: "Credit Cards",
-                    description: "Accept Visa, MasterCard, American Express",
-                    field: "acceptCreditCards",
+                    title: t('creditCards'),
+                    description: t('creditCardsDesc'),
+                    field: 'acceptCreditCards',
                   },
                   {
-                    title: "Debit Cards",
-                    description: "Accept debit card payments",
-                    field: "acceptDebitCards",
+                    title: t('debitCards'),
+                    description: t('debitCardsDesc'),
+                    field: 'acceptDebitCards',
                   },
                   {
-                    title: "PayPal",
-                    description: "Accept PayPal payments",
-                    field: "acceptPayPal",
+                    title: t('paypal'),
+                    description: t('paypalDesc'),
+                    field: 'acceptPayPal',
                   },
                   {
-                    title: "Cash",
-                    description: "Accept cash payments",
-                    field: "acceptCash",
+                    title: t('cash'),
+                    description: t('cash'),
+                    field: 'acceptCash',
                   },
                 ].map((item) => (
                   <div
@@ -529,12 +539,12 @@ export default function SalonSettings() {
 
               {/* Deposit settings */}
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Deposit Settings</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t('depositSettings')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
-                      <h4 className="font-medium text-gray-900">Require Deposit</h4>
-                      <p className="text-sm text-gray-500">Require deposit for appointments</p>
+                      <h4 className="font-medium text-gray-900">{t('requireDeposit')}</h4>
+                      <p className="text-sm text-gray-500">{t('requireDepositDesc')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -547,7 +557,7 @@ export default function SalonSettings() {
                     </label>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Deposit Amount ($)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('depositAmount')}</label>
                     <input
                       type="number"
                       value={settingsState.depositAmount}
@@ -564,10 +574,10 @@ export default function SalonSettings() {
           {/* Policies Settings */}
           {activeTab === "policies" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">Salon Policies</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('salonPolicies')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cancellation Period (hours)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('cancellationPeriod')}</label>
                   <input
                     type="number"
                     value={settingsState.cancellationHours}
@@ -576,7 +586,7 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Clients per Slot</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('maxClientsPerSlot')}</label>
                   <input
                     type="number"
                     value={settingsState.maxClientsPerSlot}
@@ -585,27 +595,27 @@ export default function SalonSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Pet Policy</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('petPolicy')}</label>
                   <select
                     value={(settingsState as any).petPolicy || "no-pets"}
                     onChange={(e) => handleSettingsChange("petPolicy", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
-                    <option value="no-pets">No Pets</option>
-                    <option value="allowed">Pets Allowed</option>
-                    <option value="restricted">Restricted (Small pets only)</option>
+                    <option value="no-pets">{t('noPets')}</option>
+                    <option value="allowed">{t('petsAllowed')}</option>
+                    <option value="restricted">{t('restrictedPets')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Smoking Policy</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('smokingPolicy')}</label>
                   <select
                     value={(settingsState as any).smokingPolicy || "no-smoking"}
                     onChange={(e) => handleSettingsChange("smokingPolicy", e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
-                    <option value="no-smoking">No Smoking</option>
-                    <option value="designated-areas">Designated Areas Only</option>
-                    <option value="smoking-rooms">Smoking Rooms Available</option>
+                    <option value="no-smoking">{t('noSmoking')}</option>
+                    <option value="designated-areas">{t('designatedAreas')}</option>
+                    <option value="smoking-rooms">{t('smokingRoomsAvailable')}</option>
                   </select>
                 </div>
               </div>

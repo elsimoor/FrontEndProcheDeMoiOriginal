@@ -18,6 +18,9 @@ import {
   X,
 } from "lucide-react"
 
+// Translation hook for resolving UI strings based on the current locale
+import useTranslation from "@/hooks/useTranslation"
+
 /**
  * Availability structure as returned by the backend for a staff member.  A staff
  * member can specify availability per day with start and end times and a
@@ -57,6 +60,8 @@ interface StaffMember {
 }
 
 export default function SalonStaff() {
+  // Acquire translation function from context
+  const { t } = useTranslation()
   // Filters and modal state
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
@@ -378,15 +383,16 @@ export default function SalonStaff() {
     fullTime: staff.filter((s) => s.schedule === "Full-time").length,
   }
 
-  // Display loading or error messages early
+  // Display loading or error messages early using translated text
   if (sessionLoading || staffLoading) {
-    return <div className="p-6 text-gray-600">Loading staff...</div>
+    return <div className="p-6 text-gray-600">{t("loadingStaff")}</div>
   }
   if (sessionError) {
+    // Session errors are passed through directly
     return <div className="p-6 text-red-600">{sessionError}</div>
   }
   if (staffError) {
-    return <div className="p-6 text-red-600">Error loading staff</div>
+    return <div className="p-6 text-red-600">{t("errorLoadingStaff")}</div>
   }
 
   return (
@@ -394,15 +400,15 @@ export default function SalonStaff() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-          <p className="text-gray-600">Manage your salon team and schedules</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("staffManagementTitle")}</h1>
+          <p className="text-gray-600">{t("staffSubtitle")}</p>
         </div>
         <button
           onClick={openCreateModal}
           className="bg-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-700 transition-colors flex items-center"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Staff Member
+          {t("addStaffMember")}
         </button>
       </div>
 
@@ -411,7 +417,7 @@ export default function SalonStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Staff</p>
+              <p className="text-sm font-medium text-gray-600">{t("totalStaff")}</p>
               <p className="text-2xl font-bold text-gray-900">{staffStats.total}</p>
             </div>
             <User className="h-8 w-8 text-gray-400" />
@@ -420,7 +426,7 @@ export default function SalonStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active</p>
+              <p className="text-sm font-medium text-gray-600">{t("active")}</p>
               <p className="text-2xl font-bold text-green-600">{staffStats.active}</p>
             </div>
             <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -431,7 +437,7 @@ export default function SalonStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">On Leave</p>
+              <p className="text-sm font-medium text-gray-600">{t("onLeave")}</p>
               <p className="text-2xl font-bold text-yellow-600">{staffStats.onLeave}</p>
             </div>
             <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -442,7 +448,7 @@ export default function SalonStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Full Time</p>
+              <p className="text-sm font-medium text-gray-600">{t("fullTime")}</p>
               <p className="text-2xl font-bold text-purple-600">{staffStats.fullTime}</p>
             </div>
             <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -460,7 +466,8 @@ export default function SalonStaff() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name, role, email..."
+                // Use translated placeholder
+                placeholder={t("searchByNameRoleEmail")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
@@ -473,28 +480,28 @@ export default function SalonStaff() {
               onChange={(e) => setRoleFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             >
-              <option value="all">All Roles</option>
-              <option value="senior">Senior</option>
-              <option value="hair">Hair</option>
-              <option value="color">Color</option>
-              <option value="esthetician">Esthetician</option>
-              <option value="nail">Nail</option>
-              <option value="massage">Massage</option>
-              <option value="barber">Barber</option>
+              <option value="all">{t("allRoles")}</option>
+              <option value="senior">{t("senior")}</option>
+              <option value="hair">{t("hair")}</option>
+              <option value="color">{t("color")}</option>
+              <option value="esthetician">{t("esthetician")}</option>
+              <option value="nail">{t("nail")}</option>
+              <option value="massage">{t("massage")}</option>
+              <option value="barber">{t("barber")}</option>
             </select>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="on-leave">On Leave</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">{t("allStatusLabel")}</option>
+              <option value="active">{t("active")}</option>
+              <option value="on-leave">{t("onLeave")}</option>
+              <option value="inactive">{t("inactive")}</option>
             </select>
             <button className="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               <Filter className="h-5 w-5 mr-2" />
-              More Filters
+              {t("moreFilters")}
             </button>
           </div>
         </div>
@@ -506,12 +513,12 @@ export default function SalonStaff() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("nameField")}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("roleField")}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("contact")}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("status")}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("schedule")}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("actionsLabel")}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -556,25 +563,37 @@ export default function SalonStaff() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(member.status)}`}>
-                      {member.status}
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(member.status)}`}>
+                      {/* Translate status: the backend returns hyphenated keys for on-leave */}
+                      {t(member.status === "on-leave" ? "onLeave" : member.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {member.schedule || "N/A"}
+                    {/* Translate schedule options if present */}
+                    {member.schedule
+                      ? t(
+                          member.schedule === "Full-time"
+                            ? "fullTimeOption"
+                            : member.schedule === "Part-time"
+                            ? "partTimeOption"
+                            : member.schedule === "Contract"
+                            ? "contractOption"
+                            : member.schedule
+                        )
+                      : "N/A"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button
                       onClick={() => handleEdit(member)}
                       className="text-blue-600 hover:text-blue-900 mr-3 flex items-center"
                     >
-                      <Edit className="h-4 w-4 mr-1" /> Edit
+                    <Edit className="h-4 w-4 mr-1" /> {t("edit")}
                     </button>
                     <button
                       onClick={() => handleDelete(member.id)}
                       className="text-red-600 hover:text-red-900 flex items-center"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    <Trash2 className="h-4 w-4 mr-1" /> {t("delete")}
                     </button>
                   </td>
                 </tr>
@@ -600,11 +619,11 @@ export default function SalonStaff() {
                   <div className="sm:flex sm:items-start">
                     <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                       <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                        {editingStaff ? "Edit Staff Member" : "Add Staff Member"}
+                        {editingStaff ? t("editStaffMember") : t("addStaffMemberModal")}
                       </h3>
                       <div className="mt-2 space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Name</label>
+                          <label className="block text-sm font-medium text-gray-700">{t("nameField")}</label>
                           <input
                             type="text"
                             required
@@ -614,7 +633,7 @@ export default function SalonStaff() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Role</label>
+                          <label className="block text-sm font-medium text-gray-700">{t("roleField")}</label>
                           <input
                             type="text"
                             required
@@ -625,7 +644,7 @@ export default function SalonStaff() {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                            <label className="block text-sm font-medium text-gray-700">{t("emailField")}</label>
                             <input
                               type="email"
                               value={formData.email || ""}
@@ -634,7 +653,7 @@ export default function SalonStaff() {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Phone</label>
+                            <label className="block text-sm font-medium text-gray-700">{t("phoneField")}</label>
                             <input
                               type="tel"
                               value={formData.phone || ""}
@@ -645,7 +664,7 @@ export default function SalonStaff() {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Hire Date</label>
+                            <label className="block text-sm font-medium text-gray-700">{t("hireDate")}</label>
                             <input
                               type="date"
                               value={formData.hireDate || ""}
@@ -654,21 +673,21 @@ export default function SalonStaff() {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Schedule</label>
+                            <label className="block text-sm font-medium text-gray-700">{t("schedule")}</label>
                             <select
                               value={formData.schedule || "Full-time"}
                               onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             >
-                              <option value="Full-time">Full-time</option>
-                              <option value="Part-time">Part-time</option>
-                              <option value="Contract">Contract</option>
+                              <option value="Full-time">{t("fullTimeOption")}</option>
+                              <option value="Part-time">{t("partTimeOption")}</option>
+                              <option value="Contract">{t("contractOption")}</option>
                             </select>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Hourly Rate</label>
+                            <label className="block text-sm font-medium text-gray-700">{t("hourlyRate")}</label>
                             <input
                               type="number"
                               min="0"
@@ -679,20 +698,20 @@ export default function SalonStaff() {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Status</label>
+                            <label className="block text-sm font-medium text-gray-700">{t("status")}</label>
                             <select
                               value={formData.status || "active"}
                               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             >
-                              <option value="active">Active</option>
-                              <option value="on-leave">On Leave</option>
-                              <option value="inactive">Inactive</option>
+                              <option value="active">{t("active")}</option>
+                              <option value="on-leave">{t("onLeave")}</option>
+                              <option value="inactive">{t("inactive")}</option>
                             </select>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Avatar URL</label>
+                          <label className="block text-sm font-medium text-gray-700">{t("avatarUrl")}</label>
                           <input
                             type="text"
                             value={formData.avatar || ""}
@@ -709,14 +728,14 @@ export default function SalonStaff() {
                     type="submit"
                     className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-pink-600 text-base font-medium text-white hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:w-auto sm:text-sm"
                   >
-                    {editingStaff ? "Update" : "Create"}
+                    {editingStaff ? t("updateButton") : t("createButton")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   >
-                    Cancel
+                    {t("cancelButton")}
                   </button>
                 </div>
               </form>
