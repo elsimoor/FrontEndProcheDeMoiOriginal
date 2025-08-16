@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { Plus, Edit, Trash2, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, X } from "lucide-react"
 
 // Import translation hook
-import { useTranslation } from "@/lib/i18n"
+import useTranslation from "@/hooks/useTranslation";
 
 // Apollo Client hooks for fetching and mutating data
 import { gql, useQuery, useMutation } from "@apollo/client"

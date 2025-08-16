@@ -16,7 +16,7 @@ import { uploadImage } from "@/app/lib/firebase"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 
 // Translation hook
-import { useTranslation } from "@/hooks/useTranslation"
+import useTranslation from "@/hooks/useTranslation";
 
 /**
  * GraphQL query to fetch a single hotel by its identifier.  We request

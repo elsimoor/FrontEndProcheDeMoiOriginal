@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslation } from "@/lib/i18n"
+import useTranslation from "@/hooks/useTranslation";
 import { gql, useQuery, useMutation } from "@apollo/client"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
