@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/currency';
 import moment from 'moment';
 import { RestaurantSubnav } from '../accueil/page';
 
@@ -38,13 +39,15 @@ const CREATE_PAYMENT_SESSION = gql`
   }
 `;
 
-// Query to fetch the restaurant's settings (in particular the horaires with their pricing).
-// We only fetch the fields needed to compute a reservation price on the client side.
+// Query to fetch the restaurant's settings.  We request both the horaires and the
+// configured currency so that we can compute prices on the client and
+// display them in the correct currency.
 const GET_RESTAURANT_SETTINGS = gql`
   query RestaurantSettings($id: ID!) {
     restaurant(id: $id) {
       id
       settings {
+        currency
         horaires {
           ouverture
           fermeture
@@ -84,12 +87,16 @@ function ConfirmationContent() {
   // this after successfully creating the reservation/privatisation.
   const [createPaymentSession, { loading: paymentSessionLoading }] = useMutation(CREATE_PAYMENT_SESSION);
 
-  // Fetch the restaurant settings to compute an accurate price per guest.  The query is skipped
-  // when no restaurantId is available in the URL (e.g. on initial render).
+  // Fetch the restaurant settings to compute an accurate price per guest and to
+  // determine the correct currency for display.  The query is skipped when no
+  // restaurantId is available in the URL (e.g. on initial render).
   const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
     variables: { id: restaurantId },
     skip: !restaurantId,
   });
+
+  // Extract the currency from the settings.  Default to USD if not provided.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
 
   const handleConfirm = async () => {
     // Validate required details before proceeding.  Missing values
@@ -227,6 +234,12 @@ function ConfirmationContent() {
   const pricePerPerson = computePricePerPerson();
   const totalPrice = numGuests * pricePerPerson;
 
+  // Format the total price for display using the restaurant's currency.  We
+  // treat the computed total as being in the base currency (USD) and convert
+  // into the restaurant's currency.  If the conversion fails, the helper
+  // falls back to appending the currency code.
+  const formattedTotalPrice = formatCurrency(totalPrice, currency);
+
   return (
     <div className="min-h-screen bg-[#FFF5F5] flex items-start justify-center px-6 py-16">
       <Card className="w-full max-w-3xl border border-[#F2B8B6] rounded-3xl bg-white shadow-none">
@@ -286,7 +299,7 @@ function ConfirmationContent() {
           </div>
           <div className="text-right">
             <p className="font-semibold text-[#B47C80]">Total</p>
-            <p className="text-gray-800">${totalPrice.toFixed(2)}</p>
+            <p className="text-gray-800">{formattedTotalPrice}</p>
           </div>
         </div>
       </div>

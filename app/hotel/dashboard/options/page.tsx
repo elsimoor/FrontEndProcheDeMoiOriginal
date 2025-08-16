@@ -7,6 +7,8 @@ import { Plus, Edit, Trash2, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, X } f
 
 // Apollo Client hooks for fetching and mutating data
 import { gql, useQuery, useMutation } from "@apollo/client"
+// Import helpers to format monetary amounts according to the selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency"
 
 /**
  * GraphQL query to load a single hotel by its identifier.  We request only
@@ -42,6 +44,19 @@ const GET_HOTEL = gql`
         description
         category
         price
+      }
+      # View options that can be selected when booking a room.  Each
+      # entry defines a type of view with a name and optional
+      # description, category and price.
+      roomViewOptions {
+        name
+        description
+        category
+        price
+      }
+      # Include hotel settings so we can access the selected currency
+      settings {
+        currency
       }
     }
   }
@@ -95,6 +110,17 @@ interface RoomPaidOption {
   price: number
 }
 
+// Represents a view option that can be selected when booking.  Each view
+// has a name and may include a description, category and price.  The
+// price is optional and defaults to 0 when not provided.
+interface RoomViewOption {
+  id: number
+  name: string
+  description?: string
+  category?: string
+  price?: number
+}
+
 // Helper function to remove __typename from an array of objects
 const cleanTypename = (arr: any[]) => arr.map(({ __typename, ...rest }) => rest);
 
@@ -103,7 +129,7 @@ export default function HotelOptions() {
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
   const [modalType, setModalType] = useState<
-    "service" | "amenity" | "policy" | "roomPaidOption"
+    "service" | "amenity" | "policy" | "roomPaidOption" | "roomViewOption"
   >("service")
 
   // Business identifier for the currently logged in hotel.  This is derived
@@ -154,6 +180,14 @@ export default function HotelOptions() {
     skip: !hotelId,
   })
 
+  // Determine the hotel's currency from settings.  Default to USD when
+  // not available.  We compute a symbol for the currency using the
+  // currencySymbols map; if no symbol exists we fall back to the
+  // currency code itself.  These values are used throughout the
+  // component to format prices and display appropriate labels.
+  const currency: string = hotelData?.hotel?.settings?.currency || "USD"
+  const currencySymbol: string = currencySymbols[currency] ?? currency
+
   // Prepare the update mutation.  We use this whenever the user creates,
   // edits or deletes a service, amenity or policy.  After each mutation the
   // hotel is refetched to keep the UI in sync with the backend.
@@ -169,6 +203,12 @@ export default function HotelOptions() {
   // add-ons configured by the hotel manager.  Initialised from
   // hotelData.roomPaidOptions when the query resolves.
   const [roomPaidOptions, setRoomPaidOptions] = useState<RoomPaidOption[]>([])
+
+  // Local state for room view options.  These correspond to types of
+  // views (e.g. City View, Garden View) that guests can select when
+  // booking a room.  Initialised from hotelData.roomViewOptions when
+  // the query resolves.
+  const [roomViewOptions, setRoomViewOptions] = useState<RoomViewOption[]>([])
 
   // When the hotel data is fetched, populate the local state arrays.  We
   // assign a generated id to each item for React list rendering because
@@ -217,6 +257,15 @@ export default function HotelOptions() {
           ...opt,
         }))
       )
+
+      // Initialise room view options.  Each view is assigned a unique id
+      // based on its index for React list rendering.
+      setRoomViewOptions(
+        (h.roomViewOptions || []).map((opt: any, index: number) => ({
+          id: index + 1,
+          ...opt,
+        }))
+      )
     }
   }, [hotelData])
 
@@ -257,7 +306,8 @@ export default function HotelOptions() {
       updatedServices: any[],
       updatedAmenities: any[],
       updatedPolicies: any[],
-      updatedRoomPaidOptions: any[]
+      updatedRoomPaidOptions: any[],
+      updatedRoomViewOptions: any[]
     ) => {
       try {
         await updateHotel({
@@ -275,6 +325,9 @@ export default function HotelOptions() {
               ),
               roomPaidOptions: cleanTypename(
                 updatedRoomPaidOptions.map(({ id, ...rest }) => rest)
+              ),
+              roomViewOptions: cleanTypename(
+                updatedRoomViewOptions.map(({ id, ...rest }) => rest)
               ),
             },
           },
@@ -308,6 +361,7 @@ export default function HotelOptions() {
         amenities.map(({ id, ...rest }) => rest),
         policies.map(({ id, ...rest }) => rest),
         roomPaidOptions.map(({ id, ...rest }) => rest),
+        roomViewOptions.map(({ id, ...rest }) => rest),
       )
     } else if (modalType === "amenity") {
       let updatedAmenities: any[]
@@ -331,6 +385,7 @@ export default function HotelOptions() {
         updatedAmenities.map(({ id, ...rest }) => rest),
         policies.map(({ id, ...rest }) => rest),
         roomPaidOptions.map(({ id, ...rest }) => rest),
+        roomViewOptions.map(({ id, ...rest }) => rest),
       )
     } else if (modalType === "policy") {
       let updatedPolicies: any[]
@@ -352,6 +407,7 @@ export default function HotelOptions() {
         amenities.map(({ id, ...rest }) => rest),
         updatedPolicies.map(({ id, ...rest }) => rest),
         roomPaidOptions.map(({ id, ...rest }) => rest),
+        roomViewOptions.map(({ id, ...rest }) => rest),
       )
     } else if (modalType === "roomPaidOption") {
       // Handle creation or editing of a paid room option
@@ -380,6 +436,37 @@ export default function HotelOptions() {
         amenities.map(({ id, ...rest }) => rest),
         policies.map(({ id, ...rest }) => rest),
         updatedOptions.map(({ id, ...rest }) => rest),
+        roomViewOptions.map(({ id, ...rest }) => rest),
+      )
+    } else if (modalType === "roomViewOption") {
+      // Handle creation or editing of a room view option
+      let updatedViews: any[]
+      if (editingItem) {
+        updatedViews = roomViewOptions.map((opt) =>
+          opt.id === editingItem.id ? { ...opt, ...formData } : opt
+        )
+      } else {
+        const newId =
+          roomViewOptions.length > 0
+            ? Math.max(...roomViewOptions.map((o) => o.id)) + 1
+            : 1
+        const newView: RoomViewOption = {
+          id: newId,
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          // Price is optional for view options; default to undefined if empty or zero
+          price: formData.price === undefined || formData.price === null || formData.price === "" ? undefined : formData.price,
+        }
+        updatedViews = [...roomViewOptions, newView]
+      }
+      setRoomViewOptions(updatedViews)
+      await persistChanges(
+        services.map(({ id, icon, ...rest }) => rest),
+        amenities.map(({ id, ...rest }) => rest),
+        policies.map(({ id, ...rest }) => rest),
+        roomPaidOptions.map(({ id, ...rest }) => rest),
+        updatedViews.map(({ id, ...rest }) => rest),
       )
     }
 
@@ -390,7 +477,7 @@ export default function HotelOptions() {
 
   const handleEdit = (
     item: any,
-    type: "service" | "amenity" | "policy" | "roomPaidOption"
+    type: "service" | "amenity" | "policy" | "roomPaidOption" | "roomViewOption"
   ) => {
     setEditingItem(item)
     setFormData(item)
@@ -400,14 +487,15 @@ export default function HotelOptions() {
 
   const handleDelete = async (
     id: number,
-    type: "service" | "amenity" | "policy" | "roomPaidOption"
+    type: "service" | "amenity" | "policy" | "roomPaidOption" | "roomViewOption"
   ) => {
     if (!hotelId) return
     if (confirm("Are you sure you want to delete this item?")) {
       let updatedServices = services
       let updatedAmenities = amenities
       let updatedPolicies = policies
-      let updatedOptions = roomPaidOptions
+      let updatedPaidOptions = roomPaidOptions
+      let updatedViewOptions = roomViewOptions
       if (type === "service") {
         updatedServices = services.filter((service) => service.id !== id)
         setServices(updatedServices)
@@ -418,8 +506,11 @@ export default function HotelOptions() {
         updatedPolicies = policies.filter((policy) => policy.id !== id)
         setPolicies(updatedPolicies)
       } else if (type === "roomPaidOption") {
-        updatedOptions = roomPaidOptions.filter((opt) => opt.id !== id)
-        setRoomPaidOptions(updatedOptions)
+        updatedPaidOptions = roomPaidOptions.filter((opt) => opt.id !== id)
+        setRoomPaidOptions(updatedPaidOptions)
+      } else if (type === "roomViewOption") {
+        updatedViewOptions = roomViewOptions.filter((opt) => opt.id !== id)
+        setRoomViewOptions(updatedViewOptions)
       }
       try {
         await updateHotel({
@@ -436,7 +527,10 @@ export default function HotelOptions() {
                 updatedPolicies.map(({ id, ...rest }) => rest)
               ),
               roomPaidOptions: cleanTypename(
-                updatedOptions.map(({ id, ...rest }) => rest)
+                updatedPaidOptions.map(({ id, ...rest }) => rest)
+              ),
+              roomViewOptions: cleanTypename(
+                updatedViewOptions.map(({ id, ...rest }) => rest)
               ),
             },
           },
@@ -449,7 +543,7 @@ export default function HotelOptions() {
   }
 
   const openCreateModal = (
-    type: "service" | "amenity" | "policy" | "roomPaidOption"
+    type: "service" | "amenity" | "policy" | "roomPaidOption" | "roomViewOption"
   ) => {
     setEditingItem(null)
     setModalType(type)
@@ -491,6 +585,7 @@ export default function HotelOptions() {
               { id: "amenities", label: "Amenities" },
               { id: "policies", label: "Policies" },
               { id: "roomPaidOptions", label: "Paid Room Options" },
+              { id: "roomViewOptions", label: "View Options" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -561,7 +656,9 @@ export default function HotelOptions() {
                       <div className="flex justify-between items-center">
                         <div>
                           <span className="text-lg font-bold text-gray-900">
-                            {service.price === 0 ? "Free" : `$${service.price}`}
+                            {service.price === 0
+                              ? "Free"
+                              : formatCurrency(service.price, currency)}
                           </span>
                         </div>
                         <div className="flex items-center">
@@ -634,7 +731,9 @@ export default function HotelOptions() {
                       </div>
                       <div>
                         <span className="text-lg font-bold text-gray-900">
-                          {amenity.price === 0 ? "Free" : `$${amenity.price}`}
+                          {amenity.price === 0
+                            ? "Free"
+                            : formatCurrency(amenity.price, currency)}
                         </span>
                       </div>
                     </div>
@@ -718,7 +817,7 @@ export default function HotelOptions() {
                         <p className="text-sm text-gray-600 mt-1">{option.description}</p>
                       )}
                       <p className="mt-2 text-lg font-bold text-gray-900">
-                        {option.price === 0 ? "Free" : `$${option.price}`}
+                        {option.price === 0 ? "Free" : formatCurrency(option.price, currency)}
                       </p>
                     </div>
                     <div className="flex space-x-2 mt-4">
@@ -743,6 +842,63 @@ export default function HotelOptions() {
               </div>
             </div>
           )}
+
+        {/* Room View Options Tab */}
+        {activeTab === "roomViewOptions" && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900">Room View Options</h2>
+              <button
+                onClick={() => openCreateModal("roomViewOption")}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add View
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {roomViewOptions.map((option) => (
+                <div
+                  key={option.id}
+                  className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow flex flex-col justify-between"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{option.name}</h3>
+                    {option.category && (
+                      <p className="text-sm text-gray-500">{option.category}</p>
+                    )}
+                    {option.description && (
+                      <p className="text-sm text-gray-600 mt-1">{option.description}</p>
+                    )}
+                    {/* Price may be undefined or zero; display Free when zero, otherwise formatted price */}
+                    {option.price !== undefined && (
+                      <p className="mt-2 text-lg font-bold text-gray-900">
+                        {option.price === 0 ? "Free" : formatCurrency(option.price, currency)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex space-x-2 mt-4">
+                    <button
+                      onClick={() => handleEdit(option, "roomViewOption")}
+                      className="text-gray-400 hover:text-blue-600"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(option.id, "roomViewOption")}
+                      className="text-gray-400 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {roomViewOptions.length === 0 && (
+                <p className="text-gray-500">No view options configured.</p>
+              )}
+            </div>
+          </div>
+        )}
         </div>
       </div>
 
@@ -783,7 +939,7 @@ export default function HotelOptions() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
                       <input
                         type="number"
                         min="0"
@@ -841,7 +997,7 @@ export default function HotelOptions() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
                     <input
                       type="number"
                       min="0"
@@ -902,6 +1058,103 @@ export default function HotelOptions() {
                 </>
               )}
 
+              {/* Fields for paid room options */}
+              {modalType === "roomPaidOption" && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Option Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name || ""}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <input
+                        type="text"
+                        value={formData.category || ""}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                      <input
+                        type="number"
+                        min="0"
+                        required
+                        value={formData.price ?? 0}
+                        onChange={(e) => setFormData({ ...formData, price: Number.parseFloat(e.target.value) })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={formData.description || ""}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Fields for room view options */}
+              {modalType === "roomViewOption" && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">View Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name || ""}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <input
+                        type="text"
+                        value={formData.category || ""}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.price ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setFormData({ ...formData, price: value === "" ? undefined : Number.parseFloat(value) })
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={formData.description || ""}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Action buttons */}
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -918,77 +1171,6 @@ export default function HotelOptions() {
           </div>
         </div>
       )}
-
-              {modalType === "roomPaidOption" && (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Option Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.name || ""}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Category
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.category || ""}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            category: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Price ($)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        required
-                        value={formData.price ?? 0}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            price: Number.parseFloat(e.target.value),
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      value={formData.description || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          description: e.target.value,
-                        })
-                      }
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </>
-              )}
     </div>
   )
 }

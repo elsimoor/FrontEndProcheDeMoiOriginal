@@ -2,6 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { gql, useQuery } from "@apollo/client";
+// Import currency helper to format payment amounts consistently
+import { formatCurrency } from "@/lib/currency";
+// Importing useQuery twice is unnecessary; we will reuse useQuery for both payment
+// and settings queries.
+
+// Query to fetch hotel settings including the preferred currency.  We use this
+// to convert payment amounts into the hotel's configured currency.  The
+// settings are keyed off of the business ID returned from the session.
+const GET_HOTEL_SETTINGS = gql`
+  query GetHotelSettings($id: ID!) {
+    hotel(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`;
 import {
   Table,
   TableHeader,
@@ -80,6 +97,14 @@ export default function HotelPaymentsPage() {
     skip: !businessId,
   });
 
+  // Fetch the hotel's currency once we know the businessId.  If the query
+  // hasn't run yet or no currency is configured, default to USD.
+  const { data: settingsData } = useQuery(GET_HOTEL_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency: string = settingsData?.hotel?.settings?.currency || 'USD';
+
   if (sessionLoading || loading) {
     return <div className="p-6">Loading…</div>;
   }
@@ -116,10 +141,21 @@ export default function HotelPaymentsPage() {
               <TableRow key={payment.id}>
                 <TableCell>{reservationId}</TableCell>
                 <TableCell>{customerName}</TableCell>
+                {/* Format the payment amount into the hotel's currency.  Payments may originate in a different
+                 * currency (e.g. USD or MAD) depending on the Stripe configuration.  We convert the
+                 * `payment.amount` from its reported `payment.currency` into the hotel's configured currency
+                 * using our `formatCurrency` helper.  The baseCurrency parameter is set to the original
+                 * payment currency to ensure the conversion is accurate.  The resulting amount will display
+                 * the proper symbol for the hotel's currency (e.g. DH for MAD). */}
                 <TableCell>
-                  {payment.amount.toFixed(2)} {payment.currency?.toUpperCase()}
+                  {formatCurrency(
+                    payment.amount ?? 0,
+                    currency,
+                    payment.currency?.toUpperCase() || 'USD'
+                  )}
                 </TableCell>
-                <TableCell>{payment.currency?.toUpperCase()}</TableCell>
+                {/* Display the hotel's currency code for clarity */}
+                <TableCell>{currency?.toUpperCase()}</TableCell>
                 <TableCell>{payment.paymentMethod || ""}</TableCell>
                 <TableCell>{payment.status}</TableCell>
                 <TableCell>{dateStr}</TableCell>

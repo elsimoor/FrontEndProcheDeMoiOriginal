@@ -350,6 +350,8 @@
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { gql, useQuery } from "@apollo/client"
+// Import currency helpers to format prices based on hotel settings
+import { formatCurrency, currencySymbols } from "@/lib/currency"
 
 // -------------------- Bed types (from your image) --------------------
 const BED_OPTIONS = [
@@ -463,6 +465,18 @@ const GET_AVAILABLE_ROOMS_COUNT = gql`
   }
 `
 
+// Query to fetch a single hotel's settings including its currency.  This
+// allows us to display room prices in the correct currency symbol.
+const GET_HOTEL_SETTINGS = gql`
+  query GetHotelSettings($id: ID!) {
+    hotel(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`
+
 export default function RoomsListPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -497,6 +511,16 @@ export default function RoomsListPage() {
     variables: { hotelId, checkIn, checkOut, adults, children },
     skip: !hotelId || !hasDates,
   })
+
+  // Fetch hotel settings to determine currency.  We skip the query if
+  // hotelId is not yet available.  Once loaded, we derive the
+  // currency and symbol with sensible defaults.
+  const { data: settingsData } = useQuery(GET_HOTEL_SETTINGS, {
+    variables: { id: hotelId },
+    skip: !hotelId,
+  })
+  const currency: string = settingsData?.hotel?.settings?.currency || 'USD'
+  const currencySymbol: string = currencySymbols[currency] || '$'
 
   // Normalize
   const roomsArray: any[] = roomsData?.rooms ?? roomsData?.availableRooms ?? []
@@ -681,7 +705,9 @@ export default function RoomsListPage() {
 
                   {/* Price */}
                   <div className="w-32 p-6 flex flex-col justify-center items-end">
-                    <span className="text-xl font-bold text-gray-900">{room.price}€/nuit</span>
+                    <span className="text-xl font-bold text-gray-900">
+                      {formatCurrency(room.price, currency)}/nuit
+                    </span>
                   </div>
                 </div>
               ))}

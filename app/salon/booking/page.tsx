@@ -9,6 +9,9 @@ import {
   Mail,
   Phone,
 }     from "lucide-react";
+
+// Currency helper to format amounts according to the salon's selected currency
+import { formatCurrency } from "@/lib/currency";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
@@ -34,6 +37,9 @@ const GET_SALONS = gql`
       name
       description
       images
+      settings {
+        currency
+      }
     }
   }
 `;
@@ -143,10 +149,19 @@ export default function SalonBookingPage() {
   // Determine which salon to book.  We fetch all salons and pick the first
   // active salon for demonstration purposes.
   const [salonId, setSalonId] = useState<string | null>(null);
+  // The currency used by the salon.  Defaults to USD until the salons query returns.
+  const [currency, setCurrency] = useState<string>('USD');
   const { data: salonsData, loading: salonsLoading } = useQuery(GET_SALONS);
   useEffect(() => {
     if (!salonsLoading && salonsData?.salons && salonsData.salons.length > 0 && !salonId) {
       setSalonId(salonsData.salons[0].id);
+    }
+    // When the salons query resolves update the currency state if available
+    if (!salonsLoading && salonsData?.salons && salonsData.salons.length > 0) {
+      const c = salonsData.salons[0].settings?.currency;
+      if (c) {
+        setCurrency(c as string);
+      }
     }
   }, [salonsLoading, salonsData, salonId]);
 
@@ -462,7 +477,7 @@ export default function SalonBookingPage() {
               <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
               <p className="text-sm text-gray-600 h-16 overflow-hidden leading-snug">{service.description}</p>
               <div className="flex justify-between items-center">
-                <span className="text-pink-600 font-bold">{service.price}€</span>
+                <span className="text-pink-600 font-bold">{formatCurrency(service.price, currency)}</span>
                 <span className="text-sm text-gray-500">{service.duration || 0} min</span>
               </div>
             </div>
@@ -497,7 +512,7 @@ export default function SalonBookingPage() {
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Prix</p>
-          <p className="text-gray-900 font-semibold text-lg">{selectedService?.price}€</p>
+          <p className="text-gray-900 font-semibold text-lg">{selectedService?.price != null ? formatCurrency(selectedService.price, currency) : ''}</p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Durée</p>
@@ -775,7 +790,9 @@ export default function SalonBookingPage() {
                     />
                     <span className="text-gray-800 text-base">{opt.name}</span>
                   </div>
-                  <span className="text-gray-600 text-base">{opt.price ? `+${opt.price.toFixed(2)}€` : 'Gratuit'}</span>
+                  <span className="text-gray-600 text-base">
+                    {opt.price ? `+${formatCurrency(opt.price, currency)}` : 'Gratuit'}
+                  </span>
                 </label>
               );
             })}
@@ -814,7 +831,7 @@ export default function SalonBookingPage() {
           </div>
           <div className="flex justify-between border-t border-gray-200 pt-4 mt-4">
             <dt className="font-semibold">Total</dt>
-            <dd className="font-semibold">{totalPrice.toFixed(2)}€</dd>
+            <dd className="font-semibold">{formatCurrency(totalPrice, currency)}</dd>
           </div>
         </dl>
       </div>
@@ -910,7 +927,7 @@ export default function SalonBookingPage() {
             {/* Total */}
             <div className="flex justify-between items-start border-t border-gray-200 pt-4 mt-4">
               <dt className="font-semibold text-gray-900">Total</dt>
-              <dd className="font-semibold text-gray-900">{totalPrice.toFixed(2)}€</dd>
+              <dd className="font-semibold text-gray-900">{formatCurrency(totalPrice, currency)}</dd>
             </div>
           </dl>
         </div>

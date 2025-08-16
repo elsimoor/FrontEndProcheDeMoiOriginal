@@ -687,6 +687,8 @@ import { Plus, Edit, Trash2, Search, Filter, DollarSign, Clock, Star, UtensilsCr
 import { gql, useQuery, useMutation } from "@apollo/client"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 import { uploadImage } from "@/app/lib/firebase"
+// Helpers to format prices according to the restaurant's selected currency
+import { formatCurrency, currencySymbols } from '@/lib/currency'
 
 interface MenuItem {
   id: string
@@ -774,11 +776,34 @@ export default function RestaurantMenus() {
     }
   `
 
+  // Query to fetch the restaurant's currency setting.  Used to format
+  // prices and labels dynamically.
+  const GET_RESTAURANT_SETTINGS = gql`
+    query GetRestaurantSettings($id: ID!) {
+      restaurant(id: $id) {
+        settings {
+          currency
+        }
+      }
+    }
+  `
+
   // Data hooks
   const { data, loading, error, refetch } = useQuery(GET_MENU_ITEMS, {
     variables: { restaurantId },
     skip: !restaurantId,
   })
+
+  // Fetch the restaurant's currency setting to format prices.  Skip
+  // until we know the restaurantId.
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: restaurantId },
+    skip: !restaurantId,
+  })
+
+  // Determine the currency and symbol.  Default to USD when not set.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD'
+  const currencySymbol: string = currencySymbols[currency] ?? currency
 
   const [createMenuItem] = useMutation(CREATE_MENU_ITEM)
   const [updateMenuItem] = useMutation(UPDATE_MENU_ITEM)
@@ -1184,7 +1209,7 @@ export default function RestaurantMenus() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
                   <input
                     type="number"
                     min="0"
@@ -1335,12 +1360,16 @@ export default function RestaurantMenus() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">
-              $
+              {/* Compute the average price of all menu items and format it using the restaurant's currency. */}
               {(() => {
                 const items = data?.menuItems ?? []
-                if (items.length === 0) return "0.00"
+                if (items.length === 0) {
+                  return formatCurrency(0, currency)
+                }
                 const sum = items.reduce((s: number, i: any) => s + (i.price || 0), 0)
-                return (sum / items.length).toFixed(2)
+                const avg = sum / items.length
+                // Convert the average into the restaurant's currency
+                return formatCurrency(avg, currency)
               })()}
             </p>
             <p className="text-sm text-gray-600">Avg. Price</p>

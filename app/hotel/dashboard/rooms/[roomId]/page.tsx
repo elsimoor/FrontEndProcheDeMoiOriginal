@@ -32,6 +32,24 @@ const GET_ROOMS = gql`
       numberOfBeds
       numberOfBathrooms
       description
+      # Fetch the paid options configured for this room.  Each option
+      # includes its name, description, category and price so that
+      # they can be pre‑selected in the form.
+      paidOptions {
+        name
+        description
+        category
+        price
+      }
+      # Fetch the view options configured for this room.  Each option
+      # includes its name, description, category and price so that
+      # they can be pre-selected in the form.
+      viewOptions {
+        name
+        description
+        category
+        price
+      }
     }
   }
 `;
@@ -46,6 +64,30 @@ const GET_ROOM_TYPES = gql`
     roomTypes(hotelId: $hotelId) {
       id
       name
+    }
+  }
+`;
+
+// Query to fetch both the hotel's paid room options and view options.  We
+// use the hotelId derived from the session to load all available
+// add‑ons and views that can be attached to a room.  If there are no
+// options defined this will return empty arrays.
+const GET_HOTEL_OPTIONS = gql`
+  query GetHotelOptions($id: ID!) {
+    hotel(id: $id) {
+      id
+      roomPaidOptions {
+        name
+        description
+        category
+        price
+      }
+      roomViewOptions {
+        name
+        description
+        category
+        price
+      }
     }
   }
 `;
@@ -106,6 +148,19 @@ export default function HotelRoomDetailsPage() {
     skip: !hotelId,
   });
 
+  // Fetch the hotel's paid room options.  This returns all add‑ons
+  // configured by the manager.  We skip the query until we have a
+  // hotelId from the session.  If there are no paid options
+  // defined the resulting array will be empty.
+  const {
+    data: hotelOptionsData,
+    loading: hotelOptionsLoading,
+    error: hotelOptionsError,
+  } = useQuery(GET_HOTEL_OPTIONS, {
+    variables: { id: hotelId },
+    skip: !hotelId,
+  });
+
   const [updateRoom] = useMutation(UPDATE_ROOM);
 
   // Upload all selected files to Firebase and append their URLs to the
@@ -150,6 +205,39 @@ export default function HotelRoomDetailsPage() {
   // files.  Otherwise it will restrict to a single file at a time.
   const [uploadMultiple, setUploadMultiple] = useState<boolean>(false);
 
+  // Toggle a paid option on or off.  When checked we add the option
+  // to the room's paidOptions array; when unchecked we remove it.  We
+  // compare by name to ensure uniqueness.
+  const handlePaidOptionToggle = (option: any, isChecked: boolean) => {
+    setFormState((prev) => {
+      let newOptions: any[];
+      if (isChecked) {
+        // Avoid duplicates by checking if the option is already selected
+        const exists = prev.paidOptions.some((o: any) => o.name === option.name);
+        newOptions = exists ? prev.paidOptions : [...prev.paidOptions, option];
+      } else {
+        newOptions = prev.paidOptions.filter((o: any) => o.name !== option.name);
+      }
+      return { ...prev, paidOptions: newOptions };
+    });
+  };
+
+  // Toggle a view option on or off.  When checked we add the option
+  // to the room's viewOptions array; when unchecked we remove it.
+  // We compare by name to avoid duplicates.
+  const handleViewOptionToggle = (option: any, isChecked: boolean) => {
+    setFormState((prev) => {
+      let newViews: any[];
+      if (isChecked) {
+        const exists = prev.viewOptions.some((o: any) => o.name === option.name);
+        newViews = exists ? prev.viewOptions : [...prev.viewOptions, option];
+      } else {
+        newViews = prev.viewOptions.filter((o: any) => o.name !== option.name);
+      }
+      return { ...prev, viewOptions: newViews };
+    });
+  };
+
   // Local state for the room form.  We populate this once we find the
   // room in roomsData.  It includes additional descriptive fields and
   // stores images as an array of strings rather than a comma‑separated
@@ -168,6 +256,14 @@ export default function HotelRoomDetailsPage() {
     numberOfBeds: "" as string | number,
     numberOfBathrooms: "" as string | number,
     description: "",
+    // Selected paid options for this room.  Each entry is an object
+    // containing name, description, category and price.  When empty
+    // the room has no additional paid options configured.
+    paidOptions: [] as any[],
+    // Selected view options for this room.  Each entry is an object
+    // containing name, description, category and price.  When empty
+    // the room has no view options configured.
+    viewOptions: [] as any[],
   });
 
   useEffect(() => {
@@ -188,6 +284,8 @@ export default function HotelRoomDetailsPage() {
           numberOfBeds: room.numberOfBeds ?? "",
           numberOfBathrooms: room.numberOfBathrooms ?? "",
           description: room.description || "",
+          paidOptions: Array.isArray(room.paidOptions) ? room.paidOptions : [],
+          viewOptions: Array.isArray(room.viewOptions) ? room.viewOptions : [],
         });
       }
     }
@@ -209,6 +307,28 @@ export default function HotelRoomDetailsPage() {
       numberOfBeds: formState.numberOfBeds !== "" ? Number(formState.numberOfBeds) : undefined,
       numberOfBathrooms: formState.numberOfBathrooms !== "" ? Number(formState.numberOfBathrooms) : undefined,
       description: formState.description || undefined,
+      // Include the selected paid options in the update payload.  We map
+      // over the options to remove any extraneous properties such as
+      // potential id fields.
+      paidOptions: Array.isArray(formState.paidOptions)
+        ? formState.paidOptions.map((opt: any) => ({
+            name: opt.name,
+            description: opt.description,
+            category: opt.category,
+            price: opt.price,
+          }))
+        : [],
+      // Include the selected view options in the update payload.  We map
+      // to extract only relevant fields.  If no views are selected
+      // provide an empty array.
+      viewOptions: Array.isArray(formState.viewOptions)
+        ? formState.viewOptions.map((opt: any) => ({
+            name: opt.name,
+            description: opt.description,
+            category: opt.category,
+            price: opt.price,
+          }))
+        : [],
     };
     try {
       await updateRoom({ variables: { id: formState.id, input } });
@@ -356,6 +476,72 @@ export default function HotelRoomDetailsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+
+            {/* Paid options selection.  Display checkboxes for each available
+                paid room option configured on the hotel.  Users can
+                toggle options on or off for the current room. */}
+            {hotelOptionsData?.hotel?.roomPaidOptions && hotelOptionsData.hotel.roomPaidOptions.length > 0 && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Paid Options</label>
+                <div className="space-y-2">
+                  {hotelOptionsData.hotel.roomPaidOptions.map((opt: any) => {
+                    const isSelected = formState.paidOptions.some((o: any) => o.name === opt.name);
+                    return (
+                      <label key={opt.name} className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handlePaidOptionToggle(opt, e.target.checked)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="flex-1">
+                          <span className="font-medium text-gray-900">{opt.name}</span>
+                          {opt.price !== undefined && (
+                            <span className="ml-2 text-sm text-gray-500">{opt.price > 0 ? `$${opt.price}` : "Free"}</span>
+                          )}
+                          {opt.category && (
+                            <span className="ml-2 text-xs text-gray-400">({opt.category})</span>
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* View options selection.  Display checkboxes for each available
+                view option configured on the hotel.  Users can select
+                one or more view options for the current room. */}
+            {hotelOptionsData?.hotel?.roomViewOptions && hotelOptionsData.hotel.roomViewOptions.length > 0 && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">View Options</label>
+                <div className="space-y-2">
+                  {hotelOptionsData.hotel.roomViewOptions.map((opt: any) => {
+                    const isSelected = formState.viewOptions.some((o: any) => o.name === opt.name);
+                    return (
+                      <label key={opt.name} className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => handleViewOptionToggle(opt, e.target.checked)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="flex-1">
+                          <span className="font-medium text-gray-900">{opt.name}</span>
+                          {opt.price !== undefined && (
+                            <span className="ml-2 text-sm text-gray-500">{opt.price > 0 ? `$${opt.price}` : "Free"}</span>
+                          )}
+                          {opt.category && (
+                            <span className="ml-2 text-xs text-gray-400">({opt.category})</span>
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex items-center space-x-4">

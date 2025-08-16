@@ -10,6 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import * as z from "zod";
 import { gql, useQuery, useMutation } from "@apollo/client";
+// Helpers to format prices according to the restaurant's selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -20,6 +22,7 @@ const GET_RESTAURANT_SETTINGS = gql`
       settings {
         capaciteTheorique
         frequenceCreneauxMinutes
+        currency
       }
     }
   }
@@ -119,6 +122,12 @@ export default function PrivatisationPage() {
     skip: !restaurantId,
   });
   const settings = restaurantData?.restaurant?.settings;
+
+  // Determine the currency and its symbol from the restaurant settings.  We
+  // default to USD when a currency is not specified.  These values
+  // are used to format prices and adjust labels throughout the form.
+  const currency: string = settings?.currency || 'USD';
+  const currencySymbol: string = currencySymbols[currency] ?? currency;
 
   const formSchema = baseFormSchema
     .refine(data => {
@@ -390,7 +399,7 @@ export default function PrivatisationPage() {
                           name={`menusDetails.${index}.prix`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Prix (€)</FormLabel>
+                              <FormLabel>Prix ({currencySymbol})</FormLabel>
                               <FormControl>
                                 <Input type="number" min="0" step="0.01" {...field} className="rounded-lg border-gray-300" />
                               </FormControl>

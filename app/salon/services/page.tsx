@@ -4,6 +4,9 @@ import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { gql, useQuery } from "@apollo/client";
 
+// Currency helper to format amounts according to the salon's selected currency
+import { formatCurrency } from "@/lib/currency";
+
 // Fetch salons to determine which salon to use.  We pick the first salon
 // available for demonstration purposes.
 const GET_SALONS = gql`
@@ -13,6 +16,9 @@ const GET_SALONS = gql`
       name
       description
       images
+      settings {
+        currency
+      }
     }
   }
 `;
@@ -52,6 +58,9 @@ export default function SalonServicesPage() {
   });
 
   const services = servicesData?.services ?? [];
+
+  // Determine the currency from the salon's settings.  Default to USD if not set.
+  const currency: string = (salonsData?.salons?.[0]?.settings?.currency as string) || 'USD';
 
   if (salonsLoading || !salonId) {
     return <p className="py-10 text-center text-gray-500">Chargement...</p>;
@@ -102,7 +111,7 @@ export default function SalonServicesPage() {
                 <h3 className="text-xl font-semibold text-gray-900">{service.name}</h3>
                 <p className="text-sm text-gray-600 h-16 overflow-hidden">{service.description}</p>
                 <div className="flex justify-between items-center mt-2">
-                  <span className="text-pink-600 font-bold">{service.price}€</span>
+                  <span className="text-pink-600 font-bold">{formatCurrency(service.price, currency)}</span>
                   <span className="text-sm text-gray-500">{service.duration || 0} min</span>
                 </div>
                 <Link

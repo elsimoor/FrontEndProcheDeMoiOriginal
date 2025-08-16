@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { gql, useQuery } from "@apollo/client";
+import { formatCurrency } from '@/lib/currency';
 import {
   Table,
   TableHeader,
@@ -40,6 +41,19 @@ const GET_PAYMENTS = gql`
   }
 `;
 
+// Query to fetch restaurant settings including the currency.  We use
+// this to convert payment amounts into the restaurant's currency on
+// this dashboard page.
+const GET_RESTAURANT_SETTINGS = gql`
+  query GetRestaurantSettings($id: ID!) {
+    restaurant(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`;
+
 export default function RestaurantPaymentsPage() {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -72,6 +86,13 @@ export default function RestaurantPaymentsPage() {
     variables: { businessId },
     skip: !businessId,
   });
+
+  // Fetch the restaurant currency for conversion.  Skip until businessId is set.
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
 
   if (sessionLoading || loading) {
     return <div className="p-6">Loading…</div>;
@@ -110,9 +131,18 @@ export default function RestaurantPaymentsPage() {
                 <TableCell>{reservationId}</TableCell>
                 <TableCell>{customerName}</TableCell>
                 <TableCell>
-                  {payment.amount.toFixed(2)} {payment.currency?.toUpperCase()}
+                  {/* Convert payment amount into the restaurant's currency.  The
+                   * `payment.amount` is reported in its own currency,
+                   * indicated by `payment.currency`.  We convert this
+                   * into the restaurant's configured currency so that
+                   * managers see a consistent currency on their dashboard. */}
+                  {formatCurrency(
+                    payment.amount ?? 0,
+                    currency,
+                    payment.currency?.toUpperCase() || 'USD'
+                  )}
                 </TableCell>
-                <TableCell>{payment.currency?.toUpperCase()}</TableCell>
+                <TableCell>{currency?.toUpperCase()}</TableCell>
                 <TableCell>{payment.paymentMethod || ""}</TableCell>
                 <TableCell>{payment.status}</TableCell>
                 <TableCell>{dateStr}</TableCell>

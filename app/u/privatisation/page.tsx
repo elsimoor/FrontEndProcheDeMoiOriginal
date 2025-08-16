@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { gql, useQuery } from "@apollo/client";
 import { toast } from "sonner";
+import { formatCurrency } from '@/lib/currency';
 import { RestaurantSubnav } from "../accueil/page";
 
 const GET_PRIVATISATION_OPTIONS = gql`
@@ -30,6 +31,19 @@ const GET_PRIVATISATION_OPTIONS = gql`
       }
       tarif
       conditions
+    }
+  }
+`;
+
+// Query to fetch the restaurant's currency setting.  We need this to
+// format menu prices in the user's selected currency.  We request
+// only the currency field to minimise payload size.
+const GET_RESTAURANT_SETTINGS = gql`
+  query RestaurantCurrency($id: ID!) {
+    restaurant(id: $id) {
+      settings {
+        currency
+      }
     }
   }
 `;
@@ -52,6 +66,14 @@ function PrivatisationContent() {
       console.error(err);
     }
   });
+
+  // Fetch the restaurant currency for formatting menu prices.  Skip
+  // until we know the restaurantId.  Default to USD if not set.
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: restaurantId },
+    skip: !restaurantId,
+  });
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
 
   const selectedOption = data?.privatisationOptionsByRestaurant.find(opt => opt.id === selectedOptionId);
 
@@ -140,7 +162,9 @@ function PrivatisationContent() {
                     {selectedOption?.menusDetails && selectedOption.menusDetails.length > 0
                       ? selectedOption.menusDetails.map((menuDetail) => (
                           <SelectItem key={menuDetail.nom} value={menuDetail.nom}>
-                            {menuDetail.nom} {menuDetail.prix ? `- ${menuDetail.prix}€` : ''}
+                            {/* Display menu name and its price converted into the restaurant's currency. */}
+                            {menuDetail.nom}
+                            {menuDetail.prix ? ` - ${formatCurrency(menuDetail.prix, currency)}` : ''}
                           </SelectItem>
                         ))
                       : selectedOption?.menusDeGroupe?.map((m) => (

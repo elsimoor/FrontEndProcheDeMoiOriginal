@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// Helpers to format prices according to the hotel's selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { gql, useQuery, useMutation } from "@apollo/client";
 import {
   Table,
@@ -75,6 +77,18 @@ const GET_RESERVATIONS = gql`
       status
       totalAmount
       createdAt
+    }
+  }
+`;
+
+// Query to fetch the hotel settings including the currency.  We use
+// this to determine how to format all monetary values on this page.
+const GET_HOTEL_SETTINGS = gql`
+  query GetHotelSettings($id: ID!) {
+    hotel(id: $id) {
+      settings {
+        currency
+      }
     }
   }
 `;
@@ -170,6 +184,16 @@ export default function HotelReservationsPage() {
     variables: { businessId, businessType },
     skip: !businessId || !businessType,
   });
+
+  // Fetch the hotel settings to determine the currency.  Once
+  // fetched, we use the currency code to format prices throughout
+  // the component.  If currency is not available we default to USD.
+  const { data: hotelSettingsData } = useQuery(GET_HOTEL_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency: string = hotelSettingsData?.hotel?.settings?.currency ?? "USD";
+  const currencySymbol: string = currencySymbols[currency] ?? currency;
 
   // Mutations
   const [createReservation] = useMutation(CREATE_RESERVATION);
@@ -344,7 +368,7 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
                   <TableCell>{res.checkIn ? new Date(res.checkIn).toLocaleDateString() : "N/A"}</TableCell>
                   <TableCell>{res.checkOut ? new Date(res.checkOut).toLocaleDateString() : "N/A"}</TableCell>
                   <TableCell>{res.guests}</TableCell>
-                  <TableCell>${res.totalAmount?.toFixed(2) ?? "0.00"}</TableCell>
+                  <TableCell>{formatCurrency(res.totalAmount ?? 0, currency)}</TableCell>
                   <TableCell>
                     <Badge variant={res.status === 'confirmed' ? 'default' : res.status === 'pending' ? 'secondary' : 'destructive'}>
                       {res.status}
@@ -429,7 +453,7 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
                 <Input id="guests" type="number" value={formState.guests} onChange={(e) => setFormState({ ...formState, guests: e.target.value === "" ? "" : Number(e.target.value) })} min={1} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="totalAmount">Total Amount</Label>
+                <Label htmlFor="totalAmount">Total Amount ({currencySymbol})</Label>
                 <Input id="totalAmount" type="number" value={formState.totalAmount} onChange={(e) => setFormState({ ...formState, totalAmount: e.target.value === "" ? "" : Number(e.target.value) })} min={0} />
               </div>
             </div>

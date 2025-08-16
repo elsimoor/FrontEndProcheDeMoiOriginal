@@ -30,6 +30,9 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 
+// Currency helper to format amounts according to the hotel's selected currency
+import { formatCurrency } from "@/lib/currency";
+
 
 /*
  * Room detail page
@@ -53,6 +56,9 @@ const GET_ROOM = gql`
       description
       hotelId {
         name
+        settings {
+          currency
+        }
         amenities {
           name
           description
@@ -60,6 +66,24 @@ const GET_ROOM = gql`
           category
           price
         }
+      }
+      # Paid options available for this room.  Each option includes name,
+      # optional description, category and price.  Used to display
+      # add‑on selections on the booking page.
+      paidOptions {
+        name
+        description
+        category
+        price
+      }
+      # View options available for this room.  Each view has a name,
+      # optional description and price.  Used to allow the guest to
+      # choose their desired view during booking.
+      viewOptions {
+        name
+        description
+        category
+        price
       }
     }
   }
@@ -75,6 +99,16 @@ interface Amenity {
 
 interface Extras {
   [key: string]: boolean;
+}
+
+// Represents a paid room option.  Each option may include an optional
+// description, category and price.  The price field is optional
+// because some view options or promotions may be free of charge.
+interface PaidOption {
+  name: string;
+  description?: string;
+  category?: string;
+  price?: number;
 }
 
 // Helper to map amenity names to icons
@@ -119,8 +153,24 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
   // Manage extras state
   const [extras, setExtras] = useState<Extras>({});
 
+  // Manage paid room options state.  Each property corresponds to an
+  // option name and indicates whether it is selected.  Using a separate
+  // state prevents collisions with amenity names.
+  const [selectedPaidOptions, setSelectedPaidOptions] = useState<{ [key: string]: boolean }>({});
+
   const room = data?.room;
   const amenities = room?.hotelId?.amenities || [];
+
+  // The currency used by this hotel.  If the hotel's settings do not define
+  // a currency we default to USD.  This value is used when formatting
+  // prices throughout the room details and price summary.
+  const currency: string = room?.hotelId?.settings?.currency || "USD";
+
+  // Extract paid and view options from the room.  These arrays are
+  // undefined if the query has not yet resolved.  When undefined we
+  // treat them as empty arrays to simplify mapping logic.
+  const paidOptions: PaidOption[] = room?.paidOptions || [];
+  const viewOptions = room?.viewOptions || [];
 
   // When extras change, recompute total cost and persist extras to booking
   const extrasCost = useMemo(() => {
@@ -133,13 +183,50 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
   }, [extras, amenities]);
 
   const basePrice = room ? room?.price * nights : 0;
-  const total = basePrice + extrasCost;
+  // Compute the total cost of selected paid options.  Sum the price of
+  // each option that has been toggled on.  If no options are selected
+  // or the price is undefined, the total is zero.
+  const paidOptionsCost = useMemo(() => {
+    return paidOptions?.reduce((sum: number, option: PaidOption) => {
+      if (selectedPaidOptions[option.name]) {
+        return sum + (option.price || 0);
+      }
+      return sum;
+    }, 0);
+  }, [selectedPaidOptions, paidOptions]);
+
+  // Selected view state must be declared before any use of it
+  const [selectedView, setSelectedView] = useState<string>("");
+
+  // Compute the cost associated with the selected view.  If the view
+  // has a price defined return it; otherwise return 0.
+  const viewCost = useMemo(() => {
+    if (!selectedView) return 0;
+    const view = viewOptions?.find((v: any) => v.name === selectedView);
+    return view && view.price ? view.price : 0;
+  }, [selectedView, viewOptions]);
+
+  const total = basePrice + extrasCost + paidOptionsCost + viewCost;
 
   const toggleExtra = (name: string) => {
     setExtras((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const [selectedView, setSelectedView] = useState("City View");
+  // Toggle a paid option by name.  When checked we add the option to
+  // selectedPaidOptions; when unchecked we remove it.  This state
+  // tracks whether each paid option is selected.
+  const togglePaidOption = (name: string) => {
+    setSelectedPaidOptions((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  // When the room data loads and no view has been selected, default to
+  // the first available view option (if any).  Do not override once
+  // the user has made a selection.
+  useEffect(() => {
+    if (!selectedView && viewOptions && viewOptions.length > 0) {
+      setSelectedView(viewOptions[0].name);
+    }
+  }, [viewOptions, selectedView]);
 
   // Gallery state: whether the image viewer dialog is open and the
   // currently selected image index.  When an image in the collage is
@@ -166,8 +253,17 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
 
   const handleAddToCart = () => {
     const selectedAmenities = amenities?.filter((a: Amenity) => extras[a.name]);
-    // Persist extras and total price
-    updateBooking({ extras: selectedAmenities, total, view: selectedView });
+    // Determine which paid options are selected.  We derive the list
+    // of selected options from the state and include the full option
+    // objects for accurate pricing when reviewing the cart.
+    const selectedPaidList: PaidOption[] = paidOptions?.filter((opt: PaidOption) => selectedPaidOptions[opt.name]);
+    // Persist selected extras, paid options, selected view and total price
+    updateBooking({
+      extras: selectedAmenities,
+      paidOptions: selectedPaidList,
+      view: selectedView,
+      total,
+    });
     router.push("/hotel/checkout");
   };
 
@@ -306,6 +402,48 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                   </p>
                 </section>
 
+                {/* Paid room options */}
+                {paidOptions && paidOptions.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-semibold mb-4">Paid options</h2>
+                    <div className="space-y-6">
+                      {Object.entries(
+                        paidOptions.reduce((acc: Record<string, PaidOption[]>, option: PaidOption) => {
+                          const cat = option.category || "General";
+                          (acc[cat] ??= []).push(option);
+                          return acc;
+                        }, {} as Record<string, PaidOption[]>)
+                      ).map(([category, items]) => (
+                        <div key={category}>
+                          <h3 className="text-md font-medium text-gray-800 mb-3">{category}</h3>
+                          <div className="space-y-4">
+                            {items.map((option: PaidOption) => (
+                              <div key={option.name} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <Checkbox
+                                    id={`paid-${option.name}`}
+                                    checked={!!selectedPaidOptions[option.name]}
+                                    onCheckedChange={() => togglePaidOption(option.name)}
+                                  />
+                                  <label
+                                    htmlFor={`paid-${option.name}`}
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {option.name}
+                                  </label>
+                                </div>
+                                <span className="text-sm text-gray-600">
+                                  {option.price !== undefined ? formatCurrency(option.price || 0, currency) : "Free"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 {/* What this place offers */}
                 <section>
                   <h2 className="text-lg font-semibold mb-4">What this place offers</h2>
@@ -330,21 +468,34 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                 {/* Select your view */}
                 <section>
                   <h2 className="text-lg font-semibold mb-4">Select your view</h2>
-                  <ToggleGroup
-                    type="single"
-                    defaultValue={selectedView}
-                    onValueChange={(value) => {
-                      if (value) setSelectedView(value);
-                    }}
-                    className="justify-start"
-                  >
-                    <ToggleGroupItem value="City View" aria-label="Select City View" className="data-[state=on]:bg-blue-600 data-[state=on]:text-white">
-                      City View
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="Eiffel Tower View" aria-label="Select Eiffel Tower View" className="data-[state=on]:bg-blue-600 data-[state=on]:text-white">
-                      Eiffel Tower View
-                    </ToggleGroupItem>
-                  </ToggleGroup>
+                  {viewOptions && viewOptions.length > 0 ? (
+                    <ToggleGroup
+                      type="single"
+                      value={selectedView}
+                      onValueChange={(value) => {
+                        if (value) setSelectedView(value);
+                      }}
+                      className="justify-start flex-wrap"
+                    >
+                      {viewOptions.map((view: any) => (
+                        <ToggleGroupItem
+                          key={view.name}
+                          value={view.name}
+                          aria-label={`Select ${view.name}`}
+                          className="data-[state=on]:bg-blue-600 data-[state=on]:text-white mr-2 mb-2"
+                        >
+                          {view.name}
+                          {view.price !== undefined && (
+                            <span className="ml-1 text-xs text-gray-200 md:text-gray-300">
+                              {view.price > 0 ? ` (${formatCurrency(view.price, currency)})` : " (Free)"}
+                            </span>
+                          )}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  ) : (
+                    <p className="text-sm text-gray-600">No view options available for this room.</p>
+                  )}
                 </section>
 
                 {/* Add-ons */}
@@ -377,7 +528,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                                   {amenity.name}
                                 </label>
                               </div>
-                              <span className="text-sm text-gray-600">(${amenity.price.toFixed(2)})</span>
+                              <span className="text-sm text-gray-600">({formatCurrency(amenity.price, currency)})</span>
                             </div>
                           ))}
                         </div>
@@ -417,20 +568,36 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                   <CardContent className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span>{`${nights} night${nights > 1 ? "s" : ""}`}</span>
-                      <span>${basePrice.toFixed(2)}</span>
+                      <span>{formatCurrency(basePrice, currency)}</span>
                     </div>
                     {amenities
                       .filter((a: Amenity) => extras[a.name])
                       .map((amenity: Amenity) => (
                         <div key={amenity.name} className="flex justify-between">
                           <span>{amenity.name}</span>
-                          <span>${amenity.price.toFixed(2)}</span>
+                          <span>{formatCurrency(amenity.price, currency)}</span>
                         </div>
                       ))}
+                    {/* List selected paid room options with their prices */}
+                    {paidOptions
+                      .filter((opt: PaidOption) => selectedPaidOptions[opt.name])
+                      .map((opt: PaidOption) => (
+                        <div key={opt.name} className="flex justify-between">
+                          <span>{opt.name}</span>
+                          <span>{formatCurrency(opt.price || 0, currency)}</span>
+                        </div>
+                      ))}
+                    {/* Add view cost if the selected view has a price */}
+                    {viewCost > 0 && (
+                      <div className="flex justify-between">
+                        <span>{selectedView}</span>
+                        <span>{formatCurrency(viewCost, currency)}</span>
+                      </div>
+                    )}
                     <Separator />
                     <div className="flex justify-between font-bold text-base">
                       <span>Total</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>{formatCurrency(total, currency)}</span>
                     </div>
                   </CardContent>
                 </Card>

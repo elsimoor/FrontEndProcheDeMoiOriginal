@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// Import currency helpers to format and convert amounts
+import { formatCurrency } from "@/lib/currency";
 import { gql, useQuery } from "@apollo/client";
 import {
   Table,
@@ -70,6 +72,25 @@ export default function SalonPaymentsPage() {
     fetchSession();
   }, []);
 
+  // Query the salon settings to retrieve the default currency.  We will
+  // convert incoming payment amounts into this currency when
+  // displaying them.  Only the currency field is required here.
+  const GET_SALON_SETTINGS = gql`
+    query GetSalonSettings($id: ID!) {
+      salon(id: $id) {
+        id
+        settings {
+          currency
+        }
+      }
+    }
+  `;
+  const { data: settingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency = settingsData?.salon?.settings?.currency || 'USD';
+
   const { data, loading, error } = useQuery(GET_PAYMENTS, {
     variables: { businessId },
     skip: !businessId,
@@ -112,9 +133,23 @@ export default function SalonPaymentsPage() {
                 <TableCell>{reservationId}</TableCell>
                 <TableCell>{customerName}</TableCell>
                 <TableCell>
-                  {payment.amount.toFixed(2)} {payment.currency?.toUpperCase()}
+                  {
+                    /*
+                     * Convert each payment amount into the salon’s selected currency.
+                     * The amount is originally denominated in `payment.currency`.  By
+                     * passing this as the base currency into `formatCurrency` we
+                     * prevent double conversion and ensure the numeric value is
+                     * scaled appropriately into the salon’s currency.
+                     */
+                  }
+                  {formatCurrency(
+                    payment.amount ?? 0,
+                    currency,
+                    payment.currency?.toUpperCase() || 'USD'
+                  )}
                 </TableCell>
-                <TableCell>{payment.currency?.toUpperCase()}</TableCell>
+                {/* Display the salon’s currency code for clarity */}
+                <TableCell>{currency.toUpperCase()}</TableCell>
                 <TableCell>{payment.paymentMethod || ""}</TableCell>
                 <TableCell>{payment.status}</TableCell>
                 <TableCell>{dateStr}</TableCell>

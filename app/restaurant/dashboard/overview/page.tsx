@@ -17,6 +17,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import moment from "moment";
+
+// Import currency helpers to format metrics based on restaurant settings
+import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { DayContent, DayContentProps } from "react-day-picker";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -73,6 +76,18 @@ const GET_DASHBOARD_CALENDAR = gql`
     dashboardCalendar(restaurantId: $restaurantId, month: $month) {
       date
       count
+    }
+  }
+`;
+
+// Query to fetch restaurant settings including currency.  This will allow
+// us to display the generated revenue in the correct currency.
+const GET_RESTAURANT_SETTINGS = gql`
+  query GetRestaurantSettings($id: ID!) {
+    restaurant(id: $id) {
+      settings {
+        currency
+      }
     }
   }
 `;
@@ -154,6 +169,15 @@ export default function RestaurantOverviewPage() {
     const style = statusStyles[status] || statusStyles.DEFAULT;
     return <Badge className={`${style} hover:${style}`}>{status}</Badge>;
   };
+
+  // Fetch restaurant settings to determine the currency.  Skip until
+  // restaurantId is known.  Default to EUR if no setting is provided.
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: restaurantId },
+    skip: !restaurantId,
+  });
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'EUR';
+  const currencySymbol: string = currencySymbols[currency] || '€';
 
   const handleCancelReservation = async () => {
     if (!cancelingReservationId) return;
@@ -244,7 +268,13 @@ export default function RestaurantOverviewPage() {
             <CardTitle className="text-sm font-medium text-gray-500">Chiffre d’affaires généré</CardTitle>
           </CardHeader>
           <CardContent>
-            {metricsLoading ? <Skeleton className="h-10 w-32" /> : <p className="text-4xl font-bold text-gray-800">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(metrics?.chiffreAffaires ?? 0)}</p>}
+            {metricsLoading ? (
+              <Skeleton className="h-10 w-32" />
+            ) : (
+              <p className="text-4xl font-bold text-gray-800">
+                {formatCurrency(metrics?.chiffreAffaires ?? 0, currency)}
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card className="bg-gray-50 shadow-sm rounded-xl border-none">

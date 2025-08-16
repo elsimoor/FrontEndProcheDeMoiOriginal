@@ -2,6 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { gql, useQuery, useMutation } from "@apollo/client";
+import { useState, useEffect } from "react";
+// Import currency helpers
+import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -99,6 +102,53 @@ export default function SalonInvoiceDetailsPage() {
     return <div className="p-6 text-red-600">Invoice not found.</div>;
   }
 
+  // Fetch the current salon's currency via session and settings.  We
+  // determine the businessId from the session endpoint and then
+  // retrieve the settings via GraphQL.  This allows us to format
+  // invoice amounts into the salon's chosen currency.
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchSession() {
+      try {
+        const res = await fetch("/api/session");
+        if (!res.ok) {
+          setSessionLoading(false);
+          return;
+        }
+        const data = await res.json();
+        if (data.businessType && data.businessType.toLowerCase() === "salon" && data.businessId) {
+          setBusinessId(data.businessId);
+        } else {
+          setSessionError("You are not associated with a salon business.");
+        }
+      } catch (err) {
+        setSessionError("Failed to load session.");
+      } finally {
+        setSessionLoading(false);
+      }
+    }
+    fetchSession();
+  }, []);
+
+  const GET_SALON_SETTINGS = gql`
+    query GetSalonSettings($id: ID!) {
+      salon(id: $id) {
+        id
+        settings {
+          currency
+        }
+      }
+    }
+  `;
+  const { data: settingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency = settingsData?.salon?.settings?.currency || 'USD';
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -138,16 +188,18 @@ export default function SalonInvoiceDetailsPage() {
             {invoice.items.map((item: any, idx: number) => (
               <TableRow key={idx}>
                 <TableCell>{item.description}</TableCell>
-                <TableCell>${item.price.toFixed(2)}</TableCell>
+                <TableCell>{formatCurrency(item.price ?? 0, currency)}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(item.total ?? 0, currency)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
       <div className="flex justify-end">
-        <div className="text-xl font-semibold">Total: ${invoice.total.toFixed(2)}</div>
+        <div className="text-xl font-semibold">
+          Total: {formatCurrency(invoice.total ?? 0, currency)}
+        </div>
       </div>
     </div>
   );

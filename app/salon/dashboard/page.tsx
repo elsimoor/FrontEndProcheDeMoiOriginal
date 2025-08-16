@@ -14,6 +14,13 @@ import {
   Pie,
   Cell,
 } from "recharts"
+// Import currency helpers to format amounts and perform conversions.  The
+// formatCurrency function converts a value from a base currency
+// (defaulting to USD) into a target currency and prepends the
+// appropriate symbol.  convertAmount returns a numeric value in the
+// target currency without formatting.  These helpers ensure
+// consistency across the dashboard when displaying monetary values.
+import { formatCurrency, convertAmount } from "@/lib/currency"
 import { Calendar, Users, Sparkles, DollarSign } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { gql, useQuery } from "@apollo/client"
@@ -77,6 +84,26 @@ export default function SalonDashboard() {
   // Selected date for filtering dashboard statistics.  Defaults to today.  Changing
   // this value will recompute analytics relative to the chosen day.
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
+
+  // Query the salon settings to determine the preferred currency.  We
+  // include only the currency field from the settings object.  If the
+  // query is skipped (before salonId is known) or no currency is
+  // returned, we fall back to USD.
+  const GET_SALON_SETTINGS = gql`
+    query GetSalonSettings($id: ID!) {
+      salon(id: $id) {
+        id
+        settings {
+          currency
+        }
+      }
+    }
+  `
+  const { data: settingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: salonId },
+    skip: !salonId,
+  })
+  const currency = settingsData?.salon?.settings?.currency || 'USD'
 
   useEffect(() => {
     async function fetchSession() {
@@ -384,7 +411,18 @@ export default function SalonDashboard() {
         <div className="bg-white rounded-lg shadow p-6 flex flex-col justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">Revenue</p>
-            <p className="mt-1 text-3xl font-bold text-gray-900">${analytics.totalRevenue.toFixed(0)}</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900">
+              {
+                /*
+                 * Display the total revenue in the salon’s selected currency.  The
+                 * `formatCurrency` helper automatically converts the revenue (assumed
+                 * to be stored in USD) into the target currency and prefixes the
+                 * appropriate symbol.  If no currency is defined the value will
+                 * remain in USD.
+                 */
+              }
+              {formatCurrency(analytics.totalRevenue ?? 0, currency)}
+            </p>
           </div>
         </div>
         {/* Occupancy Rate */}
@@ -434,11 +472,25 @@ export default function SalonDashboard() {
             </p>
           </div>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={analytics.revenueByService}>
+            {
+              /*
+               * Convert each revenue value into the selected currency before
+               * rendering the bar chart.  The conversion uses USD as the
+               * base currency for all service prices and scales according
+               * to the salon’s currency.  The Tooltip is customised to
+               * display the formatted value with the appropriate symbol.
+               */
+            }
+            <BarChart
+              data={analytics.revenueByService.map((item) => ({
+                ...item,
+                revenue: convertAmount(item.revenue, 'USD', currency),
+              }))}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip formatter={(value) => [`$${(value as number).toLocaleString()}`, "Revenue"]} />
+              <Tooltip formatter={(value) => [formatCurrency(value as number, currency), 'Revenue']} />
               <Bar dataKey="revenue" fill="#F59E0B" />
             </BarChart>
           </ResponsiveContainer>

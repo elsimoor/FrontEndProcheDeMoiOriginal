@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// Import currency helpers
+import { formatCurrency } from "@/lib/currency";
 import { gql, useQuery, useMutation } from "@apollo/client";
 import {
   Table,
@@ -125,6 +127,25 @@ export default function SalonInvoicesPage() {
     fetchSession();
   }, []);
 
+  // GraphQL query to fetch the salon settings (currency).  We only need the
+  // currency field to determine how to display monetary values throughout
+  // the invoices page.
+  const GET_SALON_SETTINGS = gql`
+    query GetSalonSettings($id: ID!) {
+      salon(id: $id) {
+        id
+        settings {
+          currency
+        }
+      }
+    }
+  `;
+  const { data: settingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency = settingsData?.salon?.settings?.currency || 'USD';
+
   // Fetch existing invoices for this salon
   const {
     data: invoicesData,
@@ -240,7 +261,7 @@ export default function SalonInvoicesPage() {
                 <TableCell>{inv.id}</TableCell>
                 <TableCell>{inv.reservation?.customerInfo?.name || inv.reservationId}</TableCell>
                 <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">${inv.total?.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(inv.total ?? 0, currency)}</TableCell>
                 <TableCell className="space-x-2">
                   <Button
                     variant="outline"

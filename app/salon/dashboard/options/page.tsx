@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { gql, useQuery, useMutation } from "@apollo/client"
+// Helpers to format prices according to the salon's selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency"
 import { Plus } from "lucide-react"
 
 interface ServiceOption {
@@ -90,6 +92,19 @@ export default function SalonOptions() {
       }
     }
   `
+
+  // Query to fetch only the salon's currency setting.  This is used to
+  // dynamically format option prices and labels based on the selected
+  // currency.
+  const GET_SALON_SETTINGS = gql`
+    query GetSalonSettings($id: ID!) {
+      salon(id: $id) {
+        settings {
+          currency
+        }
+      }
+    }
+  `
   const UPDATE_SERVICE = gql`
     mutation UpdateService($id: ID!, $input: ServiceInput!) {
       updateService(id: $id, input: $input) {
@@ -112,6 +127,17 @@ export default function SalonOptions() {
   })
 
   const services: Service[] = servicesData?.services ?? []
+
+  // Fetch the salon's currency setting.  Skip until salonId is available.
+  const { data: settingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: salonId },
+    skip: !salonId,
+  })
+
+  // Determine the currency and a friendly symbol.  Default to USD if
+  // settings are unavailable.  Used when formatting prices and labels.
+  const currency: string = settingsData?.salon?.settings?.currency || 'USD'
+  const currencySymbol: string = currencySymbols[currency] ?? currency
 
   // Aggregate all unique options across services
   const allOptions: ServiceOption[] = useMemo(() => {
@@ -251,7 +277,7 @@ export default function SalonOptions() {
                 <tr key={opt.name} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{opt.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {opt.price != null ? `${opt.price.toFixed(2)}€` : "—"}
+                    {opt.price != null ? formatCurrency(opt.price, currency) : "—"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {opt.durationImpact != null ? `+${opt.durationImpact} min` : "—"}
@@ -277,7 +303,7 @@ export default function SalonOptions() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Prix (€)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prix ({currencySymbol})</label>
             <input
               type="number"
               value={newOption.price}

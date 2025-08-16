@@ -377,6 +377,7 @@ export default function SalonSettings() {
                     <option value="EUR">EUR - Euro</option>
                     <option value="GBP">GBP - British Pound</option>
                     <option value="CAD">CAD - Canadian Dollar</option>
+                  <option value="MAD">MAD - Moroccan Dirham</option>
                   </select>
                 </div>
                 <div>

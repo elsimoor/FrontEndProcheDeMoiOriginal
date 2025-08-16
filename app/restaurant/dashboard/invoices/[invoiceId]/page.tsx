@@ -1,7 +1,10 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import React from 'react';
 import { gql, useQuery, useMutation } from "@apollo/client";
+// Import currency helper to format prices consistently
+import { formatCurrency, currencySymbols } from '@/lib/currency';
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -53,6 +56,20 @@ const GENERATE_INVOICE_PDF = gql`
   }
 `;
 
+// Query to fetch restaurant settings (currency) by ID.  We use this
+// to determine which currency to display invoice amounts in.  The
+// restaurant ID is obtained from the session when this page is
+// accessed via the dashboard.
+const GET_RESTAURANT_SETTINGS = gql`
+  query GetRestaurantSettings($id: ID!) {
+    restaurant(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`;
+
 export default function RestaurantInvoiceDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -63,6 +80,38 @@ export default function RestaurantInvoiceDetailsPage() {
     variables: { id: invoiceId },
   });
   const [generatePdf] = useMutation(GENERATE_INVOICE_PDF);
+
+  // Determine the current restaurant ID from the session.  We fetch
+  // this via the /api/session endpoint, similar to other dashboard
+  // pages.  Once known, we query the restaurant settings to obtain
+  // the currency used by this restaurant.  Because this effect has
+  // side effects (fetch), we place it within a useEffect hook below.
+  const [restaurantId, setRestaurantId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    async function fetchSession() {
+      try {
+        const res = await fetch('/api/session');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.businessType === 'restaurant' && data.businessId) {
+            setRestaurantId(data.businessId);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch session:', err);
+      }
+    }
+    fetchSession();
+  }, []);
+
+  // Fetch restaurant settings once we have the business id.  Skip
+  // running this query until the id is known.  Default to USD when
+  // currency isn't provided to ensure formatting still works.
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: restaurantId },
+    skip: !restaurantId,
+  });
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
 
   // Handler to download the invoice PDF.  It calls the
   // `generateInvoicePdf` mutation and then triggers a file download in
@@ -131,16 +180,24 @@ export default function RestaurantInvoiceDetailsPage() {
             {invoice.items.map((item: any, idx: number) => (
               <TableRow key={idx}>
                 <TableCell>{item.description}</TableCell>
-                <TableCell>${item.price.toFixed(2)}</TableCell>
+                {/* Format individual line prices.  The price stored on the invoice
+                 * items is assumed to be in the base currency (USD).  We
+                 * convert it into the restaurant's currency using
+                 * formatCurrency. */}
+                <TableCell>{formatCurrency(item.price ?? 0, currency)}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+                {/* Multiply quantity and price to show the total for the line.
+                 * We use the stored total and convert it rather than
+                 * recomputing here to avoid rounding discrepancies. */}
+                <TableCell className="text-right">{formatCurrency(item.total ?? 0, currency)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
       <div className="flex justify-end">
-        <div className="text-xl font-semibold">Total: ${invoice.total.toFixed(2)}</div>
+        {/* Display the invoice total in the restaurant's currency. */}
+        <div className="text-xl font-semibold">Total: {formatCurrency(invoice.total ?? 0, currency)}</div>
       </div>
     </div>
   );

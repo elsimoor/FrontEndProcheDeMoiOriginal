@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState, useEffect, useMemo } from "react"
+// Currency helpers for formatting amounts according to the salon's chosen currency
+import { formatCurrency, currencySymbols } from "@/lib/currency"
 import { gql, useQuery, useMutation } from "@apollo/client"
 import {
   Search,
@@ -181,6 +183,19 @@ export default function SalonBookings() {
     }
   `
 
+  // Query to fetch the salon settings including the selected currency.  The
+  // currency determines how we display prices and revenue throughout this
+  // page.  Without a settings entry we default to USD.
+  const GET_SALON_SETTINGS = gql`
+    query GetSalonSettings($id: ID!) {
+      salon(id: $id) {
+        settings {
+          currency
+        }
+      }
+    }
+  `
+
   // Query hooks
   const {
     data: reservationsData,
@@ -201,6 +216,16 @@ export default function SalonBookings() {
     variables: { businessId: salonId, businessType },
     skip: !salonId || !businessType,
   })
+
+  // Fetch the salon settings to determine which currency to use for price
+  // display.  We only run this query once a salonId has been set.  If
+  // no settings are found, default to USD.
+  const { data: salonSettingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: salonId },
+    skip: !salonId,
+  })
+  const currency: string = salonSettingsData?.salon?.settings?.currency || 'USD'
+  const currencySymbol: string = currencySymbols[currency] || '$'
 
   // Mutation hooks
   const [createReservation] = useMutation(CREATE_RESERVATION)
@@ -548,7 +573,7 @@ export default function SalonBookings() {
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">${stats.revenue}</p>
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.revenue, currency)}</p>
             <p className="text-sm text-gray-600">Revenue</p>
           </div>
         </div>
@@ -802,7 +827,7 @@ export default function SalonBookings() {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Price ($)</label>
+                            <label className="block text-sm font-medium text-gray-700">Price ({currencySymbol})</label>
                             <input
                               type="number"
                               min="0"
@@ -913,7 +938,7 @@ export default function SalonBookings() {
                       <p><strong>Date:</strong> {viewingReservation.date ? viewingReservation.date.slice(0, 10) : "N/A"}</p>
                       <p><strong>Time:</strong> {viewingReservation.time || "N/A"}</p>
                       <p><strong>Duration:</strong> {viewingReservation.duration ?? viewingReservation.serviceId?.duration ?? "N/A"} minutes</p>
-                      <p><strong>Price:</strong> ${viewingReservation.serviceId?.price ?? 0}</p>
+                      <p><strong>Price:</strong> {formatCurrency(viewingReservation.serviceId?.price ?? 0, currency)}</p>
                       <p><strong>Status:</strong> {viewingReservation.status}</p>
                       <p><strong>Payment Status:</strong> {viewingReservation.paymentStatus || "pending"}</p>
                       {viewingReservation.notes && <p><strong>Notes:</strong> {viewingReservation.notes}</p>}

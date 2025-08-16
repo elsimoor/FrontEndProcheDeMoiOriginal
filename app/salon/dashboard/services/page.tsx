@@ -3,6 +3,8 @@
 import type React from "react"
 import { useState, useEffect, useMemo } from "react"
 import { gql, useQuery, useMutation } from "@apollo/client"
+// Helpers to format prices according to the salon's selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency"
 import { Search, Plus, Edit, Trash2, X, Clock, DollarSign, Star, Scissors } from "lucide-react"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 import { uploadImage, deleteImage } from "@/app/lib/firebase"
@@ -104,6 +106,18 @@ export default function SalonServices() {
     }
   `
 
+// Query to fetch only the salon's currency setting.  Used to
+// dynamically format service prices based on the selected currency.
+const GET_SALON_SETTINGS = gql`
+  query GetSalonSettings($id: ID!) {
+    salon(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`;
+
   // Fetch staff list for default employee selection.  We re-use the staff query
   // from other pages to populate a dropdown of employees.
   const GET_STAFF = gql`
@@ -167,6 +181,18 @@ export default function SalonServices() {
   const [deleteService] = useMutation(DELETE_SERVICE)
 
   const services: Service[] = servicesData?.services ?? []
+
+  // Fetch the salon's currency settings to format service prices.  We
+  // skip this query until the salonId is available.
+  const { data: settingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: salonId },
+    skip: !salonId,
+  })
+
+  // Determine the currency and symbol.  Default to USD when the
+  // setting is not defined.  Used in price labels and formatting.
+  const currency: string = settingsData?.salon?.settings?.currency || 'USD'
+  const currencySymbol: string = currencySymbols[currency] ?? currency
 
   // Compute categories list from services
   const categories = useMemo(() => {
@@ -427,7 +453,7 @@ export default function SalonServices() {
                 </div>
                 <div className="flex items-center">
                   <DollarSign className="h-4 w-4 mr-2 text-pink-600" />
-                  <span>${service.price}</span>
+                  <span>{formatCurrency(service.price, currency)}</span>
                 </div>
                 {service.staffRequired && service.staffRequired.length > 0 && (
                   <div className="flex items-center">
@@ -514,7 +540,7 @@ export default function SalonServices() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
                   <input
                     type="number"
                     name="price"

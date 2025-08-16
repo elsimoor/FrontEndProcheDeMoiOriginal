@@ -1,6 +1,8 @@
 "use client"
 
 import { gql, useQuery, useMutation } from "@apollo/client";
+// Helpers to format prices according to the hotel's selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -55,6 +57,19 @@ const SET_FEATURED_CARD = gql`
   }
 `;
 
+// Query to fetch only the hotel's currency setting.  We use this to
+// dynamically format prices on the landing cards page.  The hotel
+// identifier is derived from the current session.
+const GET_HOTEL_SETTINGS = gql`
+  query GetHotelSettings($id: ID!) {
+    hotel(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`;
+
 export default function HotelLandingCardsPage() {
   const router = useRouter();
   const [businessId, setBusinessId] = useState<string | null>(null);
@@ -94,6 +109,17 @@ export default function HotelLandingCardsPage() {
     variables: { businessType: "hotel", businessId },
     skip: !businessId,
   });
+
+  // Fetch the hotel's currency settings so we can format prices
+  const { data: settingsData } = useQuery(GET_HOTEL_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+
+  // Determine the currency and a human friendly symbol.  Default to USD
+  // when the settings are unavailable.
+  const currency: string = settingsData?.hotel?.settings?.currency || 'USD';
+  const currencySymbol: string = currencySymbols[currency] ?? currency;
 
   const [createLandingCard, { loading: creating }] = useMutation(CREATE_LANDING_CARD, {
     onCompleted: () => {
@@ -191,7 +217,11 @@ export default function HotelLandingCardsPage() {
                 </h3>
                 {card.description && <p className="text-sm text-gray-600 mt-1">{card.description}</p>}
                 {card.location && <p className="text-sm text-gray-600 mt-1">Location: {card.location}</p>}
-                {card.price && <p className="text-sm text-gray-600 mt-1">Price: €{card.price}</p>}
+                {card.price && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Price: {formatCurrency(card.price, currency)}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col items-end gap-2">
                 {!card.isFeatured && (
@@ -247,7 +277,7 @@ export default function HotelLandingCardsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
               <input
                 type="number"
                 value={formData.price}

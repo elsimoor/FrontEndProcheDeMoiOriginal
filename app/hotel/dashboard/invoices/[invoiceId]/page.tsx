@@ -13,6 +13,20 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
+// Currency helpers to format amounts according to the hotel's selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency";
+
+// GraphQL query to fetch the hotel's settings (namely the currency) for the current business
+const GET_HOTEL_SETTINGS = gql`
+  query GetHotelSettings($id: ID!) {
+    hotel(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`;
+
 const GET_INVOICE = gql`
   query GetInvoice($id: ID!) {
     invoice(id: $id) {
@@ -53,6 +67,45 @@ export default function InvoiceDetailsPage() {
   });
   const [generatePdf] = useMutation(GENERATE_INVOICE_PDF);
 
+  // Determine the current hotel id from the session.  The invoice page
+  // itself does not carry business context, so we call /api/session to
+  // retrieve the associated hotel.  If no hotel is found the
+  // component continues to use USD as a fallback currency.
+  const [hotelId, setHotelId] = useState<string | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  useEffect(() => {
+    async function fetchSession() {
+      try {
+        const res = await fetch("/api/session");
+        if (!res.ok) {
+          setSessionLoading(false);
+          return;
+        }
+        const data = await res.json();
+        if (data.businessType && data.businessType.toLowerCase() === "hotel" && data.businessId) {
+          setHotelId(data.businessId);
+        } else {
+          setSessionError("You are not associated with a hotel business.");
+        }
+      } catch (err) {
+        setSessionError("Failed to load session.");
+      } finally {
+        setSessionLoading(false);
+      }
+    }
+    fetchSession();
+  }, []);
+
+  // Fetch the hotel currency once the hotelId is known.  We skip
+  // execution until the session has loaded and the hotelId is set.
+  const { data: settingsData } = useQuery(GET_HOTEL_SETTINGS, {
+    variables: { id: hotelId },
+    skip: !hotelId,
+  });
+  const currency: string = settingsData?.hotel?.settings?.currency || 'USD';
+  const currencySymbol: string = currencySymbols[currency] || currency;
+
   const handleDownload = async () => {
     try {
       const { data: pdfData } = await generatePdf({ variables: { id: invoiceId } });
@@ -69,13 +122,20 @@ export default function InvoiceDetailsPage() {
     }
   };
 
-  if (loading) {
+  // Show loading or error states.  We also block rendering until the
+  // session has loaded so that currency can be determined before
+  // amounts are formatted.  If there is a session error we display
+  // it below, otherwise we fall back to USD.
+  if (loading || sessionLoading) {
     return <div className="p-6">Loading…</div>;
   }
   if (error) {
     return <div className="p-6 text-red-600">Unable to load invoice details.</div>;
   }
-
+  if (sessionError) {
+    // We still render the invoice details but amounts will default to USD
+    console.warn(sessionError);
+  }
   const invoice = data?.invoice;
   if (!invoice) {
     return <div className="p-6 text-red-600">Invoice not found.</div>;
@@ -115,16 +175,16 @@ export default function InvoiceDetailsPage() {
             {invoice.items.map((item: any, idx: number) => (
               <TableRow key={idx}>
                 <TableCell>{item.description}</TableCell>
-                <TableCell>${item.price.toFixed(2)}</TableCell>
+                <TableCell>{formatCurrency(item.price ?? 0, currency)}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(item.total ?? 0, currency)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
       <div className="flex justify-end">
-        <div className="text-xl font-semibold">Total: ${invoice.total.toFixed(2)}</div>
+        <div className="text-xl font-semibold">Total: {formatCurrency(invoice.total ?? 0, currency)}</div>
       </div>
     </div>
   );

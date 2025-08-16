@@ -1,3 +1,14 @@
+/**
+ * Represents the data persisted in the booking flow.  The booking
+ * stores the basic reservation details such as dates and guest
+ * counts along with the selected room.  Additional optional
+ * properties capture any extras, paid room options and view
+ * selections that the guest has chosen.  These fields are
+ * intentionally flexible (using partials and index signatures) so
+ * that new types of add‑ons can be incorporated without
+ * breaking existing code.  The total price reflects the sum of
+ * base room cost and any add‑ons selected.
+ */
 export interface BookingData {
   /** ISO string representing the check‑in date */
   checkIn?: string;
@@ -11,13 +22,32 @@ export interface BookingData {
   guests?: number;
   /** Identifier of the selected room */
   roomId?: string;
-  /** Selected extras */
-  extras?: {
-    breakfast?: boolean;
-    parking?: boolean;
-    champagne?: boolean;
-  };
-  /** Total amount including extras */
+  /**
+   * Generic extras selected by the guest.  This property is
+   * intentionally flexible to accommodate a variety of add‑on
+   * structures.  It may be a dictionary keyed by amenity name with
+   * boolean flags, or an array of amenity objects returned from
+   * GraphQL.  The concrete type depends on how the front‑end
+   * chooses to represent the selected extras.  Using `any` here
+   * avoids TypeScript errors when merging arbitrary add‑on data
+   * into the booking.
+   */
+  extras?: any;
+  /** List of paid room options selected by the guest.  Each option
+   * includes a name and price.  Additional fields such as
+   * description or category can be included but are not required.
+   */
+  paidOptions?: {
+    name: string;
+    price?: number;
+    [key: string]: any;
+  }[];
+  /** Name of the selected view option (e.g. "City View").  When
+   * undefined the room either has no view options or the guest has
+   * not made a selection.
+   */
+  view?: string;
+  /** Total amount including extras, paid options and view cost */
   total?: number;
   /** Cached hotel identifier used for queries */
   hotelId?: string;

@@ -27,6 +27,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
+// Currency helpers to format amounts according to hotel settings
+import { formatCurrency, currencySymbols } from "@/lib/currency";
+
 /**
  * GraphQL queries and mutations for invoice management.
  */
@@ -65,6 +68,17 @@ const CREATE_INVOICE = gql`
   mutation CreateInvoice($input: InvoiceInput!) {
     createInvoice(input: $input) {
       id
+    }
+  }
+`;
+
+// Query to fetch hotel settings including currency
+const GET_HOTEL_SETTINGS = gql`
+  query GetHotelSettings($id: ID!) {
+    hotel(id: $id) {
+      settings {
+        currency
+      }
     }
   }
 `;
@@ -124,6 +138,14 @@ export default function HotelInvoicesPage() {
     variables: { businessId, businessType },
     skip: !businessId || !businessType,
   });
+
+  // Fetch hotel settings to determine currency.  Skip until businessId is known.
+  const { data: settingsData } = useQuery(GET_HOTEL_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency: string = settingsData?.hotel?.settings?.currency || 'USD';
+  const currencySymbol: string = currencySymbols[currency] || '$';
 
   const [createInvoice] = useMutation(CREATE_INVOICE);
   const [generatePdf] = useMutation(GENERATE_INVOICE_PDF);
@@ -218,7 +240,7 @@ export default function HotelInvoicesPage() {
                 <TableCell>{inv.id}</TableCell>
                 <TableCell>{inv.reservation?.customerInfo?.name || inv.reservationId}</TableCell>
                 <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">${inv.total?.toFixed(2)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(inv.total ?? 0, currency)}</TableCell>
                 <TableCell className="space-x-2">
                   <Button variant="outline" size="sm" onClick={() => window.location.href = `/hotel/dashboard/invoices/${inv.id}`}>View</Button>
                   <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>Download</Button>

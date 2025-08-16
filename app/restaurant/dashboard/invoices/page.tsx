@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { gql, useQuery, useMutation } from "@apollo/client";
+import { formatCurrency } from '@/lib/currency';
 import {
   Table,
   TableHeader,
@@ -72,6 +73,19 @@ const GENERATE_INVOICE_PDF = gql`
   }
 `;
 
+// Query to fetch restaurant settings including currency.  Used to
+// determine which currency to display invoice totals in on this
+// dashboard page.
+const GET_RESTAURANT_SETTINGS = gql`
+  query GetRestaurantSettings($id: ID!) {
+    restaurant(id: $id) {
+      settings {
+        currency
+      }
+    }
+  }
+`;
+
 export default function RestaurantInvoicesPage() {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessType, setBusinessType] = useState<string | null>(null);
@@ -101,6 +115,13 @@ export default function RestaurantInvoicesPage() {
     }
     fetchSession();
   }, []);
+
+  // Fetch restaurant settings for currency once the business id is known.
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
 
   const {
     data: invoicesData,
@@ -203,7 +224,9 @@ export default function RestaurantInvoicesPage() {
                 <TableCell>{inv.id}</TableCell>
                 <TableCell>{inv.reservation?.customerInfo?.name || inv.reservationId}</TableCell>
                 <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">${inv.total?.toFixed(2)}</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(inv.total ?? 0, currency)}
+                </TableCell>
                 <TableCell className="space-x-2">
                   <Button variant="outline" size="sm" onClick={() => window.location.href = `/restaurant/dashboard/invoices/${inv.id}`}>View</Button>
                   <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>Download</Button>

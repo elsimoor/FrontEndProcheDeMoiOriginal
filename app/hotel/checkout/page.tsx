@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import { getBooking, clearBooking } from "../../../lib/booking";
 
+// Helper to format amounts according to the hotel's selected currency
+import { formatCurrency } from "@/lib/currency";
+
 /*
  * Checkout page
  *
@@ -23,6 +26,20 @@ const GET_ROOM = gql`
       type
       price
       images
+      hotelId {
+        settings {
+          currency
+        }
+      }
+      # Include view options so we can determine the cost of the
+      # selected view during checkout.  Each option provides its
+      # name and optional price.  Additional fields such as
+      # description or category are omitted here because they are
+      # not needed for pricing.
+      viewOptions {
+        name
+        price
+      }
     }
   }
 `;
@@ -79,11 +96,42 @@ export default function CheckoutPage() {
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [booking.checkIn, booking.checkOut]);
   const room = data?.room;
+  // Determine the currency from the hotel's settings.  Default to USD if not set.
+  const currency: string = room?.hotelId?.settings?.currency || 'USD';
+
+  console.log("currency:", currency);
   const basePrice = room ? room.price * nights : 0;
+  // Selected extras (amenities) from the booking.  These are stored
+  // as an array of amenity objects when present; default to empty
+  // array otherwise.  The extras may include items like parking or
+  // breakfast that were chosen on the room detail page.
   const extras = booking.extras || [];
-  const extrasCost = extras.reduce((total: number, amenity: any) => total + amenity.price, 0);
-  const tax = nights * 10; // simple tax estimate (€10/night) to match mockup
-  const total = basePrice + extrasCost + tax;
+  const extrasCost = extras.reduce((total: number, amenity: any) => total + (amenity.price || 0), 0);
+
+  // Selected paid room options.  These are additional add‑ons such as
+  // petals or champagne boxes that the guest chose.  Each option
+  // includes a price which we sum to derive the paid options cost.
+  const paidOptions = booking.paidOptions || [];
+  const paidOptionsCost = paidOptions.reduce((sum: number, opt: any) => sum + (opt.price || 0), 0);
+
+  // Determine the price of the selected view.  We look up the view
+  // name stored on the booking in the room's viewOptions array to
+  // retrieve the associated price.  When no view is selected or the
+  // view has no price the cost defaults to zero.
+  const selectedView: string | undefined = booking.view;
+  const viewPrice = useMemo(() => {
+    if (!selectedView || !room || !room.viewOptions) return 0;
+    const match = room.viewOptions.find((v: any) => v.name === selectedView);
+    return match && match.price ? match.price : 0;
+  }, [selectedView, room]);
+
+  // Simple tax estimate (€10/night) to match the mockup.  In a real
+  // application this would be computed based on the hotel's tax rate.
+  const tax = nights * 10;
+
+  // Compute the total price including base room cost, extras, paid
+  // options, view cost and taxes.
+  const total = basePrice + extrasCost + paidOptionsCost + viewPrice + tax;
 
   const handleReserve = async () => {
     if (!room) return;
@@ -191,14 +239,39 @@ export default function CheckoutPage() {
               </p>
               <h3 className="text-lg font-semibold mb-2">Options</h3>
               <div className="text-sm text-gray-700 space-y-1">
-                {extras.length > 0 ? (
-                  extras.map((amenity: any) => (
-                    <div key={amenity.name} className="flex justify-between">
-                      <span>{amenity.name}</span>
-                      <span>${amenity.price.toFixed(2)}</span>
-                    </div>
-                  ))
-                ) : (
+                {/* List selected extras (amenities) */}
+                {extras && extras.length > 0 && (
+                  <>
+                    {extras.map((amenity: any) => (
+                      <div key={amenity.name} className="flex justify-between">
+                        <span>{amenity.name}</span>
+                        <span>{formatCurrency(amenity.price || 0, currency)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {/* List selected paid room options */}
+                {paidOptions && paidOptions.length > 0 && (
+                  <>
+                    {paidOptions.map((opt: any) => (
+                      <div key={opt.name} className="flex justify-between">
+                        <span>{opt.name}</span>
+                        <span>{formatCurrency(opt.price || 0, currency)}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {/* Display selected view if present */}
+                {selectedView && (
+                  <div className="flex justify-between">
+                    <span>{selectedView}</span>
+                    <span>
+                      {viewPrice > 0 ? formatCurrency(viewPrice, currency) : "Included"}
+                    </span>
+                  </div>
+                )}
+                {/* If no options selected show a message */}
+                {!extras.length && !paidOptions.length && !selectedView && (
                   <p>No extras selected</p>
                 )}
               </div>
@@ -206,19 +279,36 @@ export default function CheckoutPage() {
               <div className="text-sm text-gray-700 space-y-1 border-t pt-2">
                 <div className="flex justify-between">
                   <span>Base price</span>
-                  <span>${basePrice.toFixed(2)}</span>
+                  <span>{formatCurrency(basePrice, currency)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Extras</span>
-                  <span>${extrasCost.toFixed(2)}</span>
-                </div>
+                {/* Cost of selected amenities */}
+                {extrasCost > 0 && (
+                  <div className="flex justify-between">
+                    <span>Extras</span>
+                    <span>{formatCurrency(extrasCost, currency)}</span>
+                  </div>
+                )}
+                {/* Cost of selected paid room options */}
+                {paidOptionsCost > 0 && (
+                  <div className="flex justify-between">
+                    <span>Paid options</span>
+                    <span>{formatCurrency(paidOptionsCost, currency)}</span>
+                  </div>
+                )}
+                {/* Cost of selected view */}
+                {viewPrice > 0 && (
+                  <div className="flex justify-between">
+                    <span>View</span>
+                    <span>{formatCurrency(viewPrice, currency)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>Taxes & fees</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>{formatCurrency(tax, currency)}</span>
                 </div>
                 <div className="flex justify-between font-semibold mt-2 border-t pt-2">
                   <span>Total price</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatCurrency(total, currency)}</span>
                 </div>
               </div>
             </div>

@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState, useEffect, useMemo } from "react"
+// Import currency helper for formatting total spent amounts
+import { formatCurrency } from "@/lib/currency"
 import { gql, useQuery } from "@apollo/client"
 import { Search, Filter, Phone, Mail, Calendar, MapPin, Plus, Edit, Trash2, X } from "lucide-react"
 
@@ -65,6 +67,25 @@ export default function SalonClients() {
     }
     fetchSession()
   }, [])
+
+  // Retrieve the salon settings to determine the preferred currency.  We
+  // only need the currency field from settings.  The query is
+  // skipped until the salonId is known.
+  const GET_SALON_SETTINGS = gql`
+    query GetSalonSettings($id: ID!) {
+      salon(id: $id) {
+        id
+        settings {
+          currency
+        }
+      }
+    }
+  `
+  const { data: settingsData } = useQuery(GET_SALON_SETTINGS, {
+    variables: { id: salonId },
+    skip: !salonId,
+  })
+  const currency = settingsData?.salon?.settings?.currency || 'USD'
 
   // Fetch reservations to compute client data
   const GET_RESERVATIONS = gql`
@@ -299,7 +320,7 @@ export default function SalonClients() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membership</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Visits</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent ($)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Favourite Services</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preferred Stylist</th>
@@ -321,7 +342,17 @@ export default function SalonClients() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.totalVisits}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.totalSpent.toFixed(2)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {
+                      /*
+                       * Display the client’s total amount spent in the salon’s
+                       * selected currency.  We assume the stored amount is
+                       * denominated in USD and use the `formatCurrency`
+                       * helper to convert and format it appropriately.
+                       */
+                    }
+                    {formatCurrency(client.totalSpent ?? 0, currency)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.lastVisit.slice(0, 10)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.favoriteServices.join(", ")}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{client.preferredStylist || "-"}</td>

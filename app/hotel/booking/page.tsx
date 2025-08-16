@@ -7,6 +7,9 @@ import Link from "next/link";
 import { Calendar, Users, Bed, Wifi, Car, Coffee, Dumbbell, Waves } from "lucide-react";
 import { gql, useQuery, useMutation } from "@apollo/client";
 
+// Import currency helpers to format amounts based on hotel settings
+import { formatCurrency, currencySymbols } from "@/lib/currency";
+
 // Query to fetch rooms for the current hotel.  We only need id, type and price.
 const GET_ROOMS = gql`
   query GetRooms($hotelId: ID!) {
@@ -29,6 +32,9 @@ const GET_HOTELS = gql`
     hotels {
       id
       name
+      settings {
+        currency
+      }
       openingPeriods {
         startDate
         endDate
@@ -154,6 +160,11 @@ export default function HotelBookingPage() {
 
   // State for previewing room images
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Determine the currency based on the selected hotel's settings.  If
+  // no hotel is selected yet or settings are missing, default to USD.
+  const currency: string = hotelData?.hotel?.settings?.currency || 'USD';
+  const currencySymbol: string = currencySymbols[currency] || '$';
 
   // Validate that selected dates fall within one of the hotel's opening periods
   const isWithinOpeningPeriod = () => {
@@ -328,7 +339,7 @@ export default function HotelBookingPage() {
                                 <p className="text-sm text-gray-600">{room.description}</p>
                               </div>
                               <span className="text-lg font-bold text-blue-600">
-                                ${room.price}/night
+                                {formatCurrency(room.price, currency)}/night
                               </span>
                             </div>
                           </div>
@@ -378,7 +389,7 @@ export default function HotelBookingPage() {
                   type="submit"
                   className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-blue-700 transition-colors"
                 >
-                  Book Now{totalPrice > 0 ? ` - $${totalPrice}` : ""}
+                  Book Now{totalPrice > 0 ? ` - ${formatCurrency(totalPrice, currency)}` : ""}
                 </button>
               </form>
             </div>
@@ -417,9 +428,9 @@ export default function HotelBookingPage() {
                     <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                       <div className="flex justify-between text-sm">
                         <span>
-                          ${selectedType.price} × {nights} nights
+                          {formatCurrency(selectedType.price, currency)} × {nights} nights
                         </span>
-                        <span className="font-medium">${totalPrice}</span>
+                        <span className="font-medium">{formatCurrency(totalPrice, currency)}</span>
                       </div>
                     </div>
                   )}

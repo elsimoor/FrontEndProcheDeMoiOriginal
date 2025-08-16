@@ -252,7 +252,7 @@
 //       console.error(err);
 //     }
 //   };
-  
+
 //   // Handle editing a room
 //   const handleEdit = (room: any) => {
 //     setEditingId(room.id);
@@ -591,6 +591,15 @@ const GET_ROOMS = gql`
       numberOfBathrooms
       description
       isActive
+      # Fetch paid options configured for each room so that they can be
+      # pre‑selected when editing.  Each option includes its name,
+      # optional description and category, and a price.
+      paidOptions {
+        name
+        description
+        category
+        price
+      }
     }
   }
 `
@@ -656,6 +665,24 @@ const GET_ROOM_TYPES = gql`
   }
 `
 
+// Query to fetch the hotel's paid room options.  These options are defined
+// on the parent hotel and can be attached to rooms as add‑ons.  We
+// fetch them separately so that they can be displayed in the room
+// creation and editing form.
+const GET_HOTEL_PAID_OPTIONS = gql`
+  query GetHotelPaidOptions($id: ID!) {
+    hotel(id: $id) {
+      id
+      roomPaidOptions {
+        name
+        description
+        category
+        price
+      }
+    }
+  }
+`
+
 // Define the shape of our form state for TypeScript
 interface RoomFormState {
   id?: string
@@ -672,6 +699,13 @@ interface RoomFormState {
   numberOfBeds: number | ""
   numberOfBathrooms: number | ""
   description: string
+  /**
+   * Paid options selected for this room.  Each entry corresponds to a
+   * purchasable add‑on defined on the hotel.  When no options are
+   * selected this array is empty.  Each object stores the option's
+   * name, optional description and category, and price.
+   */
+  paidOptions: { name: string; description?: string | null; category?: string | null; price: number }[]
 }
 
 const bedTypes = ["Single", "Double", "Queen", "King", "Twin Beds", "Bunk Bed", "Sofa Bed", "Murphy Bed"]
@@ -739,6 +773,18 @@ export default function HotelRoomsPage() {
     skip: !hotelId,
   })
 
+  // Fetch hotel paid room options.  We skip this query until we
+  // have a hotelId from the session.  If no options are defined
+  // the resulting array will be empty.
+  const {
+    data: hotelOptionsData,
+    loading: hotelOptionsLoading,
+    error: hotelOptionsError,
+  } = useQuery(GET_HOTEL_PAID_OPTIONS, {
+    variables: { id: hotelId },
+    skip: !hotelId,
+  })
+
   // Prepare mutations
   const [createRoom] = useMutation(CREATE_ROOM)
   const [updateRoom] = useMutation(UPDATE_ROOM)
@@ -758,6 +804,8 @@ export default function HotelRoomsPage() {
     numberOfBeds: "",
     numberOfBathrooms: "",
     description: "",
+    // Initialize with no paid options selected
+    paidOptions: [],
   })
 
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -780,6 +828,7 @@ export default function HotelRoomsPage() {
       numberOfBeds: "",
       numberOfBathrooms: "",
       description: "",
+      paidOptions: [],
     })
     setEditingId(null)
   }
@@ -798,6 +847,30 @@ export default function HotelRoomsPage() {
     }))
   }
 
+  /**
+   * Toggle a paid option on or off in the form state.  When the option is
+   * checked we append it to the existing array, ensuring no duplicates
+   * based on the option name.  When unchecked we remove any option with
+   * the matching name.  This allows the user to select multiple
+   * paid add‑ons for a room.
+   */
+  const handlePaidOptionToggle = (option: any, isChecked: boolean) => {
+    setFormState((prev) => {
+      let newOptions: typeof prev.paidOptions
+      if (isChecked) {
+        // Avoid duplicates by checking if the option is already selected
+        if (prev.paidOptions.some((o) => o.name === option.name)) {
+          newOptions = prev.paidOptions
+        } else {
+          newOptions = [...prev.paidOptions, option]
+        }
+      } else {
+        newOptions = prev.paidOptions.filter((o) => o.name !== option.name)
+      }
+      return { ...prev, paidOptions: newOptions }
+    })
+  }
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -806,9 +879,9 @@ export default function HotelRoomsPage() {
     // Convert the comma‑separated amenities and images into arrays
     const imagesArray = formState.images
       ? formState.images
-          .split(",")
-          .map((i) => i.trim())
-          .filter(Boolean)
+        .split(",")
+        .map((i) => i.trim())
+        .filter(Boolean)
       : []
 
     // Build the input object matching RoomInput
@@ -830,6 +903,16 @@ export default function HotelRoomsPage() {
       numberOfBeds: formState.numberOfBeds !== "" ? Number(formState.numberOfBeds) : undefined,
       numberOfBathrooms: formState.numberOfBathrooms !== "" ? Number(formState.numberOfBathrooms) : undefined,
       description: formState.description || undefined,
+      // Include selected paid options when creating or updating a room.
+      // We map each selected option to a plain object containing its
+      // name, description, category and price.  When no options are
+      // selected the resulting array will be empty.
+      paidOptions: formState.paidOptions.map((o) => ({
+        name: o.name,
+        description: o.description ?? undefined,
+        category: o.category ?? undefined,
+        price: o.price,
+      })),
     }
 
     try {
@@ -861,13 +944,16 @@ export default function HotelRoomsPage() {
       // Convert bed type strings to objects with unique IDs
       bedType: Array.isArray(room.bedType)
         ? room.bedType.map((type: string, index: number) => ({
-            id: `${room.id}-${type}-${index}`,
-            type,
-          }))
+          id: `${room.id}-${type}-${index}`,
+          type,
+        }))
         : [],
       numberOfBeds: room.numberOfBeds ?? "",
       numberOfBathrooms: room.numberOfBathrooms ?? "",
       description: room.description || "",
+      // Populate selected paid options when editing.  Fallback to an empty
+      // array if the field is undefined to avoid leaving stale options.
+      paidOptions: Array.isArray(room.paidOptions) ? room.paidOptions : [],
     })
 
     setTimeout(() => {
@@ -889,12 +975,44 @@ export default function HotelRoomsPage() {
   // Render loading and error states
   if (sessionLoading || roomsLoading || hotelLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
+
+        <div className="space-y-4">
+          <Label className="text-sm font-semibold text-gray-700">
+            Paid Room Options
+          </Label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {hotelOptionsLoading ? (
+              <p className="col-span-full text-gray-500">Loading paid options...</p>
+            ) : hotelOptionsData?.hotel?.roomPaidOptions?.length ? (
+              hotelOptionsData.hotel.roomPaidOptions.map((option: any) => (
+                <label
+                  key={option.name}
+                  className="flex items-center space-x-3 p-3 border-2 border-gray-200 rounded-lg hover:border-gray-300 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={formState.paidOptions.some((o) => o.name === option.name)}
+                    onChange={(e) => handlePaidOptionToggle(option, e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {option.name} (${option.price})
+                  </span>
+                </label>
+              ))
+            ) : (
+              <p className="col-span-full text-gray-500">No paid options defined.</p>
+            )}
+          </div>
+        </div>
+      </>
     )
   }
 
@@ -976,13 +1094,12 @@ export default function HotelRoomsPage() {
                                   ? "secondary"
                                   : "default"
                             }
-                            className={`${
-                              room.status === "occupied"
+                            className={`${room.status === "occupied"
                                 ? "bg-red-100 text-red-800 hover:bg-red-200"
                                 : room.status === "maintenance"
                                   ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
                                   : "bg-green-100 text-green-800 hover:bg-green-200"
-                            }`}
+                              }`}
                           >
                             {room.status}
                           </Badge>

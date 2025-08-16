@@ -1,6 +1,8 @@
 "use client"
 
 import { gql, useQuery, useMutation } from "@apollo/client";
+// Helpers to format prices according to the restaurant's selected currency
+import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -30,6 +32,19 @@ const CREATE_LANDING_CARD = gql`
 const DELETE_LANDING_CARD = gql`
   mutation DeleteLandingCard($id: ID!) {
     deleteLandingCard(id: $id)
+  }
+`;
+
+// Query to fetch only the restaurant's currency setting.  We use this
+// to dynamically format prices on the landing cards page.  The
+// restaurant identifier is derived from the current session.
+const GET_RESTAURANT_SETTINGS = gql`
+  query GetRestaurantSettings($id: ID!) {
+    restaurant(id: $id) {
+      settings {
+        currency
+      }
+    }
   }
 `;
 
@@ -68,6 +83,17 @@ export default function RestaurantLandingCardsPage() {
     variables: { businessType: "restaurant", businessId },
     skip: !businessId,
   });
+
+  // Fetch the restaurant's currency settings so we can format prices
+  const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
+    variables: { id: businessId },
+    skip: !businessId,
+  });
+
+  // Determine the currency and a friendly symbol.  Default to USD if
+  // settings are unavailable.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
+  const currencySymbol: string = currencySymbols[currency] ?? currency;
   const [createLandingCard, { loading: creating }] = useMutation(CREATE_LANDING_CARD, {
     onCompleted: () => {
       setFormData({
@@ -129,7 +155,11 @@ export default function RestaurantLandingCardsPage() {
                 <h3 className="text-lg font-semibold">{card.title}</h3>
                 {card.description && <p className="text-sm text-gray-600">{card.description}</p>}
                 {card.location && <p className="text-sm text-gray-600">Location: {card.location}</p>}
-                {card.price && <p className="text-sm text-gray-600">Price: €{card.price}</p>}
+                {card.price && (
+                  <p className="text-sm text-gray-600">
+                    Price: {formatCurrency(card.price, currency)}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => handleDelete(card.id)}
@@ -173,7 +203,7 @@ export default function RestaurantLandingCardsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price (€)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price ({currencySymbol})</label>
               <input
                 type="number"
                 value={formData.price}
