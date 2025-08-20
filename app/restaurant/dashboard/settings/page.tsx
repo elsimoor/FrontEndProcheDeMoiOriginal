@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery, useMutation } from "@apollo/client"
 // Firebase helper and upload component for handling logo uploads.  We
 // import these at the top of the file so they are available when
@@ -49,6 +50,7 @@ interface Policy {
 }
 
 export default function RestaurantSettings() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState("general")
   const [showHoursModal, setShowHoursModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -425,7 +427,7 @@ export default function RestaurantSettings() {
 
   // Early return for loading or error states
   if (sessionLoading || restaurantLoading) {
-    return <div className="p-6 text-gray-600">Loading settings...</div>
+    return <div className="p-6 text-gray-600">{t("loading")}</div>
   }
   if (sessionError) {
     return <div className="p-6 text-red-600">{sessionError}</div>
@@ -445,15 +447,15 @@ export default function RestaurantSettings() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Restaurant Settings</h1>
-          <p className="text-gray-600">Configure your restaurant preferences and policies</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("restaurantSettingsTitle")}</h1>
+          <p className="text-gray-600">{t("restaurantSettingsSubtitle")}</p>
         </div>
         <button
           onClick={handleSave}
           className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
         >
           <Save className="h-4 w-4 mr-2" />
-          Save Changes
+          {t("saveChanges")}
         </button>
       </div>
 
@@ -463,11 +465,11 @@ export default function RestaurantSettings() {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: "general", label: "General", icon: UtensilsCrossed },
+              { id: "general", label: t("generalTab"), icon: UtensilsCrossed },
               // Removed the Business Hours tab. All scheduling and capacity settings are now managed via the tables-disponibilites page.
-              { id: "notifications", label: "Notifications", icon: Bell },
-              { id: "payments", label: "Payments", icon: CreditCard },
-              { id: "policies", label: "Policies", icon: Shield },
+              { id: "notifications", label: t("notificationsTab"), icon: Bell },
+              { id: "payments", label: t("paymentsTab"), icon: CreditCard },
+              { id: "policies", label: t("policiesTab"), icon: Shield },
             ].map((tab) => {
               const Icon = tab.icon
               return (
@@ -492,12 +494,12 @@ export default function RestaurantSettings() {
           {/* General Settings */}
           {activeTab === "general" && (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-gray-900">General Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t("generalInformation")}</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Profile image upload */}
                 <div className="md:col-span-2 space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("profileImage")}</label>
                   {uploadedImage && (
                     <img
                       src={uploadedImage}
@@ -508,7 +510,7 @@ export default function RestaurantSettings() {
                   <ImageUpload onUpload={handleImageUpload} uploading={imageUploading} multiple={false} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("restaurantNameLabel")}</label>
                   <input
                     type="text"
                     value={settings.restaurantName}
@@ -517,7 +519,7 @@ export default function RestaurantSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("phoneNumberLabel")}</label>
                   <input
                     type="tel"
                     value={settings.phone}
@@ -526,7 +528,7 @@ export default function RestaurantSettings() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("addressLabel")}</label>
                   <input
                     type="text"
                     value={settings.address}
@@ -535,7 +537,7 @@ export default function RestaurantSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("emailLabel")}</label>
                   <input
                     type="email"
                     value={settings.email}
@@ -544,7 +546,7 @@ export default function RestaurantSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("websiteLabel")}</label>
                   <input
                     type="url"
                     value={settings.website}
@@ -553,7 +555,7 @@ export default function RestaurantSettings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("currencyLabel")}</label>
                   <select
                     value={settings.currency}
                     onChange={(e) => handleInputChange("currency", e.target.value)}
@@ -567,7 +569,7 @@ export default function RestaurantSettings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t("timezoneLabel")}</label>
                   <select
                     value={settings.timezone}
                     onChange={(e) => handleInputChange("timezone", e.target.value)}
@@ -582,10 +584,10 @@ export default function RestaurantSettings() {
               </div>
 
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Operating Preferences</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t("operatingPreferencesTitle")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Party Size</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("maxPartySizeLabel")}</label>
                     <input
                       type="number"
                       value={settings.maxPartySize}
@@ -594,7 +596,7 @@ export default function RestaurantSettings() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Reservation Window (days)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("reservationWindowLabel")}</label>
                     <input
                       type="number"
                       value={settings.reservationWindow}
@@ -603,7 +605,7 @@ export default function RestaurantSettings() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Cancellation Period (hours)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("cancellationPeriodLabel")}</label>
                     <input
                       type="number"
                       value={settings.cancellationHours}
@@ -612,7 +614,7 @@ export default function RestaurantSettings() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dress Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("dressCodeLabel")}</label>
                     <select
                       value={settings.dressCode}
                       onChange={(e) => handleInputChange("dressCode", e.target.value)}
@@ -629,8 +631,8 @@ export default function RestaurantSettings() {
                 <div className="mt-6 space-y-4">
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
-                      <h3 className="font-medium text-gray-900">Auto-confirm Reservations</h3>
-                      <p className="text-sm text-gray-500">Automatically confirm new reservations</p>
+                      <h3 className="font-medium text-gray-900">{t("autoConfirmReservationsLabel")}</h3>
+                      <p className="text-sm text-gray-500">{t("autoConfirmReservationsDesc")}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -645,8 +647,8 @@ export default function RestaurantSettings() {
 
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                     <div>
-                      <h3 className="font-medium text-gray-900">Allow Walk-ins</h3>
-                      <p className="text-sm text-gray-500">Accept customers without reservations</p>
+                      <h3 className="font-medium text-gray-900">{t("allowWalkInsLabel")}</h3>
+                      <p className="text-sm text-gray-500">{t("allowWalkInsDesc")}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -742,7 +744,7 @@ export default function RestaurantSettings() {
           {activeTab === "payments" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Payment Methods</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t("paymentMethodsTitle")}</h2>
                 <button
                   onClick={() => {
                     setEditingItem(null)
@@ -752,7 +754,7 @@ export default function RestaurantSettings() {
                   className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Payment Method
+                  {t("addPaymentMethod")}
                 </button>
               </div>
 
@@ -761,13 +763,17 @@ export default function RestaurantSettings() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Payment Method
+                        {t("paymentMethodColumn")}
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Processing Fee
+                        {t("statusColumn")}
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        {t("processingFeeColumn")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        {t("actionsColumn")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -780,7 +786,7 @@ export default function RestaurantSettings() {
                               method.enabled ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {method.enabled ? "Enabled" : "Disabled"}
+                            {t(method.enabled ? "enabledLabel" : "disabledLabel")}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">{method.processingFee}%</td>
@@ -804,10 +810,10 @@ export default function RestaurantSettings() {
               </div>
 
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Fees & Charges</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{t("feesChargesTitle")}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tax Rate (%)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("taxRateLabel")}</label>
                     <input
                       type="number"
                       step="0.1"
@@ -817,7 +823,7 @@ export default function RestaurantSettings() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Service Fee (%)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("serviceFeeLabel")}</label>
                     <input
                       type="number"
                       step="0.1"
@@ -835,7 +841,7 @@ export default function RestaurantSettings() {
           {activeTab === "policies" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Restaurant Policies</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t("restaurantPoliciesTitle")}</h2>
                 <button
                   onClick={() => {
                     setEditingItem(null)
@@ -845,7 +851,7 @@ export default function RestaurantSettings() {
                   className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Policy
+                  {t("addPolicyButton")}
                 </button>
               </div>
 

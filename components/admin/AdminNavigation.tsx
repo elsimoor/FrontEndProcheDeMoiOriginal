@@ -1,6 +1,7 @@
 "use client"
 
 import { Bell, Search, User } from "lucide-react"
+import LanguageSelector from "@/components/LanguageSelector"
 import { useEffect, useState } from "react"
 import useTranslation from "@/hooks/useTranslation"
 import { useLanguage } from "@/context/LanguageContext"
@@ -26,7 +27,11 @@ export default function AdminNavigation() {
 
   // Translation and language context
   const { t } = useTranslation()
-  const { locale, setLocale } = useLanguage()
+  // Consume useLanguage to subscribe to locale changes.  We no
+  // longer destructure locale or setLocale here since the language
+  // selector handles switching for us, but calling the hook ensures
+  // the component re-renders when the locale updates.
+  useLanguage()
 
   useEffect(() => {
     async function fetchSession() {
@@ -95,8 +100,9 @@ export default function AdminNavigation() {
               </div>
             </div>
           </div>
-          {/* Right: notifications and user menu */}
-          <div className="flex items-center">
+          {/* Right: notifications, language selector and user menu */}
+          <div className="flex items-center space-x-2">
+            {/* Notifications button */}
             <button
               type="button"
               className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -104,22 +110,11 @@ export default function AdminNavigation() {
               <span className="sr-only">{t("viewNotifications")}</span>
               <Bell className="h-6 w-6" />
             </button>
-            {/* Language selector */}
-            <div className="hidden md:flex items-center space-x-2 ml-3">
-              <button
-                onClick={() => setLocale("en")}
-                className={`text-sm font-medium ${locale === "en" ? "font-semibold text-indigo-600" : "text-gray-700"}`}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setLocale("fr")}
-                className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-indigo-600" : "text-gray-700"}`}
-              >
-                FR
-              </button>
+            {/* Desktop language selector */}
+            <div className="hidden md:block">
+              <LanguageSelector colorClass="indigo" />
             </div>
-            <div className="ml-3 relative">
+            <div className="ml-1 relative">
               <div className="flex items-center">
                 <button
                   type="button"
@@ -134,7 +129,7 @@ export default function AdminNavigation() {
                   </span>
                 </button>
                 {menuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                  <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
                     <a
                       href="#"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -147,6 +142,10 @@ export default function AdminNavigation() {
                     >
                       {t("logout")}
                     </button>
+                    {/* Language selector inside dropdown for mobile.  Hidden on desktop to avoid duplicate display */}
+                    <div className="border-t border-gray-100 mt-1 px-4 py-1 md:hidden">
+                      <LanguageSelector colorClass="indigo" />
+                    </div>
                   </div>
                 )}
               </div>

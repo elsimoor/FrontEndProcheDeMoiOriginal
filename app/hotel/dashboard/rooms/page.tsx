@@ -549,6 +549,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { X, Plus, Bed, Users, Edit, Trash2, Eye, Hotel } from "lucide-react"
+import useTranslation from "@/hooks/useTranslation";
 
 /**
  * This page provides CRUD (create, read, update, delete) operations for hotel
@@ -813,6 +814,9 @@ export default function HotelRoomsPage() {
   // Router for navigating to room details
   const router = useRouter()
 
+  // Translation hook
+  const { t } = useTranslation()
+
   // Reset the form when leaving edit mode
   const resetForm = () => {
     setFormState({
@@ -966,7 +970,7 @@ export default function HotelRoomsPage() {
 
   // Handle deletion of a room
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this room?")) {
+    if (confirm(t("deleteRoomConfirm"))) {
       await deleteRoom({ variables: { id } })
       refetchRooms()
     }
@@ -979,17 +983,17 @@ export default function HotelRoomsPage() {
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <p className="text-gray-600">{t("loading")}</p>
           </div>
         </div>
 
         <div className="space-y-4">
           <Label className="text-sm font-semibold text-gray-700">
-            Paid Room Options
+            {t("paidRoomOptions")}
           </Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {hotelOptionsLoading ? (
-              <p className="col-span-full text-gray-500">Loading paid options...</p>
+              <p className="col-span-full text-gray-500">{t("loadingPaidOptions")}</p>
             ) : hotelOptionsData?.hotel?.roomPaidOptions?.length ? (
               hotelOptionsData.hotel.roomPaidOptions.map((option: any) => (
                 <label
@@ -1008,7 +1012,7 @@ export default function HotelRoomsPage() {
                 </label>
               ))
             ) : (
-              <p className="col-span-full text-gray-500">No paid options defined.</p>
+              <p className="col-span-full text-gray-500">{t("noPaidOptionsDefined")}</p>
             )}
           </div>
         </div>
@@ -1017,10 +1021,16 @@ export default function HotelRoomsPage() {
   }
 
   if (sessionError) {
+    // Determine the translated message based on known session error strings
+    const errorMsg = sessionError === "You are not associated with a hotel business."
+      ? t("notAssociatedWithHotel")
+      : sessionError === "Failed to load session."
+        ? t("failedToLoadSession")
+        : sessionError
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-lg font-semibold">{sessionError}</div>
+          <div className="text-red-600 text-lg font-semibold">{errorMsg}</div>
         </div>
       </div>
     )
@@ -1030,7 +1040,7 @@ export default function HotelRoomsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-lg font-semibold">Error loading rooms.</div>
+          <div className="text-red-600 text-lg font-semibold">{t("errorLoadingRooms")}</div>
         </div>
       </div>
     )
@@ -1043,19 +1053,18 @@ export default function HotelRoomsPage() {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Hotel className="h-10 w-10 text-blue-600" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Rooms Management
+              {t("roomsManagementTitle")}
             </h1>
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Manage your hotel's room inventory, including adding new rooms, editing existing ones, and adjusting
-            availability.
+            {t("roomsManagementDescription")}
           </p>
         </div>
 
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-            <CardTitle className="text-xl font-semibold">Existing Rooms</CardTitle>
-            <CardDescription className="text-blue-100">Overview of all rooms in your hotel</CardDescription>
+            <CardTitle className="text-xl font-semibold">{t("existingRoomsTitle")}</CardTitle>
+            <CardDescription className="text-blue-100">{t("existingRoomsDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             {roomsData?.rooms && roomsData.rooms.length > 0 ? (
@@ -1063,12 +1072,12 @@ export default function HotelRoomsPage() {
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-50 rounded-lg">
                     <tr>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">Room Number</th>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">Type</th>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">Capacity</th>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">Amenities</th>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">Status</th>
-                      <th className="px-6 py-4 text-left font-semibold text-gray-700">Actions</th>
+                      <th className="px-6 py-4 text-left font-semibold text-gray-700">{t("roomNumberColumn")}</th>
+                      <th className="px-6 py-4 text-left font-semibold text-gray-700">{t("typeColumn")}</th>
+                      <th className="px-6 py-4 text-left font-semibold text-gray-700">{t("capacityColumn")}</th>
+                      <th className="px-6 py-4 text-left font-semibold text-gray-700">{t("amenitiesColumn")}</th>
+                      <th className="px-6 py-4 text-left font-semibold text-gray-700">{t("statusColumn")}</th>
+                      <th className="px-6 py-4 text-left font-semibold text-gray-700">{t("actionsColumn")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1140,8 +1149,8 @@ export default function HotelRoomsPage() {
             ) : (
               <div className="text-center py-12">
                 <Bed className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No rooms found.</p>
-                <p className="text-gray-400">Create your first room using the form below.</p>
+                <p className="text-gray-500 text-lg">{t("noRoomsFound")}</p>
+                <p className="text-gray-400">{t("createFirstRoom")}</p>
               </div>
             )}
           </CardContent>
@@ -1151,10 +1160,10 @@ export default function HotelRoomsPage() {
           <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
             <CardTitle className="text-xl font-semibold flex items-center gap-2">
               <Plus className="h-6 w-6" />
-              {editingId ? "Edit Room" : "Add New Room"}
+              {editingId ? t("editRoom") : t("addNewRoom")}
             </CardTitle>
             <CardDescription className="text-indigo-100">
-              {editingId ? "Update room information" : "Fill in the details to add a new room to your hotel"}
+              {editingId ? t("updateRoomInformation") : t("fillAddNewRoom")}
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8">
@@ -1163,7 +1172,7 @@ export default function HotelRoomsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="number" className="text-sm font-semibold text-gray-700">
-                    Room Number
+                    {t("roomNumberLabel")}
                   </Label>
                   <Input
                     id="number"
@@ -1177,7 +1186,7 @@ export default function HotelRoomsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type" className="text-sm font-semibold text-gray-700">
-                    Room Type
+                    {t("roomTypeLabel")}
                   </Label>
                   <Select value={formState.type} onValueChange={(value) => setFormState({ ...formState, type: value })}>
                     <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 transition-colors">
@@ -1205,7 +1214,7 @@ export default function HotelRoomsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="capacity" className="text-sm font-semibold text-gray-700">
                     <Users className="inline h-4 w-4 mr-1" />
-                    Capacity
+                    {t("capacityLabel")}
                   </Label>
                   <Input
                     id="capacity"
@@ -1220,7 +1229,7 @@ export default function HotelRoomsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="price" className="text-sm font-semibold text-gray-700">
-                    Price (€)
+                    {t("priceLabel")}
                   </Label>
                   <Input
                     id="price"
@@ -1236,7 +1245,7 @@ export default function HotelRoomsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="floor" className="text-sm font-semibold text-gray-700">
-                    Floor
+                    {t("floorLabel")}
                   </Label>
                   <Input
                     id="floor"
@@ -1253,10 +1262,10 @@ export default function HotelRoomsPage() {
 
               {/* Amenities */}
               <div className="space-y-4">
-                <Label className="text-sm font-semibold text-gray-700">Amenities</Label>
+                <Label className="text-sm font-semibold text-gray-700">{t("amenitiesLabel")}</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {hotelLoading ? (
-                    <p className="col-span-full text-gray-500">Loading amenities...</p>
+                    <p className="col-span-full text-gray-500">{t("loadingAmenities")}</p>
                   ) : (
                     hotelData?.hotel?.amenities.map((amenity: any) => (
                       <label
@@ -1287,7 +1296,7 @@ export default function HotelRoomsPage() {
               <div className="space-y-4">
                 <Label className="text-sm font-semibold text-gray-700">
                   <Bed className="inline h-4 w-4 mr-1" />
-                  Bed Types
+                  {t("bedTypesLabel")}
                 </Label>
                 {/* Selected Bed Types Display */}
                 {formState.bedType.length > 0 && (
@@ -1314,7 +1323,7 @@ export default function HotelRoomsPage() {
                 {/* Bed Type Select */}
                 <Select onValueChange={handleBedTypeSelect}>
                   <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 transition-colors">
-                    <SelectValue placeholder="Select bed types to add" />
+                    <SelectValue placeholder={t("selectBedTypesPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {bedTypes.map((bedType) => (
@@ -1333,7 +1342,7 @@ export default function HotelRoomsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="numberOfBeds" className="text-sm font-semibold text-gray-700">
-                    Number of Beds
+                    {t("numberOfBedsLabel")}
                   </Label>
                   <Input
                     id="numberOfBeds"
@@ -1348,7 +1357,7 @@ export default function HotelRoomsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="numberOfBathrooms" className="text-sm font-semibold text-gray-700">
-                    Number of Bathrooms
+                    {t("numberOfBathroomsLabel")}
                   </Label>
                   <Input
                     id="numberOfBathrooms"
@@ -1369,7 +1378,7 @@ export default function HotelRoomsPage() {
               {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-sm font-semibold text-gray-700">
-                  Room Description
+                  {t("roomDescriptionLabel")}
                 </Label>
                 <Textarea
                   id="description"
@@ -1405,12 +1414,12 @@ export default function HotelRoomsPage() {
                   {editingId ? (
                     <>
                       <Edit className="h-5 w-5 mr-2" />
-                      Update Room
+                      {t("updateRoomButton")}
                     </>
                   ) : (
                     <>
                       <Plus className="h-5 w-5 mr-2" />
-                      Add Room
+                      {t("addRoomButton")}
                     </>
                   )}
                 </Button>
@@ -1421,7 +1430,7 @@ export default function HotelRoomsPage() {
                     onClick={resetForm}
                     className="px-6 py-3 border-2 border-gray-300 hover:border-gray-400 transition-colors bg-transparent"
                   >
-                    Cancel
+                    {t("cancel")}
                   </Button>
                 )}
               </div>

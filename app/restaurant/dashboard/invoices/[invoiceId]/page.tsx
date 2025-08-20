@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import React from 'react';
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery, useMutation } from "@apollo/client";
 // Import currency helper to format prices consistently
 import { formatCurrency, currencySymbols } from '@/lib/currency';
@@ -71,6 +72,7 @@ const GET_RESTAURANT_SETTINGS = gql`
 `;
 
 export default function RestaurantInvoiceDetailsPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const invoiceId = params.invoiceId as string;
@@ -128,52 +130,59 @@ export default function RestaurantInvoiceDetailsPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to download invoice.");
+      alert(t("downloadInvoiceFailed"));
     }
   };
 
   if (loading) {
-    return <div className="p-6">Loading…</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
   if (error) {
-    return <div className="p-6 text-red-600">Unable to load invoice details.</div>;
+    return <div className="p-6 text-red-600">{t("unableToLoadInvoice")}</div>;
   }
 
   const invoice = data?.invoice;
   if (!invoice) {
-    return <div className="p-6 text-red-600">Invoice not found.</div>;
+    return <div className="p-6 text-red-600">{t("invoiceNotFound")}</div>;
   }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Invoice {invoice.id}</h1>
-          <p className="text-sm text-gray-600">Date: {new Date(invoice.date).toLocaleDateString()}</p>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            {t("invoiceTitle")} {invoice.id}
+          </h1>
+          <p className="text-sm text-gray-600">
+            {t("invoiceDate")}: {new Date(invoice.date).toLocaleDateString()}
+          </p>
           {invoice.reservation && (
-            <p className="text-sm text-gray-600">Customer: {invoice.reservation.customerInfo?.name}</p>
+            <p className="text-sm text-gray-600">
+              {t("customerLabelDetails")}: {invoice.reservation.customerInfo?.name}
+            </p>
           )}
           {invoice.reservation?.checkIn && invoice.reservation?.checkOut && (
             <p className="text-sm text-gray-600">
-              Stay: {new Date(invoice.reservation.checkIn).toLocaleDateString()} – {new Date(invoice.reservation.checkOut).toLocaleDateString()}
+              {t("stayLabel")}:{" "}
+              {new Date(invoice.reservation.checkIn).toLocaleDateString()} – {new Date(invoice.reservation.checkOut).toLocaleDateString()}
             </p>
           )}
         </div>
         <div className="space-x-2">
           <Button variant="outline" onClick={() => router.back()}>
-            Back
+            {t("backButton")}
           </Button>
-          <Button onClick={handleDownload}>Download</Button>
+          <Button onClick={handleDownload}>{t("downloadButton")}</Button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Description</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead>{t("descriptionColumn")}</TableHead>
+              <TableHead>{t("priceColumn")}</TableHead>
+              <TableHead>{t("quantityColumn")}</TableHead>
+              <TableHead className="text-right">{t("totalLabel")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -197,7 +206,9 @@ export default function RestaurantInvoiceDetailsPage() {
       </div>
       <div className="flex justify-end">
         {/* Display the invoice total in the restaurant's currency. */}
-        <div className="text-xl font-semibold">Total: {formatCurrency(invoice.total ?? 0, currency)}</div>
+        <div className="text-xl font-semibold">
+          {t("totalLabel")}: {formatCurrency(invoice.total ?? 0, currency)}
+        </div>
       </div>
     </div>
   );

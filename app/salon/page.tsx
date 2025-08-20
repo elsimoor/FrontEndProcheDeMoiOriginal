@@ -147,34 +147,45 @@ export default function SalonLanding() {
           <div className="absolute inset-0 bg-black bg-opacity-40"></div>
           <div className="max-w-3xl mx-auto px-4 py-24 text-center relative z-10">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              {salon.name || "Laissez‑vous tenter par le luxe, rajeunissez vos sens"}
+              {salon.name || t("salonHeroTitle")}
             </h1>
             <p className="text-lg md:text-xl text-gray-100 mb-8">
-              {salon.description || "Découvrez le summum de la détente et de la beauté au Salon Zenith. Notre équipe d’experts se consacre à fournir des services personnalisés qui vous laisseront une sensation de fraîcheur et d’éclat."}
+              {salon.description || t("salonHeroDescription")}
             </p>
             <Link
               href="/salon/booking"
               className="inline-block bg-pink-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-pink-700 transition-transform transform hover:scale-105"
             >
-              Prendre rendez-vous
+              {t("bookNow")}
             </Link>
           </div>
         </div>
         {/* Services */}
         <section className="max-w-7xl mx-auto px-4 py-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6 text-center">Nos services</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-6 text-center">{t("ourServices")}</h2>
           {/* Category filters */}
           <div className="flex flex-wrap justify-center gap-4 mb-10">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border
+            {categories.map((cat) => {
+              // Translate "Tous" and "Autres" categories, otherwise show the category name as is
+              let displayCat: string
+              if (cat === "Tous") {
+                displayCat = t("all")
+              } else if (cat === "Autres") {
+                displayCat = t("others")
+              } else {
+                displayCat = cat
+              }
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border
                 ${selectedCategory === cat ? 'bg-pink-600 text-white border-pink-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'}`}
-              >
-                {cat}
-              </button>
-            ))}
+                >
+                  {displayCat}
+                </button>
+              )
+            })}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredServices.map((service: any) => (
@@ -230,7 +241,7 @@ export default function SalonLanding() {
         {/* Stylists */}
         <section className="bg-pink-50 py-16">
             <div className="max-w-7xl mx-auto px-4 text-center">
-                <h2 className="text-4xl font-bold text-gray-900 mb-10">Nos Stylistes Experts</h2>
+                <h2 className="text-4xl font-bold text-gray-900 mb-10">{t("ourExpertStylists")}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="text-center">
                         <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61" alt="Stylist 1" className="w-32 h-32 rounded-full mx-auto mb-4" />
@@ -252,7 +263,7 @@ export default function SalonLanding() {
         </section>
         {/* Testimonials */}
         <section className="max-w-7xl mx-auto px-4 py-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-10 text-center">Ce que nos clients disent</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-10 text-center">{t("whatClientsSay")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-lg">
               <p className="text-gray-600 mb-4">"Une expérience incroyable ! Je suis tellement contente de ma nouvelle coupe."</p>
@@ -274,9 +285,9 @@ export default function SalonLanding() {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p>&copy; {new Date().getFullYear()} Salon Zenith. Tous droits réservés.</p>
           <div className="flex justify-center space-x-6 mt-4">
-            <Link href="#" className="hover:text-pink-400">Politique de confidentialité</Link>
-            <Link href="#" className="hover:text-pink-400">Conditions d’utilisation</Link>
-            <Link href="#" className="hover:text-pink-400">Nous contacter</Link>
+            <Link href="#" className="hover:text-pink-400">{t("privacyPolicy")}</Link>
+            <Link href="#" className="hover:text-pink-400">{t("termsOfUse")}</Link>
+            <Link href="#" className="hover:text-pink-400">{t("contactUs")}</Link>
           </div>
         </div>
       </footer>

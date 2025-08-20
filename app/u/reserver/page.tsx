@@ -13,6 +13,7 @@ import { gql, useLazyQuery } from "@apollo/client";
 import { toast } from "sonner";
 import moment from "moment";
 import { RestaurantSubnav } from "../accueil/page";
+import useTranslation from "@/hooks/useTranslation";
 
 const GET_AVAILABILITY = gql`
   query Availability($restaurantId: ID!, $date: String!, $partySize: Int!) {
@@ -34,15 +35,18 @@ function ReserverContent() {
   const searchParams = useSearchParams();
   const restaurantId = searchParams.get('restaurantId');
 
+  // Translation hook
+  const { t } = useTranslation();
+
   const [loadAvailability, { loading, error, data }] = useLazyQuery(GET_AVAILABILITY, {
     onCompleted: (data) => {
       setAvailableSlots(data.availability);
       if (data.availability.filter(s => s.available).length === 0) {
-        toast.info("Aucun créneau disponible pour cette date ou ce nombre de personnes.");
+        toast.info(t("noSlotsAvailableWithPeople"));
       }
     },
     onError: (error) => {
-      toast.error("Erreur lors de la récupération des disponibilités.");
+      toast.error(t("errorLoadingAvailability"));
       console.error(error);
     }
   });
@@ -75,12 +79,12 @@ function ReserverContent() {
     <div className="min-h-screen bg-[#FFF5F5] px-6 py-12">
       <div className="max-w-5xl mx-auto">
         {/* Heading */}
-        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-8">Réservez une table</h1>
+        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-8">{t("reserveTableTitle")}</h1>
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Personnes & Emplacement */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="personnes" className="text-lg font-medium text-gray-700">Nombre de personnes</Label>
+              <Label htmlFor="personnes" className="text-lg font-medium text-gray-700">{t("numPeopleLabel")}</Label>
               <Input
                 id="personnes"
                 type="number"
@@ -93,7 +97,7 @@ function ReserverContent() {
               />
             </div>
             <div>
-              <Label htmlFor="emplacement" className="text-lg font-medium text-gray-700">Endroit dans le restaurant</Label>
+              <Label htmlFor="emplacement" className="text-lg font-medium text-gray-700">{t("locationInRestaurantLabel")}</Label>
               <Input
                 id="emplacement"
                 type="text"
@@ -106,13 +110,13 @@ function ReserverContent() {
           </div>
           {/* Time slots */}
           <div>
-            <Label className="text-lg font-medium text-gray-700">Heure de la réservation</Label>
+            <Label className="text-lg font-medium text-gray-700">{t("reservationTimeLabel")}</Label>
             <div className="flex flex-wrap gap-3 mt-3">
-              {loading && <p>Chargement des créneaux...</p>}
-              {error && <p className="text-red-500">Erreur de chargement.</p>}
+              {loading && <p>{t("loadingSlotsMessage")}</p>}
+              {error && <p className="text-red-500">{t("errorLoadingMessage")}</p>}
               {/* When not loading or error, but no available slots are returned, show a friendly message. */}
               {!loading && !error && availableSlots.length === 0 && (
-                <p className="text-gray-600">Aucun créneau disponible pour cette date.</p>
+                <p className="text-gray-600">{t("noSlotsAvailableMessage")}</p>
               )}
               {availableSlots.map((slot) => {
                 const isSelected = heure === slot.time;
@@ -136,7 +140,7 @@ function ReserverContent() {
           </div>
           {/* Calendar */}
           <div>
-            <Label className="text-lg font-medium text-gray-700 mb-3 inline-block">Dates de la réservation</Label>
+            <Label className="text-lg font-medium text-gray-700 mb-3 inline-block">{t("reservationDatesLabel")}</Label>
             <Calendar
               mode="single"
               selected={date}
@@ -154,7 +158,7 @@ function ReserverContent() {
               size="lg"
               className="rounded-full bg-red-500 hover:bg-red-600 text-white px-10 py-4 text-lg font-semibold shadow-none"
             >
-              Réserver
+              {t("reservationButtonLabel")}
             </Button>
           </div>
         </form>
@@ -164,10 +168,17 @@ function ReserverContent() {
 }
 
 export default function ReserverPage() {
+    // Translation for the page title and subnav
+    const { t } = useTranslation();
+    // Access search parameters for restaurantId
+    const searchParams = useSearchParams();
     return (
         <Suspense fallback={<div>Loading...</div>}>
-          <RestaurantSubnav title="Réserver une table" restaurantId={useSearchParams().get('restaurantId') || ''} />
-            <ReserverContent />
+          <RestaurantSubnav
+            title={t("reserveTableTitle")}
+            restaurantId={searchParams.get('restaurantId') || ''}
+          />
+          <ReserverContent />
         </Suspense>
-    )
+    );
 }

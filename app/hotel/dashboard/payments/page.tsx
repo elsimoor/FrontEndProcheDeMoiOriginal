@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useTranslation from "@/hooks/useTranslation";;
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery } from "@apollo/client";
 // Import currency helper to format payment amounts consistently
 import { formatCurrency } from "@/lib/currency";

@@ -11,6 +11,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import * as z from "zod";
 import { gql, useQuery, useMutation } from "@apollo/client";
 import { useState, useEffect } from "react";
+import useTranslation from "@/hooks/useTranslation";
 import { toast } from "sonner";
 
 const GET_RESTAURANT_SETTINGS = gql`
@@ -112,6 +113,7 @@ const formSchema = z.object({
 });
 
 export default function TablesDisponibilitesPage() {
+  const { t } = useTranslation();
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
 
@@ -275,13 +277,13 @@ export default function TablesDisponibilitesPage() {
   }
 
   if (sessionLoading || queryLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Gestion des tables et des disponibilités</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t("restaurantTablesTitle")}</h1>
       </header>
 
       <Form {...form}>
@@ -290,7 +292,7 @@ export default function TablesDisponibilitesPage() {
           {/* Jours d’ouverture */}
           <Card>
             <CardHeader>
-              <CardTitle>Jours d’ouverture</CardTitle>
+              <CardTitle>{t("openingDaysTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -315,24 +317,7 @@ export default function TablesDisponibilitesPage() {
                             }}
                           />
                           <span className="text-sm text-gray-700">
-                            {(() => {
-                              switch (day) {
-                                case 'Monday':
-                                  return 'Lundi';
-                                case 'Tuesday':
-                                  return 'Mardi';
-                                case 'Wednesday':
-                                  return 'Mercredi';
-                                case 'Thursday':
-                                  return 'Jeudi';
-                                case 'Friday':
-                                  return 'Vendredi';
-                                case 'Saturday':
-                                  return 'Samedi';
-                                case 'Sunday':
-                                  return 'Dimanche';
-                              }
-                            })()}
+                            {t(day.toLowerCase())}
                           </span>
                         </label>
                       ))}
@@ -346,7 +331,7 @@ export default function TablesDisponibilitesPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Horaires d’ouverture et de fermeture</CardTitle>
+              <CardTitle>{t("openingClosingHoursTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {horaireFields.map((field, index) => (
@@ -356,7 +341,7 @@ export default function TablesDisponibilitesPage() {
                     name={`horaires.${index}.ouverture`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Heure d’ouverture</FormLabel>
+                        <FormLabel>{t("openTimeLabel")}</FormLabel>
                         <FormControl>
                           <Input type="time" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -369,7 +354,7 @@ export default function TablesDisponibilitesPage() {
                     name={`horaires.${index}.fermeture`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Heure de fermeture</FormLabel>
+                        <FormLabel>{t("closeTimeLabel")}</FormLabel>
                         <FormControl>
                           <Input type="time" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -382,7 +367,7 @@ export default function TablesDisponibilitesPage() {
                     name={`horaires.${index}.prix`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Prix par personne</FormLabel>
+                        <FormLabel>{t("pricePerPersonLabel")}</FormLabel>
                         <FormControl>
                           <Input type="number" min="0" step="0.01" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -394,14 +379,14 @@ export default function TablesDisponibilitesPage() {
                   <div className="flex justify-end">
                     {horaireFields.length > 1 && (
                       <Button type="button" variant="destructive" onClick={() => remove(index)} className="px-3 py-2 h-10">
-                        Supprimer
+                        {t("delete")}
                       </Button>
                     )}
                   </div>
                 </div>
               ))}
               <Button type="button" onClick={() => append({ ouverture: '', fermeture: '', prix: 0 })} className="mt-2">
-                Ajouter une plage horaire
+                {t("addTimeSlotButton")}
               </Button>
             </CardContent>
           </Card>
@@ -409,7 +394,7 @@ export default function TablesDisponibilitesPage() {
           {/* Dates de fermetures (congés ou fermeture annuelle) */}
           <Card>
             <CardHeader>
-              <CardTitle>Dates de fermeture</CardTitle>
+              <CardTitle>{t("closingDatesTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {fermetureFields && fermetureFields.length > 0 ? (
@@ -420,7 +405,7 @@ export default function TablesDisponibilitesPage() {
                       name={`fermetures.${index}.debut`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Date de début</FormLabel>
+                          <FormLabel>{t("startDateLabel")}</FormLabel>
                           <FormControl>
                             <Input type="date" {...field} className="rounded-lg border-gray-300" />
                           </FormControl>
@@ -433,7 +418,7 @@ export default function TablesDisponibilitesPage() {
                       name={`fermetures.${index}.fin`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Date de fin</FormLabel>
+                          <FormLabel>{t("endDateLabel")}</FormLabel>
                           <FormControl>
                             <Input type="date" {...field} className="rounded-lg border-gray-300" />
                           </FormControl>
@@ -443,23 +428,23 @@ export default function TablesDisponibilitesPage() {
                     />
                     <div className="flex justify-end">
                       <Button type="button" variant="destructive" onClick={() => removeFermeture(index)} className="px-3 py-2 h-10">
-                        Supprimer
+                        {t("delete")}
                       </Button>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">Aucune période de fermeture définie.</p>
+                <p className="text-sm text-gray-500">{t("noClosingPeriods")}</p>
               )}
               <Button type="button" onClick={() => appendFermeture({ debut: '', fin: '' })} className="mt-2">
-                Ajouter une période de fermeture
+                {t("addClosingPeriodButton")}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Capacité totale du restaurant</CardTitle>
+              <CardTitle>{t("totalCapacityTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -467,7 +452,7 @@ export default function TablesDisponibilitesPage() {
                 name="capaciteTotale"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre total de personnes acceptées</FormLabel>
+                    <FormLabel>{t("totalPeopleAcceptedLabel")}</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} className="rounded-lg border-gray-300" />
                     </FormControl>
@@ -478,9 +463,11 @@ export default function TablesDisponibilitesPage() {
               {watchCapaciteTotale > capaciteTheorique && (
                   <Alert variant="destructive" className="mt-4">
                       <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>Attention</AlertTitle>
+                      <AlertTitle>{t("warningTitle")}</AlertTitle>
                       <AlertDescription>
-                          La capacité totale saisie ({watchCapaciteTotale}) est supérieure à la capacité théorique calculée ({capaciteTheorique}) en fonction du nombre de tables.
+                          {t("capacityAlertDescription")
+                            .replace("{current}", String(watchCapaciteTotale))
+                            .replace("{theoretical}", String(capaciteTheorique))}
                       </AlertDescription>
                   </Alert>
               )}
@@ -489,7 +476,7 @@ export default function TablesDisponibilitesPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Nombre de tables par taille</CardTitle>
+              <CardTitle>{t("tablesBySizeTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
@@ -497,7 +484,7 @@ export default function TablesDisponibilitesPage() {
                     name="tables.size2"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Tables de 2 personnes</FormLabel>
+                            <FormLabel>{t("tablesOf2Label")}</FormLabel>
                             <FormControl>
                                 <Input type="number" {...field} className="rounded-lg border-gray-300"/>
                             </FormControl>
@@ -510,7 +497,7 @@ export default function TablesDisponibilitesPage() {
                     name="tables.size4"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Tables de 4 personnes</FormLabel>
+                            <FormLabel>{t("tablesOf4Label")}</FormLabel>
                             <FormControl>
                                 <Input type="number" {...field} className="rounded-lg border-gray-300"/>
                             </FormControl>
@@ -523,7 +510,7 @@ export default function TablesDisponibilitesPage() {
                     name="tables.size6"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Tables de 6 personnes</FormLabel>
+                            <FormLabel>{t("tablesOf6Label")}</FormLabel>
                             <FormControl>
                                 <Input type="number" {...field} className="rounded-lg border-gray-300"/>
                             </FormControl>
@@ -536,7 +523,7 @@ export default function TablesDisponibilitesPage() {
                     name="tables.size8"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Tables de 8 personnes</FormLabel>
+                            <FormLabel>{t("tablesOf8Label")}</FormLabel>
                             <FormControl>
                                 <Input type="number" {...field} className="rounded-lg border-gray-300"/>
                             </FormControl>
@@ -550,7 +537,7 @@ export default function TablesDisponibilitesPage() {
           {/* Tables personnalisées */}
           <Card>
             <CardHeader>
-              <CardTitle>Tables personnalisées</CardTitle>
+              <CardTitle>{t("customTablesTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {customTableFields && customTableFields.length > 0 ? (
@@ -561,7 +548,7 @@ export default function TablesDisponibilitesPage() {
                       name={`customTables.${index}.taille`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Taille de la table (personnes)</FormLabel>
+                          <FormLabel>{t("customTableSizeLabel")}</FormLabel>
                           <FormControl>
                             <Input type="number" min="1" {...field} className="rounded-lg border-gray-300" />
                           </FormControl>
@@ -574,7 +561,7 @@ export default function TablesDisponibilitesPage() {
                       name={`customTables.${index}.nombre`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nombre de tables</FormLabel>
+                          <FormLabel>{t("customTableNumberLabel")}</FormLabel>
                           <FormControl>
                             <Input type="number" min="0" {...field} className="rounded-lg border-gray-300" />
                           </FormControl>
@@ -584,23 +571,23 @@ export default function TablesDisponibilitesPage() {
                     />
                     <div className="flex justify-end">
                       <Button type="button" variant="destructive" onClick={() => removeCustomTable(index)} className="px-3 py-2 h-10">
-                        Supprimer
+                        {t("delete")}
                       </Button>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">Aucune table personnalisée ajoutée.</p>
+                <p className="text-sm text-gray-500">{t("noCustomTables")}</p>
               )}
               <Button type="button" onClick={() => appendCustomTable({ taille: 0, nombre: 0 })} className="mt-2">
-                Ajouter une table personnalisée
+                {t("addCustomTableButton")}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Créneaux de réservation</CardTitle>
+              <CardTitle>{t("reservationSlotsTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -608,7 +595,7 @@ export default function TablesDisponibilitesPage() {
                 name="frequenceCreneauxMinutes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fréquence des créneaux (en minutes)</FormLabel>
+                    <FormLabel>{t("slotFrequencyLabel")}</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} className="rounded-lg border-gray-300" />
                     </FormControl>
@@ -621,7 +608,7 @@ export default function TablesDisponibilitesPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Limites de réservation par créneau</CardTitle>
+              <CardTitle>{t("maxReservationsPerSlotTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -629,7 +616,7 @@ export default function TablesDisponibilitesPage() {
                 name="maxReservationsParCreneau"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre maximum de réservations par créneau</FormLabel>
+                    <FormLabel>{t("maxReservationsPerSlotLabel")}</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} className="rounded-lg border-gray-300" />
                     </FormControl>
@@ -642,7 +629,7 @@ export default function TablesDisponibilitesPage() {
 
           <div className="flex justify-end pt-4">
             <Button type="submit" disabled={updateLoading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 ease-in-out">
-              {updateLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              {updateLoading ? t("saving") : t("saveChanges")}
             </Button>
           </div>
         </form>

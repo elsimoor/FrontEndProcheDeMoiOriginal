@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import useTranslation from "@/hooks/useTranslation"
 import { useLanguage } from "@/context/LanguageContext"
+import LanguageSelector from "@/components/LanguageSelector"
 // Import icons from lucide-react for navigation items
 import {
   LayoutDashboard,
@@ -23,7 +24,10 @@ export default function AdminSidebar() {
   const pathname = usePathname()
   // Translation and language context
   const { t } = useTranslation()
-  const { locale, setLocale } = useLanguage()
+  // Subscribe to locale changes.  Language switching is handled by
+  // the LanguageSelector component; we simply call useLanguage() here
+  // to re-render the sidebar when the locale changes.
+  useLanguage()
   const navigation = [
     { name: t("overview"), href: "/admin/overview", icon: LayoutDashboard },
     { name: t("hotels"), href: "/admin/hotels", icon: Hotel },
@@ -61,20 +65,9 @@ export default function AdminSidebar() {
               )
             })}
           </nav>
-          {/* Language toggle */}
-          <div className="px-4 mt-4 flex space-x-2">
-            <button
-              onClick={() => setLocale("en")}
-              className={`text-sm font-medium ${locale === "en" ? "font-semibold text-indigo-300" : "text-gray-400"}`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLocale("fr")}
-              className={`text-sm font-medium ${locale === "fr" ? "font-semibold text-indigo-300" : "text-gray-400"}`}
-            >
-              FR
-            </button>
+          {/* Language selector */}
+          <div className="px-4 mt-4">
+            <LanguageSelector colorClass="indigo" />
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery, useMutation } from "@apollo/client";
 import { formatCurrency } from '@/lib/currency';
 import {
@@ -87,6 +88,7 @@ const GET_RESTAURANT_SETTINGS = gql`
 `;
 
 export default function RestaurantInvoicesPage() {
+  const { t } = useTranslation();
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessType, setBusinessType] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -165,10 +167,12 @@ export default function RestaurantInvoicesPage() {
       setShowForm(false);
       setSelectedReservationId("");
       await refetchInvoices();
-      alert("Invoice created successfully!");
+      // Show success message using translations
+      alert(t("invoiceCreatedSuccess"));
     } catch (err) {
       console.error(err);
-      alert("Failed to create invoice.");
+      // Show error message using translations
+      alert(t("invoiceCreateFailed"));
     }
   };
 
@@ -184,18 +188,23 @@ export default function RestaurantInvoicesPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to download invoice.");
+      // Show error message using translations
+      alert(t("downloadInvoiceFailed"));
     }
   };
 
   if (sessionLoading || invoicesLoading) {
-    return <div className="p-6">Loading…</div>;
+    return <div className="p-6">{t("loadingInvoices")}</div>;
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>;
+    // Display appropriate translated error based on the session error message
+    const errorKey = sessionError.toLowerCase().includes("not associated")
+      ? "notAssociatedWithRestaurant"
+      : "failedToLoadSession";
+    return <div className="p-6 text-red-600">{t(errorKey)}</div>;
   }
   if (invoicesError) {
-    return <div className="p-6 text-red-600">Failed to load invoices.</div>;
+    return <div className="p-6 text-red-600">{t("errorLoadingInvoices")}</div>;
   }
 
   const invoices = invoicesData?.invoices ?? [];
@@ -204,18 +213,18 @@ export default function RestaurantInvoicesPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
-        <Button onClick={() => setShowForm(true)}>Create Invoice</Button>
+        <h1 className="text-2xl font-semibold text-gray-900">{t("invoicesTitle")}</h1>
+        <Button onClick={() => setShowForm(true)}>{t("createInvoice")}</Button>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice ID</TableHead>
-              <TableHead>Reservation</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>{t("invoiceIdColumn")}</TableHead>
+              <TableHead>{t("reservationColumnInvoice")}</TableHead>
+              <TableHead>{t("dateColumnInvoice")}</TableHead>
+              <TableHead className="text-right">{t("totalColumn")}</TableHead>
+              <TableHead>{t("actionsColumn")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -228,8 +237,8 @@ export default function RestaurantInvoicesPage() {
                   {formatCurrency(inv.total ?? 0, currency)}
                 </TableCell>
                 <TableCell className="space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => window.location.href = `/restaurant/dashboard/invoices/${inv.id}`}>View</Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>Download</Button>
+                  <Button variant="outline" size="sm" onClick={() => window.location.href = `/restaurant/dashboard/invoices/${inv.id}`}>{t("view")}</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>{t("download")}</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -240,17 +249,17 @@ export default function RestaurantInvoicesPage() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Create Invoice</DialogTitle>
+            <DialogTitle>{t("createInvoice")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="reservation">Select Reservation</Label>
+              <Label htmlFor="reservation">{t("selectReservationLabel")}</Label>
               <Select
                 value={selectedReservationId}
                 onValueChange={(value) => setSelectedReservationId(value)}
               >
                 <SelectTrigger id="reservation">
-                  <SelectValue placeholder="Choose reservation" />
+                  <SelectValue placeholder={t("chooseReservationPlaceholder") || undefined} />
                 </SelectTrigger>
                 <SelectContent>
                   {reservations.map((res: any) => (
@@ -263,10 +272,10 @@ export default function RestaurantInvoicesPage() {
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="secondary" onClick={() => setShowForm(false)}>
-                Cancel
+                {t("cancelButton")}
               </Button>
               <Button onClick={handleCreateInvoice} disabled={!selectedReservationId}>
-                Create
+                {t("createButton")}
               </Button>
             </div>
           </div>

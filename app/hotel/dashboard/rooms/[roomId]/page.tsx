@@ -376,7 +376,8 @@ export default function HotelRoomDetailsPage() {
           <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-lg shadow-sm border p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("room")} Number</label>
+        {/* Use translated label for room number */}
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t("roomNumberLabel")}</label>
                 <input
                   type="text"
                   value={formState.number}
@@ -412,7 +413,8 @@ export default function HotelRoomDetailsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+                {/* Floor label translation */}
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("floorLabel")}</label>
                 <input
                   type="number"
                   value={formState.floor}
@@ -421,7 +423,8 @@ export default function HotelRoomDetailsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
+                {/* Capacity label translation */}
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("capacityLabel")}</label>
                 <input
                   type="number"
                   value={formState.capacity}
@@ -439,7 +442,8 @@ export default function HotelRoomDetailsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                {/* Status label translation */}
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("statusLabel")}</label>
                 <select
                   value={formState.status}
                   onChange={(e) => setFormState({ ...formState, status: e.target.value })}
@@ -452,7 +456,8 @@ export default function HotelRoomDetailsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Number of Beds</label>
+                {/* Number of beds label translation */}
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("numberOfBedsLabel")}</label>
                 <input
                   type="number"
                   value={formState.numberOfBeds}
@@ -461,7 +466,8 @@ export default function HotelRoomDetailsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Number of Bathrooms</label>
+                {/* Number of bathrooms label translation */}
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("numberOfBathroomsLabel")}</label>
                 <input
                   type="number"
                   value={formState.numberOfBathrooms}
@@ -569,7 +575,8 @@ export default function HotelRoomDetailsPage() {
         {/* Right column for photos and other info */}
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Room Photos</h3>
+            {/* Room photos section title translation */}
+            <h3 className="text-lg font-medium text-gray-900 mb-4">{t("roomPhotosTitle")}</h3>
             {Array.isArray(formState.images) && formState.images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                 {(formState.images as string[]).map((img) => (
@@ -609,7 +616,8 @@ export default function HotelRoomDetailsPage() {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Amenities</h3>
+            {/* Amenities section title translation */}
+            <h3 className="text-lg font-medium text-gray-900 mb-4">{t("amenitiesTitle")}</h3>
             <div className="flex flex-wrap gap-2">
               {(formState.amenities as string[]).map((amenity) => (
                 <span key={amenity} className="px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm">
@@ -620,7 +628,8 @@ export default function HotelRoomDetailsPage() {
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Bed Types</h3>
+            {/* Bed types section title translation */}
+            <h3 className="text-lg font-medium text-gray-900 mb-4">{t("bedTypesTitle")}</h3>
             <div className="flex flex-wrap gap-2">
               {(formState.bedType as string[]).map((bt) => (
                 <span key={bt} className="px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-sm">

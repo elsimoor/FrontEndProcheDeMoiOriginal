@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useMemo } from "react"
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery, useMutation } from "@apollo/client"
 import { Search, Filter, Plus, Edit, Trash2, Phone, Mail, Calendar, Clock, User, X } from "lucide-react"
 
@@ -35,6 +36,8 @@ interface StaffMember {
 }
 
 export default function RestaurantStaff() {
+  // Translation hook
+  const { t } = useTranslation()
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -234,6 +237,21 @@ export default function RestaurantStaff() {
     }
   }
 
+  // Translate schedule values (Full-time, Part-time, Contract) based on the current locale.
+  const displaySchedule = (schedule: string | undefined | null): string => {
+    if (!schedule) return ""
+    switch (schedule) {
+      case "Full-time":
+        return t("fullTimeOption")
+      case "Part-time":
+        return t("partTimeOption")
+      case "Contract":
+        return t("contractOption")
+      default:
+        return schedule
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!businessId || !businessType) return
@@ -352,13 +370,13 @@ export default function RestaurantStaff() {
 
   // Early return for loading or error states
   if (sessionLoading || staffLoading) {
-    return <div className="p-6 text-gray-600">Loading staff...</div>
+    return <div className="p-6 text-gray-600">{t("loadingStaff")}</div>
   }
   if (sessionError) {
     return <div className="p-6 text-red-600">{sessionError}</div>
   }
   if (staffError) {
-    return <div className="p-6 text-red-600">Error loading staff</div>
+    return <div className="p-6 text-red-600">{t("errorLoadingStaff")}</div>
   }
 
   return (
@@ -366,15 +384,15 @@ export default function RestaurantStaff() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-          <p className="text-gray-600">Manage your restaurant team and schedules</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("staffManagementTitle")}</h1>
+          <p className="text-gray-600">{t("staffManagementSubtitleRestaurant")}</p>
         </div>
         <button
           onClick={openCreateModal}
           className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Staff Member
+          {t("addStaffMember")}
         </button>
       </div>
 
@@ -383,7 +401,7 @@ export default function RestaurantStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Staff</p>
+              <p className="text-sm font-medium text-gray-600">{t("totalStaff")}</p>
               <p className="text-2xl font-bold text-gray-900">{staffStats.total}</p>
             </div>
             <User className="h-8 w-8 text-gray-400" />
@@ -392,7 +410,7 @@ export default function RestaurantStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active</p>
+              <p className="text-sm font-medium text-gray-600">{t("active")}</p>
               <p className="text-2xl font-bold text-green-600">{staffStats.active}</p>
             </div>
             <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -403,7 +421,7 @@ export default function RestaurantStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">On Leave</p>
+              <p className="text-sm font-medium text-gray-600">{t("onLeave")}</p>
               <p className="text-2xl font-bold text-yellow-600">{staffStats.onLeave}</p>
             </div>
             <Calendar className="h-8 w-8 text-yellow-400" />
@@ -412,7 +430,7 @@ export default function RestaurantStaff() {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Full-time</p>
+              <p className="text-sm font-medium text-gray-600">{t("fullTime")}</p>
               <p className="text-2xl font-bold text-blue-600">{staffStats.fullTime}</p>
             </div>
             <Clock className="h-8 w-8 text-blue-400" />
@@ -428,7 +446,7 @@ export default function RestaurantStaff() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name, email, or role..."
+                placeholder={t("searchByNameRoleEmail")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -441,7 +459,7 @@ export default function RestaurantStaff() {
               onChange={(e) => setRoleFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              <option value="all">All Roles</option>
+              <option value="all">{t("allRoles")}</option>
               <option value="chef">Chef</option>
               <option value="server">Server</option>
               <option value="bartender">Bartender</option>
@@ -452,14 +470,14 @@ export default function RestaurantStaff() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="on-leave">On Leave</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">{t("allStatusLabel")}</option>
+              <option value="active">{t("active")}</option>
+              <option value="on-leave">{t("onLeave")}</option>
+              <option value="inactive">{t("inactive")}</option>
             </select>
             <button className="flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               <Filter className="h-5 w-5 mr-2" />
-              More Filters
+              {t("moreFilters")}
             </button>
           </div>
         </div>
@@ -492,7 +510,7 @@ export default function RestaurantStaff() {
                 <span
                   className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(member.status)}`}
                 >
-                  {member.status.replace("-", " ")}
+                  {member.status === "on-leave" ? t("onLeave") : t(member.status)}
                 </span>
               </div>
             </div>
@@ -508,12 +526,12 @@ export default function RestaurantStaff() {
               </div>
               <div className="flex items-center text-sm text-gray-600">
                 <Calendar className="h-4 w-4 mr-2" />
-                Hired: {member.hireDate}
+                {t("hireDate")}: {member.hireDate}
               </div>
               {member.nextShift && (
                 <div className="flex items-center text-sm text-gray-600">
                   <Clock className="h-4 w-4 mr-2" />
-                  Next shift: {member.nextShift}
+                  {t("nextShift")}: {member.nextShift}
                 </div>
               )}
             </div>
@@ -521,18 +539,18 @@ export default function RestaurantStaff() {
             <div className="mt-4 pt-4 border-t border-gray-100">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm text-gray-600">Schedule</p>
-                  <p className="font-medium text-gray-900">{member.schedule}</p>
+                  <p className="text-sm text-gray-600">{t("schedule")}</p>
+                  <p className="font-medium text-gray-900">{displaySchedule(member.schedule)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-600">Rate</p>
+                  <p className="text-sm text-gray-600">{t("hourlyRate")}</p>
                   <p className="font-medium text-gray-900">${member.hourlyRate}/hr</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-4 flex justify-between items-center">
-              <button className="text-red-600 hover:text-red-700 text-sm font-medium">View Profile</button>
+              <button className="text-red-600 hover:text-red-700 text-sm font-medium">{t("viewProfile")}</button>
               <div className="flex space-x-2">
                 <button onClick={() => handleEdit(member)} className="text-gray-400 hover:text-blue-600">
                   <Edit className="h-4 w-4" />
@@ -552,7 +570,7 @@ export default function RestaurantStaff() {
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
+                {editingStaff ? t("editStaffMember") : t("addStaffMemberModal")}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="h-6 w-6" />
@@ -561,7 +579,7 @@ export default function RestaurantStaff() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("fullNameField")}</label>
                   <input
                     type="text"
                     required
@@ -571,14 +589,14 @@ export default function RestaurantStaff() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("roleField")}</label>
                   <select
                     required
                     value={formData.role || ""}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    <option value="">Select Role</option>
+                    <option value="">{t("selectRolePlaceholder")}</option>
                     <option value="Head Chef">Head Chef</option>
                     <option value="Sous Chef">Sous Chef</option>
                     <option value="Server">Server</option>
@@ -589,7 +607,7 @@ export default function RestaurantStaff() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("emailField")}</label>
                   <input
                     type="email"
                     required
@@ -599,7 +617,7 @@ export default function RestaurantStaff() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("phoneField")}</label>
                   <input
                     type="tel"
                     required
@@ -609,7 +627,7 @@ export default function RestaurantStaff() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("hireDate")}</label>
                   <input
                     type="date"
                     required
@@ -619,19 +637,19 @@ export default function RestaurantStaff() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Schedule</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("schedule")}</label>
                   <select
                     value={formData.schedule || "Full-time"}
                     onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Contract">Contract</option>
+                    <option value="Full-time">{t("fullTimeOption")}</option>
+                    <option value="Part-time">{t("partTimeOption")}</option>
+                    <option value="Contract">{t("contractOption")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("hourlyRate")} ($)</label>
                   <input
                     type="number"
                     min="0"
@@ -643,20 +661,20 @@ export default function RestaurantStaff() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("status")}</label>
                   <select
                     value={formData.status || "active"}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    <option value="active">Active</option>
-                    <option value="on-leave">On Leave</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">{t("active")}</option>
+                    <option value="on-leave">{t("onLeave")}</option>
+                    <option value="inactive">{t("inactive")}</option>
                   </select>
                 </div>
                 {/* The next shift field has been removed. Scheduling is managed through availability. */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("avatarUrl")}</label>
                   <input
                     type="url"
                     value={formData.avatar || ""}
@@ -671,10 +689,10 @@ export default function RestaurantStaff() {
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
                 <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                  {editingStaff ? "Update" : "Add"} Staff Member
+                  {editingStaff ? t("updateButton") : t("createButton")}
                 </button>
               </div>
             </form>
@@ -685,7 +703,7 @@ export default function RestaurantStaff() {
       {/* Today's Schedule */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-6 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">Today's Schedule</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t("todaysSchedule")}</h3>
         </div>
         <div className="p-6">
           <div className="space-y-4">
@@ -712,7 +730,7 @@ export default function RestaurantStaff() {
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-gray-900">{nextShiftDisplay ? nextAvailability?.startTime : "N/A"}</p>
-                      <p className="text-sm text-gray-600">Start time</p>
+                      <p className="text-sm text-gray-600">{t("startTimeLabel")}</p>
                     </div>
                   </div>
                 )

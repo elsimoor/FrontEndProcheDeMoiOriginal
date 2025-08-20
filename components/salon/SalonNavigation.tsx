@@ -1,6 +1,7 @@
 "use client"
 
 import { Bell, Search, User } from "lucide-react"
+import LanguageSelector from "@/components/LanguageSelector"
 import { useState, useEffect } from "react"
 import useTranslation from "@/hooks/useTranslation"
 import { useLanguage } from "@/context/LanguageContext"
@@ -27,7 +28,9 @@ export default function SalonNavigation() {
 
   // Translation and language context
   const { t } = useTranslation()
-  const { locale, setLocale } = useLanguage()
+  // Consume language context to re-render on locale changes.  Actual
+  // switching happens in the LanguageSelector component.
+  useLanguage()
 
   useEffect(() => {
     async function fetchSession() {
@@ -91,8 +94,8 @@ export default function SalonNavigation() {
               </div>
             </div>
           </div>
-          {/* Right side: notifications and user info */}
-          <div className="flex items-center">
+          {/* Right side: notifications, language selector and user info */}
+          <div className="flex items-center space-x-2">
             <button
               type="button"
               className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
@@ -100,8 +103,11 @@ export default function SalonNavigation() {
               <span className="sr-only">{t("viewNotifications")}</span>
               <Bell className="h-6 w-6" />
             </button>
-
-            <div className="ml-3 relative">
+            {/* Desktop language selector */}
+            <div className="hidden md:block">
+              <LanguageSelector colorClass="pink" />
+            </div>
+            <div className="ml-1 relative">
               <div className="flex items-center">
                 <button
                   type="button"
@@ -115,7 +121,7 @@ export default function SalonNavigation() {
                   </span>
                 </button>
                 {menuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                  <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
                     <a
                       href="#"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -128,23 +134,10 @@ export default function SalonNavigation() {
                     >
                       {t("logout")}
                     </button>
-                    <div className="border-t border-gray-100 mt-1" />
-                    <button
-                      onClick={() => setLocale("en")}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                        locale === "en" ? "font-semibold text-pink-600" : "text-gray-700"
-                      }`}
-                    >
-                      English
-                    </button>
-                    <button
-                      onClick={() => setLocale("fr")}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                        locale === "fr" ? "font-semibold text-pink-600" : "text-gray-700"
-                      }`}
-                    >
-                      Français
-                    </button>
+                    {/* Language selector inside dropdown for mobile.  Hidden on desktop to avoid duplicate display */}
+                    <div className="border-t border-gray-100 mt-1 px-4 py-1 md:hidden">
+                      <LanguageSelector colorClass="pink" />
+                    </div>
                   </div>
                 )}
               </div>

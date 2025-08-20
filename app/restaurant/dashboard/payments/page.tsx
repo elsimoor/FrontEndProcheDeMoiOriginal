@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery } from "@apollo/client";
 import { formatCurrency } from '@/lib/currency';
 import {
@@ -55,6 +56,7 @@ const GET_RESTAURANT_SETTINGS = gql`
 `;
 
 export default function RestaurantPaymentsPage() {
+  const { t } = useTranslation();
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -95,30 +97,33 @@ export default function RestaurantPaymentsPage() {
   const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
 
   if (sessionLoading || loading) {
-    return <div className="p-6">Loading…</div>;
+    return <div className="p-6">{t("loading")}</div>;
   }
   if (sessionError) {
-    return <div className="p-6 text-red-600">{sessionError}</div>;
+    const errorKey = sessionError.toLowerCase().includes("not associated")
+      ? "notAssociatedWithRestaurant"
+      : "failedToLoadSession";
+    return <div className="p-6 text-red-600">{t(errorKey)}</div>;
   }
   if (error) {
-    return <div className="p-6 text-red-600">Failed to load payments.</div>;
+    return <div className="p-6 text-red-600">{t("errorLoadingPayments")}</div>;
   }
 
   const payments = data?.payments ?? [];
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Payments</h1>
+      <h1 className="text-2xl font-bold">{t("paymentsTitle")}</h1>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Reservation</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Currency</TableHead>
-            <TableHead>Method</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>{t("reservationColumnPayment")}</TableHead>
+            <TableHead>{t("customerColumn")}</TableHead>
+            <TableHead>{t("amountColumn")}</TableHead>
+            <TableHead>{t("currencyColumn")}</TableHead>
+            <TableHead>{t("methodColumn")}</TableHead>
+            <TableHead>{t("statusColumnPayment")}</TableHead>
+            <TableHead>{t("dateColumnPayment")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -152,7 +157,7 @@ export default function RestaurantPaymentsPage() {
         </TableBody>
       </Table>
       {payments.length === 0 && (
-        <p className="text-gray-600">No payments found.</p>
+        <p className="text-gray-600">{t("noPaymentsFound")}</p>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useTranslation from "@/hooks/useTranslation";;
+import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery, useMutation } from "@apollo/client";
 
 /**

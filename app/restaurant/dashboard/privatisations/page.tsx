@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useTranslation from "@/hooks/useTranslation";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -113,6 +114,7 @@ const baseFormSchema = z.object({
 
 
 export default function PrivatisationPage() {
+  const { t } = useTranslation();
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [existingOptionId, setExistingOptionId] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -258,25 +260,25 @@ export default function PrivatisationPage() {
   const menuItems = ["Menu A (3 plats)", "Menu B (4 plats)", "Menu C (5 plats)"];
 
   if (sessionLoading || queryLoading || settingsLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t("loading") || "Loading..."}</div>;
   }
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Gérer les privatisations</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t("restaurantPrivatisationsTitle")}</h1>
       </header>
 
       <Tabs defaultValue="options" className="w-full">
         <TabsList className="border-b border-gray-200 w-full justify-start rounded-none bg-transparent p-0">
           <TabsTrigger value="options" className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=active]:font-bold text-gray-500 rounded-none">
-            Options de privatisation
+            {t("privatisationOptionsTab")}
           </TabsTrigger>
           <TabsTrigger value="tarifs" className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=active]:font-bold text-gray-500 rounded-none">
-            Tarifs et disponibilités
+            {t("privatisationTarifsTab")}
           </TabsTrigger>
           <TabsTrigger value="conditions" className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=active]:font-bold text-gray-500 rounded-none">
-            Conditions
+            {t("privatisationConditionsTab")}
           </TabsTrigger>
         </TabsList>
 
@@ -285,7 +287,7 @@ export default function PrivatisationPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Card className="border-none shadow-none">
                 <CardHeader>
-                  <CardTitle className="font-bold">Options de privatisation</CardTitle>
+                  <CardTitle className="font-bold">{t("privatisationOptionsTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <FormField
@@ -293,7 +295,7 @@ export default function PrivatisationPage() {
                     name="nom"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nom de l’option de privatisation</FormLabel>
+                        <FormLabel>{t("privatisationOptionNameLabel")}</FormLabel>
                         <FormControl>
                           <Input placeholder="" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -306,7 +308,7 @@ export default function PrivatisationPage() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>{t("privatisationDescriptionLabel")}</FormLabel>
                         <FormControl>
                           <Textarea rows={5} {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -319,7 +321,7 @@ export default function PrivatisationPage() {
                     name="type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Type de privatisation</FormLabel>
+                        <FormLabel>{t("privatisationTypeLabel")}</FormLabel>
                         <FormControl>
                           <Input {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -332,7 +334,7 @@ export default function PrivatisationPage() {
                     name="capaciteMaximale"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Capacité maximale</FormLabel>
+                        <FormLabel>{t("privatisationMaxCapacityLabel")}</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -345,7 +347,7 @@ export default function PrivatisationPage() {
                     name="dureeMaximaleHeures"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Durée maximale de la privatisation (heures)</FormLabel>
+                        <FormLabel>{t("privatisationMaxDurationLabel")}</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -358,7 +360,7 @@ export default function PrivatisationPage() {
 
               <Card className="border-none shadow-none">
                 <CardHeader>
-                  <CardTitle className="font-bold">Menus de groupe</CardTitle>
+                  <CardTitle className="font-bold">{t("privatisationGroupMenusTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Dynamic menusDetails using useFieldArray */}
@@ -371,9 +373,9 @@ export default function PrivatisationPage() {
                           name={`menusDetails.${index}.nom`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Nom du menu</FormLabel>
+                              <FormLabel>{t("privatisationMenuNameLabel")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="Menu de groupe" {...field} className="rounded-lg border-gray-300" />
+                                <Input placeholder={t("privatisationMenuPlaceholder")} {...field} className="rounded-lg border-gray-300" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -385,9 +387,9 @@ export default function PrivatisationPage() {
                           name={`menusDetails.${index}.description`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Description</FormLabel>
+                              <FormLabel>{t("privatisationMenuDescriptionLabel")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="Description" {...field} className="rounded-lg border-gray-300" />
+                                <Input placeholder={t("privatisationMenuDescriptionLabel")} {...field} className="rounded-lg border-gray-300" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -399,7 +401,7 @@ export default function PrivatisationPage() {
                           name={`menusDetails.${index}.prix`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Prix ({currencySymbol})</FormLabel>
+                              <FormLabel>{`${t("privatisationMenuPriceLabel")} (${currencySymbol})`}</FormLabel>
                               <FormControl>
                                 <Input type="number" min="0" step="0.01" {...field} className="rounded-lg border-gray-300" />
                               </FormControl>
@@ -409,23 +411,23 @@ export default function PrivatisationPage() {
                         />
                         <div className="flex justify-end">
                           <Button type="button" variant="destructive" onClick={() => removeMenu(index)} className="px-3 py-2 h-10">
-                            Supprimer
+                            {t("privatisationDeleteMenuButton")}
                           </Button>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">Aucun menu de groupe défini.</p>
+                    <p className="text-sm text-gray-500">{t("privatisationNoGroupMenu")}</p>
                   )}
                   <Button type="button" onClick={() => appendMenu({ nom: '', description: '', prix: 0 })} className="mt-2">
-                    Ajouter un menu de groupe
+                    {t("privatisationAddGroupMenu")}
                   </Button>
                 </CardContent>
               </Card>
 
               <div className="flex justify-end pt-4">
                 <Button type="submit" disabled={createLoading || updateLoading || settingsLoading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 ease-in-out">
-                  {createLoading || updateLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                  {createLoading || updateLoading ? t("privatisationSaving") : t("privatisationSaveChanges")}
                 </Button>
               </div>
             </form>
@@ -437,7 +439,7 @@ export default function PrivatisationPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Card className="border-none shadow-none">
                 <CardHeader>
-                  <CardTitle className="font-bold">Tarif de privatisation</CardTitle>
+                  <CardTitle className="font-bold">{t("privatisationRatesTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <FormField
@@ -445,7 +447,7 @@ export default function PrivatisationPage() {
                     name="tarif"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tarif (forfait ou par personne)</FormLabel>
+                        <FormLabel>{t("privatisationRateLabel")}</FormLabel>
                         <FormControl>
                           <Input type="number" min="0" step="0.01" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -457,7 +459,7 @@ export default function PrivatisationPage() {
               </Card>
               <div className="flex justify-end">
                 <Button type="submit" disabled={createLoading || updateLoading || settingsLoading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 ease-in-out">
-                  {createLoading || updateLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                  {createLoading || updateLoading ? t("privatisationSaving") : t("privatisationSaveChanges")}
                 </Button>
               </div>
             </form>
@@ -468,7 +470,7 @@ export default function PrivatisationPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Card className="border-none shadow-none">
                 <CardHeader>
-                  <CardTitle className="font-bold">Conditions</CardTitle>
+                  <CardTitle className="font-bold">{t("privatisationConditionsTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <FormField
@@ -476,7 +478,7 @@ export default function PrivatisationPage() {
                     name="conditions"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Texte des conditions</FormLabel>
+                        <FormLabel>{t("privatisationConditionsLabel")}</FormLabel>
                         <FormControl>
                           <Textarea rows={6} {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
@@ -488,7 +490,7 @@ export default function PrivatisationPage() {
               </Card>
               <div className="flex justify-end">
                 <Button type="submit" disabled={createLoading || updateLoading || settingsLoading} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 ease-in-out">
-                  {createLoading || updateLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                  {createLoading || updateLoading ? t("privatisationSaving") : t("privatisationSaveChanges")}
                 </Button>
               </div>
             </form>

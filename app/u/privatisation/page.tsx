@@ -17,6 +17,7 @@ import { gql, useQuery } from "@apollo/client";
 import { toast } from "sonner";
 import { formatCurrency } from '@/lib/currency';
 import { RestaurantSubnav } from "../accueil/page";
+import useTranslation from "@/hooks/useTranslation";
 
 const GET_PRIVATISATION_OPTIONS = gql`
   query PrivatisationOptionsByRestaurant($restaurantId: ID!) {
@@ -58,11 +59,12 @@ function PrivatisationContent() {
   const searchParams = useSearchParams();
   const restaurantId = searchParams.get('restaurantId');
 
+  const { t } = useTranslation();
   const { loading, error, data } = useQuery(GET_PRIVATISATION_OPTIONS, {
     variables: { restaurantId },
     skip: !restaurantId,
     onError: (err) => {
-      toast.error("Erreur lors du chargement des options.");
+      toast.error(t("errorLoadingOptions"));
       console.error(err);
     }
   });
@@ -103,14 +105,14 @@ function PrivatisationContent() {
         <Card className="border border-[#F2B8B6] rounded-3xl bg-white shadow-none">
           <CardHeader className="p-6 pb-4">
             <CardTitle className="text-4xl font-extrabold text-gray-800 tracking-tight">
-              Privatisation
+              {t("privatisation")}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-12">
               {/* Option selection */}
               <div>
-                <h3 className="text-2xl font-semibold text-gray-800 mb-4">Choisissez votre option</h3>
+                <h3 className="text-2xl font-semibold text-gray-800 mb-4">{t("chooseYourOption")}</h3>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button
                     type="button"
@@ -121,7 +123,7 @@ function PrivatisationContent() {
                         : 'bg-transparent text-gray-700 border-[#F2B8B6] hover:bg-red-50'
                     }`}
                   >
-                    Privatiser le restaurant
+                    {t("privatiseRestaurant")}
                   </Button>
                   <Button
                     type="button"
@@ -132,21 +134,21 @@ function PrivatisationContent() {
                         : 'bg-transparent text-gray-700 border-[#F2B8B6] hover:bg-red-50'
                     }`}
                   >
-                    Réserver un menu à l’avance
+                    {t("reserveMenuInAdvance")}
                   </Button>
                 </div>
               </div>
 
               {/* Privatisation details */}
               <div className="space-y-8">
-                <h3 className="text-2xl font-semibold text-gray-800">Détails de la privatisation</h3>
+                <h3 className="text-2xl font-semibold text-gray-800">{t("privatisationDetails")}</h3>
 
                 <Select onValueChange={setSelectedOptionId} value={selectedOptionId} required>
                   <SelectTrigger className="w-full p-6 text-lg rounded-xl border-2 border-[#F2B8B6] focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <SelectValue placeholder="Type de privatisation" />
+                    <SelectValue placeholder={t("selectPrivatisationType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {loading && <SelectItem value="loading" disabled>Chargement...</SelectItem>}
+                    {loading && <SelectItem value="loading" disabled>{t("loading")}</SelectItem>}
                     {data?.privatisationOptionsByRestaurant?.map((opt) => (
                       <SelectItem key={opt.id} value={opt.id}>{opt.nom}</SelectItem>
                     ))}
@@ -155,7 +157,7 @@ function PrivatisationContent() {
 
                 <Select onValueChange={setMenu} value={menu} disabled={!selectedOption} required>
                   <SelectTrigger className="w-full p-6 text-lg rounded-xl border-2 border-[#F2B8B6] focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50">
-                    <SelectValue placeholder="Menu du groupe" />
+                    <SelectValue placeholder={t("selectGroupMenu")} />
                   </SelectTrigger>
                   <SelectContent>
                     {/* If menusDetails exist, display them with price; otherwise fallback to menusDeGroupe */}
@@ -175,11 +177,11 @@ function PrivatisationContent() {
 
                 <Select onValueChange={setEspace} value={espace} required>
                   <SelectTrigger className="w-full p-6 text-lg rounded-xl border-2 border-[#F2B8B6] focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <SelectValue placeholder="Choix de l'espace" />
+                    <SelectValue placeholder={t("selectSpace")} />
                   </SelectTrigger>
                   <SelectContent>
                     {/* If space management is not implemented, this is the only option */}
-                    <SelectItem value="Salle entière">Salle entière</SelectItem>
+                    <SelectItem value="Salle entière">{t("fullHallOption")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -192,7 +194,7 @@ function PrivatisationContent() {
                   size="lg"
                   className="rounded-full bg-red-500 hover:bg-red-600 text-white px-12 py-6 text-xl font-semibold shadow-none"
                 >
-                  Confirmer la réservation
+                  {t("confirmReservation")}
                 </Button>
               </div>
             </form>
@@ -204,10 +206,12 @@ function PrivatisationContent() {
 }
 
 export default function PrivatisationPage() {
+    const { t } = useTranslation();
+    const searchParams = useSearchParams();
     return (
         <Suspense fallback={<div>Loading...</div>}>
-          <RestaurantSubnav title="Privatisation" restaurantId={useSearchParams().get('restaurantId') || ''} />
-            <PrivatisationContent />
+          <RestaurantSubnav title={t("privatisation")} restaurantId={searchParams.get('restaurantId') || ''} />
+          <PrivatisationContent />
         </Suspense>
     )
 }
