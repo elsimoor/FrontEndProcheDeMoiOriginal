@@ -40,6 +40,14 @@ interface PaymentMethod {
   name: string
   enabled: boolean
   processingFee: number
+  /**
+   * Optional ISO date on which this payment method should be
+   * exclusively active.  When provided, the payment method will only
+   * be enabled on that date (for example, to activate a special
+   * payment option on New Year’s Eve).  When undefined the method
+   * behaves normally according to the enabled flag.
+   */
+  specialDate?: string
 }
 
 interface Policy {
@@ -89,17 +97,18 @@ export default function RestaurantSettings() {
     reminderNotifications: true,
     autoConfirmReservations: false,
     allowWalkIns: true,
+    // Dress code enforced by the restaurant.  Defaults to smart‑casual
     dressCode: "smart-casual",
   })
 
   const [businessHours, setBusinessHours] = useState<BusinessHours[]>([])
-  // Payment methods are local only; they are not part of the Restaurant model
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
-    { id: "1", name: "Credit Cards", enabled: true, processingFee: 2.9 },
-    { id: "2", name: "Debit Cards", enabled: true, processingFee: 1.5 },
-    { id: "3", name: "Cash", enabled: true, processingFee: 0 },
-    { id: "4", name: "Digital Wallets", enabled: false, processingFee: 2.5 },
-  ])
+  /**
+   * Payment methods accepted by the restaurant.  These are
+   * persisted on the backend and loaded via the GET_RESTAURANT query.
+   * Each method contains a name, enabled flag, optional processing
+   * fee and an optional specialDate for date‑specific activation.
+   */
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [policies, setPolicies] = useState<Policy[]>([])
 
   const [hoursForm, setHoursForm] = useState<Partial<BusinessHours>>({})
@@ -144,6 +153,8 @@ export default function RestaurantSettings() {
           maxPartySize
           reservationWindow
           cancellationHours
+          # Load the current dress code so it can be edited
+          dressCode
         }
         businessHours {
           day
@@ -166,6 +177,13 @@ export default function RestaurantSettings() {
         # Include images so we can display the current logo and persist
         # it back if no new image is uploaded.
         images
+        # Load payment methods so they can be edited and persisted.
+        paymentMethods {
+          name
+          enabled
+          processingFee
+          specialDate
+        }
       }
     }
   `
@@ -188,6 +206,7 @@ export default function RestaurantSettings() {
           maxPartySize
           reservationWindow
           cancellationHours
+          dressCode
         }
         businessHours {
           day
@@ -241,6 +260,7 @@ export default function RestaurantSettings() {
         maxPartySize: rest.settings?.maxPartySize?.toString() || "",
         reservationWindow: rest.settings?.reservationWindow?.toString() || "",
         cancellationHours: rest.settings?.cancellationHours?.toString() || "",
+        dressCode: rest.settings?.dressCode || "smart-casual",
       }))
       // Map business hours
       setBusinessHours(
@@ -259,6 +279,19 @@ export default function RestaurantSettings() {
           title: p.title,
           description: p.description,
           category: p.category,
+        })) || []
+      )
+
+      // Map payment methods from the backend.  Each method is
+      // assigned a unique id for local editing purposes.  If no
+      // payment methods are defined we initialise an empty array.
+      setPaymentMethods(
+        rest.paymentMethods?.map((method: any, index: number) => ({
+          id: (index + 1).toString(),
+          name: method.name,
+          enabled: method.enabled,
+          processingFee: method.processingFee ?? 0,
+          specialDate: method.specialDate || "",
         })) || []
       )
 
@@ -297,12 +330,21 @@ export default function RestaurantSettings() {
           maxPartySize: settings.maxPartySize ? parseInt(settings.maxPartySize, 10) : null,
           reservationWindow: settings.reservationWindow ? parseInt(settings.reservationWindow, 10) : null,
           cancellationHours: settings.cancellationHours ? parseInt(settings.cancellationHours, 10) : null,
+          // Persist the selected dress code
+          dressCode: settings.dressCode || null,
         },
         // Omit businessHours from the update payload.  Schedule management is handled separately via the tables-disponibilites page.
         policies: policies.map(({ title, description, category }) => ({
           title,
           description,
           category,
+        })),
+        // Persist payment methods.  Remove the id field used for local editing.
+        paymentMethods: paymentMethods.map(({ id, name, enabled, processingFee, specialDate }) => ({
+          name,
+          enabled,
+          processingFee: processingFee ?? 0,
+          specialDate: specialDate || null,
         })),
       }
       // Include the uploaded logo if available.  Only a single image
@@ -380,6 +422,7 @@ export default function RestaurantSettings() {
         name: paymentForm.name || "",
         enabled: paymentForm.enabled || false,
         processingFee: paymentForm.processingFee || 0,
+        specialDate: paymentForm.specialDate || "",
       }
       setPaymentMethods([...paymentMethods, newMethod])
     }
@@ -579,6 +622,23 @@ export default function RestaurantSettings() {
                     <option value="America/Chicago">Central Time</option>
                     <option value="America/Denver">Mountain Time</option>
                     <option value="America/Los_Angeles">Pacific Time</option>
+                  </select>
+                </div>
+
+                {/* Dress code selection.  Provides a dropdown of predefined
+                    dress codes.  Users may choose from casual,
+                    smart‑casual, business or formal. */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Dress Code</label>
+                  <select
+                    value={settings.dressCode}
+                    onChange={(e) => handleInputChange("dressCode", e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  >
+                    <option value="casual">Casual</option>
+                    <option value="smart-casual">Smart‑Casual</option>
+                    <option value="business">Business</option>
+                    <option value="formal">Formal</option>
                   </select>
                 </div>
               </div>
@@ -920,6 +980,17 @@ export default function RestaurantSettings() {
                   required
                   value={paymentForm.processingFee || 0}
                   onChange={(e) => setPaymentForm({ ...paymentForm, processingFee: Number.parseFloat(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+              {/* Optional special activation date.  When provided the payment
+                  method is enabled only on this date (ISO format). */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Special Activation Date (optional)</label>
+                <input
+                  type="date"
+                  value={paymentForm.specialDate || ""}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, specialDate: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 />
               </div>

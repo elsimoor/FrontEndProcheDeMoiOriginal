@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -10,6 +10,17 @@ import { formatCurrency } from '@/lib/currency';
 import moment from 'moment';
 import { RestaurantSubnav } from '../accueil/page';
 import useTranslation from "@/hooks/useTranslation";
+// Import Select components for payment method selection
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Import Input component for collecting optional reservation file URL
+import { Input } from '@/components/ui/input';
 
 const CREATE_RESERVATION_V2 = gql`
   mutation CreateReservationV2($input: CreateReservationV2Input!) {
@@ -55,6 +66,16 @@ const GET_RESTAURANT_SETTINGS = gql`
           prix
         }
       }
+      # Fetch the payment methods configured for this restaurant.
+      # Each method includes its name, whether it is enabled and an
+      # optional specialDate on which the method is valid (e.g. New
+      # Year’s Eve).  If enabled is false or specialDate is set to a
+      # different date the method should not be available to the user.
+      paymentMethods {
+        name
+        enabled
+        specialDate
+      }
     }
   }
 `;
@@ -99,6 +120,56 @@ function ConfirmationContent() {
     skip: !restaurantId,
   });
 
+  // Extract payment methods from restaurant settings.  The
+  // `paymentMethods` field lives at the root of `restaurant`.  We
+  // filter out disabled methods and those with a specialDate that
+  // doesn’t match the chosen reservation date.  When no payment
+  // methods are defined, an empty array will be returned.
+  const availablePaymentMethods = useMemo(() => {
+    const methods = settingsData?.restaurant?.paymentMethods ?? [];
+    // Reservation date may not be defined (e.g. when form incomplete).  In
+    // that case only methods without a specialDate will be shown.
+    const resDateStr = date;
+    return methods.filter((m: any) => {
+      if (!m.enabled) return false;
+      if (m.specialDate) {
+        // Compare the special date (YYYY-MM-DD) to the reservation
+        // date (which is provided as a YYYY-MM-DD string in the
+        // search params).  Use moment to handle formatting.
+        try {
+          const special = moment(m.specialDate).format('YYYY-MM-DD');
+          return resDateStr && special === resDateStr;
+        } catch (err) {
+          console.error('Failed to parse specialDate', err);
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [settingsData, date]);
+
+  // State to track the selected payment method.  Default to the first
+  // available method when the list changes.
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
+  useEffect(() => {
+    if (availablePaymentMethods && availablePaymentMethods.length > 0) {
+      // If the previously selected payment method is still available, keep it
+      const found = availablePaymentMethods.find((m: any) => m.name === paymentMethod);
+      if (!found) {
+        setPaymentMethod(availablePaymentMethods[0].name);
+      }
+    } else {
+      setPaymentMethod('');
+    }
+    // We intentionally exclude paymentMethod from dependencies to avoid
+    // resetting when the user changes it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availablePaymentMethods]);
+
+  // Optional URL for the reservation details file.  User can paste a link to a
+  // document containing additional information or requirements.
+  const [reservationFileUrlInput, setReservationFileUrlInput] = useState<string>('');
+
   // Extract the currency from the settings.  Default to USD if not provided.
   const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
 
@@ -134,6 +205,8 @@ function ConfirmationContent() {
               dureeHeures: 4, // Example value, should be part of privatisation option
               source: 'new-ui',
               customerInfo,
+              paymentMethod: paymentMethod || undefined,
+              reservationFileUrl: reservationFileUrlInput || undefined,
             },
           },
         });
@@ -149,6 +222,8 @@ function ConfirmationContent() {
               emplacement: emplacement || '',
               source: 'new-ui',
               customerInfo,
+              paymentMethod: paymentMethod || undefined,
+              reservationFileUrl: reservationFileUrlInput || undefined,
             },
           },
         });
@@ -162,8 +237,8 @@ function ConfirmationContent() {
       // the current origin so that Stripe redirects back to the
       // application.
       const origin = window.location.origin;
-      const successUrl = `${origin}/payment/success`;
-      const cancelUrl = `${origin}/payment/cancel`;
+      const successUrl = `${origin}/payment/success?reservationId=${reservationId}`;
+      const cancelUrl = `${origin}/payment/cancel?reservationId=${reservationId}`;
       const paymentRes = await createPaymentSession({
         variables: {
           input: {
@@ -293,15 +368,44 @@ function ConfirmationContent() {
               </div>
             </div>
           </div>
-      {/* Payment section */}
+      {/* Payment and extras section */}
       <div className="border-t border-[#F2B8B6] pt-6 space-y-6">
         <h3 className="text-2xl font-semibold text-gray-800">{t("paymentTitle")}</h3>
         <div className="grid grid-cols-2 gap-x-10 text-lg">
-          <div>
-            <p className="font-semibold text-[#B47C80]">{t("paymentMethodLabel")}</p>
-            <p className="text-gray-800">Credit Card ending in 1234</p>
+          {/* Left column: payment method selection and optional file URL */}
+          <div className="space-y-4">
+            <div>
+              <p className="font-semibold text-[#B47C80]">{t("paymentMethodLabel")}</p>
+              {availablePaymentMethods && availablePaymentMethods.length > 0 ? (
+                <Select onValueChange={setPaymentMethod} value={paymentMethod}>
+                  <SelectTrigger className="w-full p-4 text-lg rounded-xl border-2 border-[#F2B8B6] focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <SelectValue placeholder="Select a payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePaymentMethods.map((m: any) => (
+                      <SelectItem key={m.name} value={m.name}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-gray-800">No payment methods available</p>
+              )}
+            </div>
+            <div>
+              <p className="font-semibold text-[#B47C80]">Reservation file URL (optional)</p>
+              <Input
+                type="text"
+                value={reservationFileUrlInput}
+                onChange={(e) => setReservationFileUrlInput(e.target.value)}
+                placeholder="Paste link to reservation document"
+                className="mt-2 p-4 text-lg rounded-xl border border-[#F2B8B6] focus:outline-none focus:ring-2 focus:ring-red-500 w-full"
+              />
+            </div>
           </div>
-          <div className="text-right">
+          {/* Right column: total price */}
+          <div className="text-right space-y-1">
             <p className="font-semibold text-[#B47C80]">{t("totalLabel")}</p>
             <p className="text-gray-800">{formattedTotalPrice}</p>
           </div>

@@ -175,10 +175,12 @@ export default function CheckoutPage() {
       // After successfully creating the reservation, initiate the
       // payment session.  Compute success and cancel URLs based on
       // the current origin so that the user returns to our app after
-      // completing or cancelling payment.
+      // completing or cancelling payment.  Append the reservationId
+      // to these URLs so that the payment pages can confirm or
+      // cancel the reservation appropriately.
       const origin = window.location.origin;
-      const successUrl = `${origin}/payment/success`;
-      const cancelUrl = `${origin}/payment/cancel`;
+      const successUrl = `${origin}/payment/success?reservationId=${reservationId}`;
+      const cancelUrl = `${origin}/payment/cancel?reservationId=${reservationId}`;
       const { data: paymentData } = await createPaymentSession({
         variables: {
           input: {

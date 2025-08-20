@@ -552,7 +552,21 @@ export default function HotelOptions() {
   ) => {
     setEditingItem(null)
     setModalType(type)
-    setFormData({})
+    // Initialise form data.  When creating a service we prefill the icon
+    // field with a default value so the user can choose a different icon.
+    if (type === "service") {
+      setFormData({ name: "", category: "", price: 0, available: true, description: "", icon: "Utensils" })
+    } else if (type === "amenity") {
+      setFormData({ name: "", category: "", price: 0, included: true, description: "" })
+    } else if (type === "policy") {
+      setFormData({ title: "", category: "", description: "" })
+    } else if (type === "roomPaidOption") {
+      setFormData({ name: "", category: "", price: 0, description: "" })
+    } else if (type === "roomViewOption") {
+      setFormData({ name: "", category: "", price: undefined, description: "" })
+    } else {
+      setFormData({})
+    }
     setShowModal(true)
   }
 
@@ -967,6 +981,23 @@ export default function HotelOptions() {
                         <option value="false">{t("unavailableLabel")}</option>
                       </select>
                     </div>
+                  </div>
+                  {/* Icon selection placed outside of the grid to
+                      maintain a two‑column layout. */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+                    <select
+                      value={formData.icon || "Utensils"}
+                      onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="Utensils">Utensils</option>
+                      <option value="Car">Car</option>
+                      <option value="Coffee">Coffee</option>
+                      <option value="Dumbbell">Dumbbell</option>
+                      <option value="Waves">Waves</option>
+                      <option value="Wifi">Wifi</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t("description")}</label>

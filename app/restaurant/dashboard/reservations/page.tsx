@@ -29,6 +29,10 @@ interface Reservation {
   notes?: string
   specialRequests?: string
   createdAt: string
+
+  // Optional URL for a reservation document (e.g. Word file) that
+  // contains detailed requirements.  May be undefined if no file is attached.
+  reservationFileUrl?: string
 }
 
 interface TableOption {
@@ -97,6 +101,7 @@ export default function RestaurantReservations() {
         notes
         specialRequests
         createdAt
+        reservationFileUrl
       }
     }
   `
@@ -158,6 +163,12 @@ export default function RestaurantReservations() {
     status: string
     notes: string
     specialRequests: string
+    /**
+     * Optional URL pointing to a Word document or other file that
+     * contains additional requirements for the reservation.  When
+     * empty the reservation has no attached file.
+     */
+    reservationFileUrl: string
   }>({
     customerName: "",
     email: "",
@@ -169,6 +180,7 @@ export default function RestaurantReservations() {
     status: "pending",
     notes: "",
     specialRequests: "",
+    reservationFileUrl: "",
   })
 
   // Derive a filtered list of reservations from the GraphQL data.  We
@@ -245,6 +257,7 @@ export default function RestaurantReservations() {
               status: formData.status,
               notes: formData.notes,
               specialRequests: formData.specialRequests,
+              reservationFileUrl: formData.reservationFileUrl || null,
               source: "admin",
             },
           },
@@ -267,6 +280,7 @@ export default function RestaurantReservations() {
               status: formData.status,
               notes: formData.notes,
               specialRequests: formData.specialRequests,
+              reservationFileUrl: formData.reservationFileUrl || null,
               source: "admin",
             },
           },
@@ -294,6 +308,7 @@ export default function RestaurantReservations() {
       status: "pending",
       notes: "",
       specialRequests: "",
+      reservationFileUrl: "",
     })
   }
 
@@ -678,6 +693,20 @@ export default function RestaurantReservations() {
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Optional field for attaching a reservation document.  The user
+                    may paste a URL to a Word document or other file that
+                    contains detailed requirements for the reservation. */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Reservation File URL (optional)</label>
+                  <input
+                    type="url"
+                    value={formData.reservationFileUrl || ""}
+                    onChange={(e) => setFormData({ ...formData, reservationFileUrl: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="https://.../reservation-details.docx"
                   />
                 </div>
               </div>

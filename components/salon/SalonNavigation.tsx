@@ -20,7 +20,7 @@ interface SessionUser {
  * dropdown containing profile and logout actions.  The colour
  * palette is adjusted to match the salon theme (pink accents).
  */
-export default function SalonNavigation() {
+export default function SalonNavigation({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => void }) {
   // Session user and UI state
   const [user, setUser] = useState<SessionUser | null>(null)
   const [search, setSearch] = useState("")
@@ -64,11 +64,12 @@ export default function SalonNavigation() {
         <div className="flex justify-between h-16">
           {/* Left side: search bar (desktop) */}
           <div className="flex items-center">
-            {/* Mobile menu button placeholder */}
+          {/* Mobile menu button */}
             <div className="flex-shrink-0 md:hidden">
               <button
                 type="button"
                 className="bg-white p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-pink-500"
+                onClick={() => setSidebarOpen(true)}
               >
                 <span className="sr-only">{t("openSidebar")}</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

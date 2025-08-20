@@ -1,9 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import useTranslation from "@/hooks/useTranslation";
 import { useLanguage } from "@/context/LanguageContext";
+import { gql, useMutation } from '@apollo/client';
+import { useEffect } from 'react';
+
+// GraphQL mutation to cancel a reservation.  This removes the pending
+// reservation and any invoice when a payment is aborted.
+const CANCEL_RESERVATION = gql`
+  mutation CancelReservation($id: ID!) {
+    cancelReservation(id: $id)
+  }
+`;
 
 /**
  * Cancellation page shown when a user aborts the payment on Stripe
@@ -19,6 +29,20 @@ export default function PaymentCancelPage() {
   // strings in the current locale and allow the user to switch languages.
   const { t } = useTranslation();
   const { locale, setLocale } = useLanguage();
+
+  // Read the reservationId from the query string.  When present we
+  // cancel the reservation on mount to clean up any pending booking.
+  const searchParams = useSearchParams();
+  const reservationId = searchParams.get('reservationId');
+
+  const [cancelReservation] = useMutation(CANCEL_RESERVATION);
+  useEffect(() => {
+    if (reservationId) {
+      cancelReservation({ variables: { id: reservationId } }).catch(() => {
+        // Ignore errors; the reservation may already be deleted.
+      });
+    }
+  }, [reservationId, cancelReservation]);
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">

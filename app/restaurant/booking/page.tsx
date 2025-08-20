@@ -110,8 +110,10 @@ export default function RestaurantBookingPage() {
       }
       // Initiate payment.  Compute return URLs based on current origin.
       const origin = window.location.origin;
-      const successUrl = `${origin}/payment/success`;
-      const cancelUrl = `${origin}/payment/cancel`;
+      // Append the reservationId to the success and cancel URLs so that
+      // the payment pages can confirm or cancel the booking appropriately.
+      const successUrl = `${origin}/payment/success?reservationId=${reservationId}`;
+      const cancelUrl = `${origin}/payment/cancel?reservationId=${reservationId}`;
       const { data: paymentData } = await createPaymentSession({
         variables: {
           input: {

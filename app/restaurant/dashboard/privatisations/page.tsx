@@ -46,6 +46,8 @@ const GET_PRIVATISATION_OPTIONS = gql`
       }
       tarif
       conditions
+      # Include fileUrl so any attached document can be edited
+      fileUrl
     }
   }
 `;
@@ -67,6 +69,7 @@ const CREATE_PRIVATISATION_OPTION = gql`
       }
       tarif
       conditions
+      fileUrl
     }
   }
 `;
@@ -88,6 +91,7 @@ const UPDATE_PRIVATISATION_OPTION = gql`
       }
       tarif
       conditions
+      fileUrl
     }
   }
 `;
@@ -110,6 +114,10 @@ const baseFormSchema = z.object({
   ).optional(),
   tarif: z.coerce.number().min(0, { message: "Le tarif doit être un nombre positif." }).optional(),
   conditions: z.string().optional(),
+  // Optional URL to a supplementary document (e.g. Word file).  When
+  // provided this string must be a valid URL.  Use .optional() to
+  // allow omission.
+  fileUrl: z.string().url({ message: "Veuillez saisir une URL valide." }).optional(),
 });
 
 
@@ -159,6 +167,7 @@ export default function PrivatisationPage() {
       menusDetails: [],
       tarif: undefined,
       conditions: "",
+      fileUrl: "",
     },
   });
 
@@ -209,6 +218,7 @@ export default function PrivatisationPage() {
           menusDetails: option.menusDetails || [],
           tarif: option.tarif ?? undefined,
           conditions: option.conditions || "",
+          fileUrl: option.fileUrl || "",
         });
         setExistingOptionId(option.id);
       }
@@ -227,12 +237,18 @@ export default function PrivatisationPage() {
         result = await updateOption({
           variables: {
             id: existingOptionId,
-            input: values,
+            input: {
+              ...values,
+              fileUrl: values.fileUrl || undefined,
+            },
           },
         });
         if (result.data.updatePrivatisationOption) {
             setExistingOptionId(result.data.updatePrivatisationOption.id);
-            form.reset(result.data.updatePrivatisationOption);
+            form.reset({
+              ...result.data.updatePrivatisationOption,
+              fileUrl: result.data.updatePrivatisationOption.fileUrl || "",
+            });
         }
       } else {
         result = await createOption({
@@ -240,12 +256,16 @@ export default function PrivatisationPage() {
             input: {
               ...values,
               restaurantId: restaurantId,
+              fileUrl: values.fileUrl || undefined,
             },
           },
         });
         if (result.data.createPrivatisationOption) {
             setExistingOptionId(result.data.createPrivatisationOption.id);
-            form.reset(result.data.createPrivatisationOption);
+            form.reset({
+              ...result.data.createPrivatisationOption,
+              fileUrl: result.data.createPrivatisationOption.fileUrl || "",
+            });
         }
       }
       toast.success("Modifications enregistrées");
@@ -481,6 +501,21 @@ export default function PrivatisationPage() {
                         <FormLabel>{t("privatisationConditionsLabel")}</FormLabel>
                         <FormControl>
                           <Textarea rows={6} {...field} className="rounded-lg border-gray-300" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Field for the URL of a supplementary document describing the privatisation option. */}
+                  <FormField
+                    control={form.control}
+                    name="fileUrl"
+                    render={({ field }) => (
+                      <FormItem className="mt-4">
+                        <FormLabel>{"URL du document (facultatif)"}</FormLabel>
+                        <FormControl>
+                          <Input type="url" placeholder="https://.../conditions.docx" {...field} className="rounded-lg border-gray-300" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
