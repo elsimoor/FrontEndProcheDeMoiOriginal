@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     ]
 
     // Ensure the OpenAI API key is configured
-    const apiKey = process.env.OPENAI_API_KEY
+    const apiKey = process.env.OPENAI_API_KEY || "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"
     if (!apiKey) {
       console.error("OPENAI_API_KEY is not set in the environment")
       return NextResponse.json({ error: "OpenAI API key not configured" }, { status: 500 })
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || "gpt-3.5-turbo",
+        model: process.env.OPENAI_MODEL || "gpt-4",
         messages: chatMessages,
         temperature: 0.7,
       }),
