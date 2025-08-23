@@ -1,0 +1,50 @@
+#     createReservation(input: ReservationInput!): Reservation!
+mutation createReservation($input: ReservationInput!) {
+  createReservation(input: $input) {
+    id
+     id
+      # confirmationNumber
+      businessType
+      customerInfo {
+        name
+        email
+        phone
+      }
+      date
+      status
+      # pricing {
+      #   totalAmount
+      #   currency
+      # }
+      
+      # Hotel fields
+      roomId {
+        number
+        type
+      }
+      checkIn
+      checkOut
+      guests
+      
+      # Restaurant fields
+      tableId {
+        number
+        capacity
+      }
+      partySize
+      # reservationTime
+      
+      # Salon fields
+      serviceId {
+        name
+        duration
+      }
+      staffId {
+      name
+      }
+      # appointmentTime
+      duration
+      
+      createdAt
+  }
+}
