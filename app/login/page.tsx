@@ -191,12 +191,17 @@ export default function LoginPage() {
       const data = await res.json()
       setIsLoading(false)
       if (res.ok && data.data?.login?.token) {
-        if (data.data.login.user.businessType === "hotel") {
-          router.push("/hotel/dashboard")
-        } else if (data.data.login.user.businessType === "restaurant") {
-          router.push("/restaurant/dashboard")
-        } else if (data.data.login.user.businessType === "salon") {
-          router.push("/salon/dashboard")
+        const user = data.data.login.user;
+        // Redirect admins to the admin dashboard.  Managers and staff are directed
+        // to their respective business dashboards based on businessType.
+        if (user.role === "admin") {
+          router.push("/admin");
+        } else if (user.businessType === "hotel") {
+          router.push("/hotel/dashboard");
+        } else if (user.businessType === "restaurant") {
+          router.push("/restaurant/dashboard");
+        } else if (user.businessType === "salon") {
+          router.push("/salon/dashboard");
         }
       } else {
         console.log("data.error", data.error)

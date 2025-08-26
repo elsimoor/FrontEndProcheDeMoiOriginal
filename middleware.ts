@@ -83,30 +83,32 @@ export async function middleware(request: NextRequest) {
         if (lowerPath.startsWith("/admin") && role !== "admin") {
             return NextResponse.redirect(new URL("/login", request.url));
         }
-        // System administrators can access any dashboard regardless of business type.
-        if (role === 'admin') {
-            return NextResponse.next();
+        // Hotel dashboard access: managers/staff only.  Admins are redirected back to the admin panel.
+        if (lowerPath.startsWith("/hotel/dashboard")) {
+            if (role === 'admin') {
+                return NextResponse.redirect(new URL("/admin", request.url));
+            }
+            if (businessType !== "hotel") {
+                return NextResponse.redirect(new URL("/login", request.url));
+            }
         }
-        // Hotel dashboard requires businessType "hotel"
-        if (
-            lowerPath.startsWith("/hotel/dashboard") &&
-            businessType !== "hotel"
-        ) {
-            return NextResponse.redirect(new URL("/login", request.url));
+        // Restaurant dashboard access
+        if (lowerPath.startsWith("/restaurant/dashboard")) {
+            if (role === 'admin') {
+                return NextResponse.redirect(new URL("/admin", request.url));
+            }
+            if (businessType !== "restaurant") {
+                return NextResponse.redirect(new URL("/login", request.url));
+            }
         }
-        // Restaurant dashboard requires businessType "restaurant"
-        if (
-            lowerPath.startsWith("/restaurant/dashboard") &&
-            businessType !== "restaurant"
-        ) {
-            return NextResponse.redirect(new URL("/login", request.url));
-        }
-        // Salon dashboard requires businessType "salon"
-        if (
-            lowerPath.startsWith("/salon/dashboard") &&
-            businessType !== "salon"
-        ) {
-            return NextResponse.redirect(new URL("/login", request.url));
+        // Salon dashboard access
+        if (lowerPath.startsWith("/salon/dashboard")) {
+            if (role === 'admin') {
+                return NextResponse.redirect(new URL("/admin", request.url));
+            }
+            if (businessType !== "salon") {
+                return NextResponse.redirect(new URL("/login", request.url));
+            }
         }
     }
 

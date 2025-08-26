@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 
 const projectId = "t0fm911f9d"
-
+  
 Clarity.init(projectId);
 
 export default function RootLayout({
