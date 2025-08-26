@@ -4,8 +4,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import ClientApolloProvider from "@/components/ClientApolloProvider"
 import { LanguageProvider } from "@/context/LanguageContext"
+import UseMsClarity from "@/components/Clarity"
 // import { AuthProvider } from "@/context/AuthContext"
-import Clarity from '@microsoft/clarity';
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -17,15 +17,17 @@ export const metadata: Metadata = {
 
 
 
-const projectId = "t0fm911f9d"
-  
-Clarity.init(projectId);
+
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+
+
+
+
   return (
     <html lang="en">
 
@@ -36,6 +38,7 @@ export default function RootLayout({
 
       </head>
       <body className={inter.className}>
+        <UseMsClarity />
         {/* Provide the language context to the entire application so that
             components can access and modify the current locale. */}
         <LanguageProvider>
