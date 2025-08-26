@@ -37,12 +37,12 @@ export default function RestaurantSidebar({ sidebarOpen, setSidebarOpen }: { sid
   // Define navigation with translation keys.  These keys correspond
   // to entries in the i18n catalog so labels change with the locale.
   const navigation = [
-    { key: 'dashboard', href: '/restaurant/dashboard', icon: LayoutDashboard },
-    { key: 'overview', href: '/restaurant/dashboard/overview', icon: LayoutDashboard },
-    { key: 'reservations', href: '/restaurant/dashboard/reservations', icon: Calendar },
-    { key: 'tables', href: '/restaurant/dashboard/tables', icon: LayoutDashboard },
-    { key: 'menusPage', href: '/restaurant/dashboard/menus', icon: LayoutDashboard },
-    { key: 'staffPage', href: '/restaurant/dashboard/staff', icon: Users },
+    // { key: 'dashboard', href: '/restaurant/dashboard', icon: LayoutDashboard },
+    { key: 'overview', href: '/restaurant/dashboard', icon: LayoutDashboard },
+    // { key: 'reservations', href: '/restaurant/dashboard/reservations', icon: Calendar },
+    // { key: 'tables', href: '/restaurant/dashboard/tables', icon: LayoutDashboard },
+    // { key: 'menusPage', href: '/restaurant/dashboard/menus', icon: LayoutDashboard },
+    // { key: 'staffPage', href: '/restaurant/dashboard/staff', icon: Users },
     { key: 'privatisations', href: '/restaurant/dashboard/privatisations', icon: Users },
     { key: 'tablesDisponibilites', href: '/restaurant/dashboard/tables-disponibilites', icon: Calendar },
     { key: 'settings', href: '/restaurant/dashboard/settings', icon: Cog },

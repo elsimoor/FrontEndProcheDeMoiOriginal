@@ -917,7 +917,7 @@ export default function EnhancedLandingPage() {
             <Link href="/hotel" className="hover:text-blue-600">
               Hotels
             </Link>
-            <Link href="/restaurant" className="hover:text-blue-600">
+            <Link href="/u/accueil" className="hover:text-blue-600">
               Restaurants
             </Link>
             <Link href="/salon" className="hover:text-blue-600">
