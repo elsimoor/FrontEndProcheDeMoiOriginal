@@ -20,6 +20,20 @@ const GET_ROOMS = gql`
       status
       images
       amenities
+      # Fetch special date-range pricing sessions.  Each entry
+      # specifies a start and end day within the year and a nightly rate.
+      specialPrices {
+        startMonth
+        startDay
+        endMonth
+        endDay
+        price
+      }
+      monthlyPrices {
+        startMonth
+        endMonth
+        price
+      }
     }
   }
 `;
@@ -151,12 +165,77 @@ export default function HotelBookingPage() {
     }
   }, [roomsData]);
 
-  // Compute nights and total price
+  // Compute nights and total price with support for monthly pricing
   const selectedType = roomTypes.find((r: any) => r.id === bookingData.roomType);
   const nights = bookingData.checkIn && bookingData.checkOut
     ? Math.ceil((new Date(bookingData.checkOut).getTime() - new Date(bookingData.checkIn).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
-  const totalPrice = selectedType ? selectedType.price * nights : 0;
+
+  /**
+   * Calculate the total cost of a stay for a given room.  Pricing is determined
+   * in the following order of precedence:
+   * 1. If a date falls within a special pricing period (defined by
+   *    startMonth/startDay and endMonth/endDay), use that period's nightly
+   *    rate.
+   * 2. Otherwise, if a monthly pricing session covers the month, use that
+   *    session's nightly rate.
+   * 3. Failing both, use the room's base price.
+   * Date ranges may cross the year boundary (e.g. Dec 15–Jan 5).  The
+   * function iterates through each night in the stay and sums the
+   * applicable rate.
+   */
+  function calculatePriceForStay(room: any, checkIn: string, checkOut: string): number {
+    if (!room || !checkIn || !checkOut) return 0;
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    let total = 0;
+    for (let date = new Date(start); date < end; date.setDate(date.getDate() + 1)) {
+      const m = date.getMonth() + 1; // month (1-12)
+      const d = date.getDate(); // day of month
+      let nightly = room.price;
+      let appliedSpecial = false;
+      // Check special pricing periods first
+      if (Array.isArray(room.specialPrices) && room.specialPrices.length > 0) {
+        const spSession = room.specialPrices.find((sp: any) => {
+          const { startMonth, startDay, endMonth, endDay, price } = sp;
+          // Determine if the date falls within the range (inclusive)
+          if (startMonth < endMonth || (startMonth === endMonth && startDay <= endDay)) {
+            // Range does not cross year boundary
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) &&
+              (m < endMonth || (m === endMonth && d <= endDay))
+            );
+          } else {
+            // Range crosses year boundary: from startMonth/day to endMonth/day across year end
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) ||
+              (m < endMonth || (m === endMonth && d <= endDay))
+            );
+          }
+        });
+        if (spSession) {
+          nightly = spSession.price;
+          appliedSpecial = true;
+        }
+      }
+      // If no special price applied, check monthly pricing
+      if (!appliedSpecial && Array.isArray(room.monthlyPrices) && room.monthlyPrices.length > 0) {
+        const session = room.monthlyPrices.find((mp: any) => m >= mp.startMonth && m <= mp.endMonth);
+        if (session) {
+          nightly = session.price;
+        }
+      }
+      total += nightly;
+    }
+    return total;
+  }
+
+  const totalPrice = (() => {
+    if (!selectedType || !bookingData.checkIn || !bookingData.checkOut) return 0;
+    const room = selectedType.rooms && selectedType.rooms.length > 0 ? selectedType.rooms[0] : null;
+    if (!room) return 0;
+    return calculatePriceForStay(room, bookingData.checkIn, bookingData.checkOut);
+  })();
 
   // State for previewing room images
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -339,7 +418,7 @@ export default function HotelBookingPage() {
                                 <p className="text-sm text-gray-600">{room.description}</p>
                               </div>
                               <span className="text-lg font-bold text-blue-600">
-                                {formatCurrency(room.price, currency)}/night
+                                {formatCurrency(room.price, currency, currency)}/night
                               </span>
                             </div>
                           </div>
@@ -389,7 +468,7 @@ export default function HotelBookingPage() {
                   type="submit"
                   className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-medium text-lg hover:bg-blue-700 transition-colors"
                 >
-                  Book Now{totalPrice > 0 ? ` - ${formatCurrency(totalPrice, currency)}` : ""}
+                  Book Now{totalPrice > 0 ? ` - ${formatCurrency(totalPrice, currency, currency)}` : ""}
                 </button>
               </form>
             </div>
@@ -428,9 +507,14 @@ export default function HotelBookingPage() {
                     <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                       <div className="flex justify-between text-sm">
                         <span>
-                          {formatCurrency(selectedType.price, currency)} × {nights} nights
+                          {formatCurrency(
+                            nights > 0 ? totalPrice / nights : selectedType?.price || 0,
+                            currency,
+                            currency
+                          )}{" "}
+                          × {nights} nights
                         </span>
-                        <span className="font-medium">{formatCurrency(totalPrice, currency)}</span>
+                        <span className="font-medium">{formatCurrency(totalPrice, currency, currency)}</span>
                       </div>
                     </div>
                   )}

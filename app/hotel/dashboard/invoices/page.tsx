@@ -244,7 +244,7 @@ export default function HotelInvoicesPage() {
                 <TableCell>{inv.id}</TableCell>
                 <TableCell>{inv.reservation?.customerInfo?.name || inv.reservationId}</TableCell>
                 <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">{formatCurrency(inv.total ?? 0, currency)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(inv.total ?? 0, currency, currency)}</TableCell>
                 <TableCell className="space-x-2">
                   <Button variant="outline" size="sm" onClick={() => window.location.href = `/hotel/dashboard/invoices/${inv.id}`}>{t("view")}</Button>
                   <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>{t("download")}</Button>

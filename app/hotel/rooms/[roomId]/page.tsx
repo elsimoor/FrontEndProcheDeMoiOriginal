@@ -49,6 +49,10 @@ import { useLanguage } from "@/context/LanguageContext"
  */
 
 // Query a single room by id
+// Fetch a single room by id.  Include specialPrices and monthlyPrices so
+// we can compute dynamic pricing (date‑range and monthly) on the
+// frontend.  These fields define seasonal or promotional rates that
+// override the base price when applicable.
 const GET_ROOM = gql`
   query GetRoom($id: ID!) {
     room(id: $id) {
@@ -86,6 +90,26 @@ const GET_ROOM = gql`
         name
         description
         category
+        price
+      }
+      # Date‑range special pricing sessions.  Each entry defines a start
+      # month/day and end month/day along with a nightly rate.  If a
+      # night falls within one of these sessions it takes precedence
+      # over monthlyPricing and the default price.
+      specialPrices {
+        startMonth
+        startDay
+        endMonth
+        endDay
+        price
+      }
+      # Monthly pricing sessions.  Defines a nightly rate for a range of
+      # months.  Used when no special price applies.  The base price
+      # acts as a fallback when neither special nor monthly pricing is
+      # defined for a given date.
+      monthlyPrices {
+        startMonth
+        endMonth
         price
       }
     }
@@ -144,7 +168,9 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
     variables: { id: roomId },
   });
 
-  // Determine number of nights from booking
+  // Determine number of nights from booking.  This value is used for
+  // computing taxes/fees and other per‑night charges.  If the
+  // booking data is incomplete we default to zero nights.
   const nights = useMemo(() => {
     if (!booking.checkIn || !booking.checkOut) return 0;
     const inDate = new Date(booking.checkIn);
@@ -152,6 +178,64 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
     const diff = outDate.getTime() - inDate.getTime();
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [booking.checkIn, booking.checkOut]);
+
+  /**
+   * Calculate the total cost of a stay for a given room.  Pricing is
+   * determined in the following order of precedence for each night:
+   * 1. If the date falls within a special pricing period (defined by
+   *    startMonth/startDay and endMonth/endDay), use that period's
+   *    nightly rate.
+   * 2. Otherwise, if a monthly pricing session covers the month, use
+   *    that session's nightly rate.
+   * 3. Failing both, use the room's base price.
+   * Date ranges may cross the year boundary (e.g. Dec 15–Jan 5).  The
+   * function iterates through each night in the stay and sums the
+   * applicable rate.  Returns 0 if room or dates are missing.
+   */
+  function calculatePriceForStay(room: any, checkIn: string, checkOut: string): number {
+    if (!room || !checkIn || !checkOut) return 0;
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    let total = 0;
+    for (let date = new Date(start); date < end; date.setDate(date.getDate() + 1)) {
+      const m = date.getMonth() + 1; // month (1–12)
+      const d = date.getDate(); // day of month
+      let nightly = room.price;
+      let appliedSpecial = false;
+      // Apply special date‑range pricing first
+      if (Array.isArray(room.specialPrices) && room.specialPrices.length > 0) {
+        const spSession = room.specialPrices.find((sp: any) => {
+          const { startMonth, startDay, endMonth, endDay } = sp;
+          // Determine if date falls within this range (inclusive).  Account
+          // for ranges that cross the year boundary by using OR logic.
+          if (startMonth < endMonth || (startMonth === endMonth && startDay <= endDay)) {
+            // Range does not cross year boundary
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) &&
+              (m < endMonth || (m === endMonth && d <= endDay))
+            );
+          } else {
+            // Range crosses year boundary
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) ||
+              (m < endMonth || (m === endMonth && d <= endDay))
+            );
+          }
+        });
+        if (spSession) {
+          nightly = spSession.price;
+          appliedSpecial = true;
+        }
+      }
+      // Apply monthly pricing if no special pricing applies
+      if (!appliedSpecial && Array.isArray(room.monthlyPrices) && room.monthlyPrices.length > 0) {
+        const mpSession = room.monthlyPrices.find((mp: any) => m >= mp.startMonth && m <= mp.endMonth);
+        if (mpSession) nightly = mpSession.price;
+      }
+      total += nightly;
+    }
+    return total;
+  }
 
   // Manage extras state
   const [extras, setExtras] = useState<Extras>({});
@@ -185,7 +269,12 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
     }, 0);
   }, [extras, amenities]);
 
-  const basePrice = room ? room?.price * nights : 0;
+  // Compute the base price for the stay using dynamic pricing.  Use
+  // useMemo to avoid recalculating unless the room or booking dates change.
+  const basePrice = useMemo(() => {
+    if (!room || !booking.checkIn || !booking.checkOut) return 0;
+    return calculatePriceForStay(room, booking.checkIn, booking.checkOut);
+  }, [room, booking.checkIn, booking.checkOut]);
   // Compute the total cost of selected paid options.  Sum the price of
   // each option that has been toggled on.  If no options are selected
   // or the price is undefined, the total is zero.
@@ -476,7 +565,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                                   </label>
                                 </div>
                                 <span className="text-sm text-gray-600">
-                                  {option.price !== undefined ? formatCurrency(option.price || 0, currency) : t("free")}
+                                  {option.price !== undefined ? formatCurrency(option.price || 0, currency, currency) : t("free")}
                                 </span>
                               </div>
                             ))}
@@ -530,7 +619,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                           {view.name}
                           {view.price !== undefined && (
                             <span className="ml-1 text-xs text-gray-200 md:text-gray-300">
-                              {view.price > 0 ? ` (${formatCurrency(view.price, currency)})` : ` (${t("free")})`}
+                              {view.price > 0 ? ` (${formatCurrency(view.price, currency, currency)})` : ` (${t("free")})`}
                             </span>
                           )}
                         </ToggleGroupItem>
@@ -571,7 +660,7 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                                   {amenity.name}
                                 </label>
                               </div>
-                              <span className="text-sm text-gray-600">({formatCurrency(amenity.price, currency)})</span>
+                              <span className="text-sm text-gray-600">({formatCurrency(amenity.price, currency, currency)})</span>
                             </div>
                           ))}
                         </div>
@@ -614,14 +703,14 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                       <span>
                         {`${nights} ${nights === 1 ? t("nightSingular") : t("nightsPlural")}`}
                       </span>
-                      <span>{formatCurrency(basePrice, currency)}</span>
+                      <span>{formatCurrency(basePrice, currency, currency)}</span>
                     </div>
                     {amenities
                       .filter((a: Amenity) => extras[a.name])
                       .map((amenity: Amenity) => (
                         <div key={amenity.name} className="flex justify-between">
                           <span>{amenity.name}</span>
-                          <span>{formatCurrency(amenity.price, currency)}</span>
+                          <span>{formatCurrency(amenity.price, currency, currency)}</span>
                         </div>
                       ))}
                     {/* List selected paid room options with their prices */}
@@ -630,20 +719,20 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                       .map((opt: PaidOption) => (
                         <div key={opt.name} className="flex justify-between">
                           <span>{opt.name}</span>
-                          <span>{formatCurrency(opt.price || 0, currency)}</span>
+                          <span>{formatCurrency(opt.price || 0, currency, currency)}</span>
                         </div>
                       ))}
                     {/* Add view cost if the selected view has a price */}
                     {viewCost > 0 && (
                       <div className="flex justify-between">
                         <span>{selectedView}</span>
-                        <span>{formatCurrency(viewCost, currency)}</span>
+                        <span>{formatCurrency(viewCost, currency, currency)}</span>
                       </div>
                     )}
                     <Separator />
                     <div className="flex justify-between font-bold text-base">
                       <span>{t("totalPrice")}</span>
-                      <span>{formatCurrency(total, currency)}</span>
+                      <span>{formatCurrency(total, currency, currency)}</span>
                     </div>
                   </CardContent>
                 </Card>

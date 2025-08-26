@@ -83,6 +83,10 @@ export async function middleware(request: NextRequest) {
         if (lowerPath.startsWith("/admin") && role !== "admin") {
             return NextResponse.redirect(new URL("/login", request.url));
         }
+        // System administrators can access any dashboard regardless of business type.
+        if (role === 'admin') {
+            return NextResponse.next();
+        }
         // Hotel dashboard requires businessType "hotel"
         if (
             lowerPath.startsWith("/hotel/dashboard") &&

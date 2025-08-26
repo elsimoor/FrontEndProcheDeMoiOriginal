@@ -677,7 +677,7 @@ export default function HotelOptions() {
                           <span className="text-lg font-bold text-gray-900">
                             {service.price === 0
                               ? t("free")
-                              : formatCurrency(service.price, currency)}
+                              : formatCurrency(service.price, currency, currency)}
                           </span>
                         </div>
                         <div className="flex items-center">
@@ -752,7 +752,7 @@ export default function HotelOptions() {
                         <span className="text-lg font-bold text-gray-900">
                           {amenity.price === 0
                             ? t("free")
-                            : formatCurrency(amenity.price, currency)}
+                            : formatCurrency(amenity.price, currency, currency)}
                         </span>
                       </div>
                     </div>
@@ -836,7 +836,7 @@ export default function HotelOptions() {
                         <p className="text-sm text-gray-600 mt-1">{option.description}</p>
                       )}
                       <p className="mt-2 text-lg font-bold text-gray-900">
-                        {option.price === 0 ? t("free") : formatCurrency(option.price, currency)}
+                        {option.price === 0 ? t("free") : formatCurrency(option.price, currency, currency)}
                       </p>
                     </div>
                     <div className="flex space-x-2 mt-4">
@@ -892,7 +892,7 @@ export default function HotelOptions() {
                     {/* Price may be undefined or zero; display Free when zero, otherwise formatted price */}
                     {option.price !== undefined && (
                       <p className="mt-2 text-lg font-bold text-gray-900">
-                        {option.price === 0 ? t("free") : formatCurrency(option.price, currency)}
+                        {option.price === 0 ? t("free") : formatCurrency(option.price, currency, currency)}
                       </p>
                     )}
                   </div>

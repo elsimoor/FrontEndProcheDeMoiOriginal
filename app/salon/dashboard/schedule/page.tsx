@@ -157,6 +157,38 @@ export default function SalonSchedule() {
   const staff = staffData?.staff || [];
   const shifts = shiftsData?.shifts || [];
 
+  // Maintain a list of selected staff IDs for filtering.  When no
+  // staff are selected we default to showing all.  Upon initial
+  // loading of the staff list we select all staff by default so
+  // that all shifts are displayed.  Users can toggle individual
+  // staff to customise which shifts appear on the calendar.
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (staff && staff.length > 0) {
+      setSelectedStaffIds(staff.map((s: any) => s.id));
+    }
+  }, [staff]);
+  const toggleStaffSelection = (id: string) => {
+    setSelectedStaffIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((s) => s !== id);
+      }
+      return [...prev, id];
+    });
+  };
+
+  // Filter shifts based on selected staff.  When no selection is
+  // present (i.e. the selection array is empty) we default to
+  // showing all shifts.  This memoised value recomputes only when
+  // either the shifts list or the selected staff changes.
+  const visibleShifts = useMemo(() => {
+    if (!selectedStaffIds || selectedStaffIds.length === 0) return shifts;
+    return shifts.filter((shift: any) => {
+      const sid = shift.staffId?.id;
+      return sid ? selectedStaffIds.includes(sid) : true;
+    });
+  }, [shifts, selectedStaffIds]);
+
   // Compute array of seven days for the calendar header
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => weekStart.clone().add(i, "day"));
@@ -212,7 +244,7 @@ export default function SalonSchedule() {
     const map: Record<string, { leftPercent: number; widthPercent: number }> = {};
     weekDays.forEach((day) => {
       const dayStr = day.format("YYYY-MM-DD");
-      const dayEvents = shifts
+      const dayEvents = visibleShifts
         .filter((shift: any) => moment(shift.date).format("YYYY-MM-DD") === dayStr)
         .map((shift: any) => {
           const [sh, sm] = shift.startTime.split(":").map((x: string) => parseInt(x));
@@ -247,7 +279,7 @@ export default function SalonSchedule() {
       });
     });
     return map;
-  }, [shifts, weekDays]);
+  }, [visibleShifts, weekDays]);
 
   // Selection state for click‑and‑drag range selection
   const [isSelecting, setIsSelecting] = useState(false);
@@ -417,6 +449,26 @@ export default function SalonSchedule() {
           </button>
         </div>
       </div>
+
+      {/* Staff filter checkboxes.  When multiple staff are available,
+          display a list of checkboxes allowing the user to choose
+          which personnel to display on the calendar.  The default
+          selection is all staff. */}
+      {staff && staff.length > 0 && (
+        <div className="flex flex-wrap items-center gap-4">
+          {staff.map((member: any) => (
+            <label key={member.id} className="inline-flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedStaffIds.includes(member.id)}
+                onChange={() => toggleStaffSelection(member.id)}
+                className="form-checkbox rounded text-pink-600"
+              />
+              <span className="text-sm text-gray-700">{member.name}</span>
+            </label>
+          ))}
+        </div>
+      )}
       {/* Calendar grid */}
       <div className="overflow-x-auto">
         <div className="grid" style={{ gridTemplateColumns: `80px repeat(7, 1fr)` }}>
@@ -434,9 +486,11 @@ export default function SalonSchedule() {
           </div>
           {/* Day columns */}
           {weekDays.map((day, dayIndex) => {
-            // Filter shifts for this day
+            // Filter shifts for this day based on the selected staff.  Only
+            // visibleShifts are considered so that the calendar reflects
+            // the current staff filter.
             const dayDateStr = day.format("YYYY-MM-DD");
-            const dayShifts = shifts.filter((shift: any) => {
+            const dayShifts = visibleShifts.filter((shift: any) => {
               return moment(shift.date).format("YYYY-MM-DD") === dayDateStr;
             });
             return (

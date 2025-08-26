@@ -179,16 +179,16 @@ export default function InvoiceDetailsPage() {
             {invoice.items.map((item: any, idx: number) => (
               <TableRow key={idx}>
                 <TableCell>{item.description}</TableCell>
-                <TableCell>{formatCurrency(item.price ?? 0, currency)}</TableCell>
+                <TableCell>{formatCurrency(item.price ?? 0, currency, currency)}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell className="text-right">{formatCurrency(item.total ?? 0, currency)}</TableCell>
+                <TableCell className="text-right">{formatCurrency(item.total ?? 0, currency, currency)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
       <div className="flex justify-end">
-        <div className="text-xl font-semibold">{t("total")}: {formatCurrency(invoice.total ?? 0, currency)}</div>
+        <div className="text-xl font-semibold">{t("total")}: {formatCurrency(invoice.total ?? 0, currency, currency)}</div>
       </div>
     </div>
   );

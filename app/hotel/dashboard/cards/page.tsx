@@ -233,7 +233,7 @@ export default function HotelLandingCardsPage() {
                 )}
                 {card.price && (
                   <p className="text-sm text-gray-600 mt-1">
-                    {t("price")} : {formatCurrency(card.price, currency)}
+                    {t("price")} : {formatCurrency(card.price, currency, currency)}
                   </p>
                 )}
               </div>

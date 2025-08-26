@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import { getBooking, clearBooking } from "../../../lib/booking";
@@ -22,6 +22,10 @@ import { useLanguage } from "@/context/LanguageContext"
  * notification.
  */
 
+// Fetch a single room by id and include pricing sessions needed for
+// dynamic price calculations.  We include specialPrices and
+// monthlyPrices so the frontend can compute the correct total for
+// stays that fall within date‑specific or monthly promotional periods.
 const GET_ROOM = gql`
   query GetRoom($id: ID!) {
     room(id: $id) {
@@ -34,13 +38,25 @@ const GET_ROOM = gql`
           currency
         }
       }
-      # Include view options so we can determine the cost of the
-      # selected view during checkout.  Each option provides its
-      # name and optional price.  Additional fields such as
-      # description or category are omitted here because they are
-      # not needed for pricing.
+      # View options are fetched so we can determine the cost of the
+      # selected view during checkout.  Only name and price are needed
+      # here because descriptions/categories are not used in pricing.
       viewOptions {
         name
+        price
+      }
+      # Special date‑range pricing periods
+      specialPrices {
+        startMonth
+        startDay
+        endMonth
+        endDay
+        price
+      }
+      # Monthly pricing sessions
+      monthlyPrices {
+        startMonth
+        endMonth
         price
       }
     }
@@ -90,6 +106,22 @@ export default function CheckoutPage() {
   // redirect the user to Stripe after the reservation is recorded.
   const [createPaymentSession] = useMutation(CREATE_PAYMENT_SESSION);
 
+  // Guest information state.  This captures the name, email and phone
+  // number of the person making the reservation.  Without these
+  // details the reservation would default to a generic guest which
+  // prevents the business from contacting the customer.
+  const [guestInfo, setGuestInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
+
+  // Handle guest info changes
+  const handleGuestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setGuestInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
   // Compute nights and cost
   const nights = useMemo(() => {
     if (!booking.checkIn || !booking.checkOut) return 0;
@@ -103,7 +135,57 @@ export default function CheckoutPage() {
   const currency: string = room?.hotelId?.settings?.currency || 'USD';
 
   console.log("currency:", currency);
-  const basePrice = room ? room.price * nights : 0;
+  /**
+   * Calculate the total cost of a stay for a given room.  For each night,
+   * pricing follows a hierarchy: use a special price if the date falls
+   * within a special period; otherwise use a monthly pricing session if
+   * available; otherwise use the default price.  Handles date ranges
+   * crossing year boundaries.
+   */
+  function calculatePriceForStay(room: any, checkIn: string, checkOut: string): number {
+    if (!room || !checkIn || !checkOut) return 0;
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    let total = 0;
+    for (let date = new Date(start); date < end; date.setDate(date.getDate() + 1)) {
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      let nightly = room.price;
+      let appliedSpecial = false;
+      if (Array.isArray(room.specialPrices) && room.specialPrices.length > 0) {
+        const spSession = room.specialPrices.find((sp: any) => {
+          const { startMonth, startDay, endMonth, endDay } = sp;
+          if (startMonth < endMonth || (startMonth === endMonth && startDay <= endDay)) {
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) &&
+              (m < endMonth || (m === endMonth && d <= endDay))
+            );
+          } else {
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) ||
+              (m < endMonth || (m === endMonth && d <= endDay))
+            );
+          }
+        });
+        if (spSession) {
+          nightly = spSession.price;
+          appliedSpecial = true;
+        }
+      }
+      if (!appliedSpecial && Array.isArray(room.monthlyPrices) && room.monthlyPrices.length > 0) {
+        const mpSession = room.monthlyPrices.find((mp: any) => m >= mp.startMonth && m <= mp.endMonth);
+        if (mpSession) nightly = mpSession.price;
+      }
+      total += nightly;
+    }
+    return total;
+  }
+
+  // Compute the base price using dynamic pricing based on booking dates.
+  const basePrice = useMemo(() => {
+    if (!room || !booking.checkIn || !booking.checkOut) return 0;
+    return calculatePriceForStay(room, booking.checkIn, booking.checkOut);
+  }, [room, booking.checkIn, booking.checkOut]);
   // Selected extras (amenities) from the booking.  These are stored
   // as an array of amenity objects when present; default to empty
   // array otherwise.  The extras may include items like parking or
@@ -142,6 +224,11 @@ export default function CheckoutPage() {
 
   const handleReserve = async () => {
     if (!room) return;
+    // Basic validation: ensure guest information is provided
+    if (!guestInfo.name || !guestInfo.email || !guestInfo.phone) {
+      alert("Please provide your name, email and phone number to complete the booking.");
+      return;
+    }
     try {
       // First create the reservation.  We await the result so we can
       // obtain the reservation ID for payment.  If the creation
@@ -152,9 +239,9 @@ export default function CheckoutPage() {
             businessId: booking.hotelId,
             businessType: "hotel",
             customerInfo: {
-              name: "Guest",
-              email: "guest@example.com",
-              phone: "0000000000",
+              name: guestInfo.name,
+              email: guestInfo.email,
+              phone: guestInfo.phone,
             },
             roomId: booking.roomId,
             checkIn: booking.checkIn,
@@ -276,7 +363,7 @@ export default function CheckoutPage() {
                     {extras.map((amenity: any) => (
                       <div key={amenity.name} className="flex justify-between">
                         <span>{amenity.name}</span>
-                        <span>{formatCurrency(amenity.price || 0, currency)}</span>
+                        <span>{formatCurrency(amenity.price || 0, currency, currency)}</span>
                       </div>
                     ))}
                   </>
@@ -287,7 +374,7 @@ export default function CheckoutPage() {
                     {paidOptions.map((opt: any) => (
                       <div key={opt.name} className="flex justify-between">
                         <span>{opt.name}</span>
-                        <span>{formatCurrency(opt.price || 0, currency)}</span>
+                        <span>{formatCurrency(opt.price || 0, currency, currency)}</span>
                       </div>
                     ))}
                   </>
@@ -297,7 +384,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between">
                     <span>{selectedView}</span>
                     <span>
-                      {viewPrice > 0 ? formatCurrency(viewPrice, currency) : t("included")}
+                      {viewPrice > 0 ? formatCurrency(viewPrice, currency, currency) : t("included")}
                     </span>
                   </div>
                 )}
@@ -310,38 +397,69 @@ export default function CheckoutPage() {
               <div className="text-sm text-gray-700 space-y-1 border-t pt-2">
                 <div className="flex justify-between">
                   <span>{t("basePriceLabel")}</span>
-                  <span>{formatCurrency(basePrice, currency)}</span>
+                  <span>{formatCurrency(basePrice, currency, currency)}</span>
                 </div>
                 {/* Cost of selected amenities */}
                 {extrasCost > 0 && (
                   <div className="flex justify-between">
                     <span>{t("extrasLabel")}</span>
-                    <span>{formatCurrency(extrasCost, currency)}</span>
+                    <span>{formatCurrency(extrasCost, currency, currency)}</span>
                   </div>
                 )}
                 {/* Cost of selected paid room options */}
                 {paidOptionsCost > 0 && (
                   <div className="flex justify-between">
                     <span>{t("paidOptionsCostLabel")}</span>
-                    <span>{formatCurrency(paidOptionsCost, currency)}</span>
+                    <span>{formatCurrency(paidOptionsCost, currency, currency)}</span>
                   </div>
                 )}
                 {/* Cost of selected view */}
                 {viewPrice > 0 && (
                   <div className="flex justify-between">
                     <span>{t("viewLabel")}</span>
-                    <span>{formatCurrency(viewPrice, currency)}</span>
+                    <span>{formatCurrency(viewPrice, currency, currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>{t("taxesFeesLabel")}</span>
-                  <span>{formatCurrency(tax, currency)}</span>
+                  <span>{formatCurrency(tax, currency, currency)}</span>
                 </div>
                 <div className="flex justify-between font-semibold mt-2 border-t pt-2">
                   <span>{t("totalPriceLabel")}</span>
-                  <span>{formatCurrency(total, currency)}</span>
+                  <span>{formatCurrency(total, currency, currency)}</span>
                 </div>
               </div>
+            </div>
+            {/* Guest Information Section */}
+            <div className="mt-8 bg-white rounded-lg shadow-md p-4 space-y-4">
+              <h3 className="text-lg font-semibold">Guest Information</h3>
+              <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                value={guestInfo.name}
+                onChange={handleGuestChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                value={guestInfo.email}
+                onChange={handleGuestChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <input
+                type="tel"
+                name="phone"
+                placeholder="Phone Number"
+                value={guestInfo.phone}
+                onChange={handleGuestChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
             </div>
             <div className="flex justify-center items-start">
               {room.images && room.images.length > 0 ? (

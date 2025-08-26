@@ -216,29 +216,29 @@
 //     e.preventDefault();
 //     if (!hotelId) return;
 //     // Convert the comma‑separated amenities and images into arrays
-//     const imagesArray = formState.images
-//       ? formState.images.split(",").map((i) => i.trim()).filter(Boolean)
+//     const imagesArray = formState?.images
+//       ? formState?.images.split(",").map((i) => i.trim()).filter(Boolean)
 //       : [];
 //     // Build the input object matching RoomInput
 //     const input: any = {
 //       hotelId,
-//       number: formState.number,
-//       type: formState.type,
-//       floor: formState.floor !== "" ? Number(formState.floor) : undefined,
-//       capacity: formState.capacity !== "" ? Number(formState.capacity) : undefined,
+//       number: formState?.number,
+//       type: formState?.type,
+//       floor: formState?.floor !== "" ? Number(formState?.floor) : undefined,
+//       capacity: formState?.capacity !== "" ? Number(formState?.capacity) : undefined,
 //       // Price is required in the backend (Float!), so default to 0 when empty
-//       price: formState.price !== "" ? Number(formState.price) : 0,
-//       status: formState.status,
-//       amenities: formState.amenities,
+//       price: formState?.price !== "" ? Number(formState?.price) : 0,
+//       status: formState?.status,
+//       amenities: formState?.amenities,
 //       features: [],
 //       condition: "good",
 //       images: imagesArray,
 
 //       // New descriptive fields
-//       bedType: formState.bedType,
-//       numberOfBeds: formState.numberOfBeds !== "" ? Number(formState.numberOfBeds) : undefined,
-//       numberOfBathrooms: formState.numberOfBathrooms !== "" ? Number(formState.numberOfBathrooms) : undefined,
-//       description: formState.description || undefined,
+//       bedType: formState?.bedType,
+//       numberOfBeds: formState?.numberOfBeds !== "" ? Number(formState?.numberOfBeds) : undefined,
+//       numberOfBathrooms: formState?.numberOfBathrooms !== "" ? Number(formState?.numberOfBathrooms) : undefined,
+//       description: formState?.description || undefined,
 //     };
 //     try {
 //       if (editingId) {
@@ -381,7 +381,7 @@
 //             <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
 //             <input
 //               type="text"
-//               value={formState.number}
+//               value={formState?.number}
 //               onChange={(e) => setFormState({ ...formState, number: e.target.value })}
 //               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 //               required
@@ -390,7 +390,7 @@
 //           <div>
 //             <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
 //             <select
-//               value={formState.type}
+//               value={formState?.type}
 //               onChange={(e) => setFormState({ ...formState, type: e.target.value })}
 //               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 //             >
@@ -404,7 +404,7 @@
 //             <label className="block text-sm font-medium text-gray-700 mb-1">Capacity</label>
 //             <input
 //               type="number"
-//               value={formState.capacity}
+//               value={formState?.capacity}
 //               onChange={(e) =>
 //                 setFormState({ ...formState, capacity: e.target.value === "" ? "" : Number(e.target.value) })
 //               }
@@ -415,7 +415,7 @@
 //             <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
 //             <input
 //               type="number"
-//               value={formState.price}
+//               value={formState?.price}
 //               onChange={(e) =>
 //                 setFormState({ ...formState, price: e.target.value === "" ? "" : Number(e.target.value) })
 //               }
@@ -433,7 +433,7 @@
 //                   <label key={amenity.name} className="flex items-center space-x-2">
 //                     <input
 //                       type="checkbox"
-//                       checked={formState.amenities.includes(amenity.name)}
+//                       checked={formState?.amenities.includes(amenity.name)}
 //                       onChange={(e) => {
 //                         const checked = e.target.checked;
 //                         setFormState((prevState) => {
@@ -461,7 +461,7 @@
 //               <label key={bedType} className="flex items-center space-x-2">
 //                 <input
 //                   type="checkbox"
-//                   checked={formState.bedType.includes(bedType)}
+//                   checked={formState?.bedType.includes(bedType)}
 //                   onChange={(e) => {
 //                     const checked = e.target.checked;
 //                     setFormState((prevState) => {
@@ -482,7 +482,7 @@
 //           <label className="block text-sm font-medium text-gray-700 mb-1">Number of Beds</label>
 //           <input
 //             type="number"
-//             value={formState.numberOfBeds}
+//             value={formState?.numberOfBeds}
 //             onChange={(e) => setFormState({ ...formState, numberOfBeds: e.target.value === "" ? "" : Number(e.target.value) })}
 //             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 //           />
@@ -491,7 +491,7 @@
 //           <label className="block text-sm font-medium text-gray-700 mb-1">Number of Bathrooms</label>
 //           <input
 //             type="number"
-//             value={formState.numberOfBathrooms}
+//             value={formState?.numberOfBathrooms}
 //             onChange={(e) => setFormState({ ...formState, numberOfBathrooms: e.target.value === "" ? "" : Number(e.target.value) })}
 //             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 //           />
@@ -499,7 +499,7 @@
 //         <div className="md:col-span-2">
 //           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
 //           <textarea
-//             value={formState.description}
+//             value={formState?.description}
 //             onChange={(e) => setFormState({ ...formState, description: e.target.value })}
 //             rows={3}
 //             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -541,6 +541,8 @@ import { useState, useEffect, useRef } from "react"
 import type React from "react"
 import { useRouter } from "next/navigation"
 import { gql, useQuery, useMutation } from "@apollo/client"
+// Import currency symbols to display the correct currency next to prices
+import { currencySymbols } from "@/lib/currency"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -604,6 +606,23 @@ const GET_ROOMS = gql`
       numberOfBathrooms
       description
       isActive
+      # Fetch special pricing sessions defined by month/day ranges.  Each
+      # entry specifies a start and end day within the year and a nightly rate.
+      specialPrices {
+        startMonth
+        startDay
+        endMonth
+        endDay
+        price
+      }
+      # Include monthly pricing sessions to allow seasonal rates to be
+      # viewed and edited.  Each session defines a range of months
+      # and a nightly price.  When empty the base price applies.
+      monthlyPrices {
+        startMonth
+        endMonth
+        price
+      }
       # Fetch paid options configured for each room so that they can be
       # pre‑selected when editing.  Each option includes its name,
       # optional description and category, and a price.
@@ -612,6 +631,18 @@ const GET_ROOMS = gql`
         description
         category
         price
+      }
+    }
+  }
+`
+
+// Query to fetch hotel settings such as the currency code.  This is
+// used to display a dynamic currency symbol next to price fields.
+const GET_HOTEL_SETTINGS = gql`
+  query GetHotelSettings($id: ID!) {
+    hotel(id: $id) {
+      settings {
+        currency
       }
     }
   }
@@ -719,9 +750,37 @@ interface RoomFormState {
    * name, optional description and category, and price.
    */
   paidOptions: { name: string; description?: string | null; category?: string | null; price: number }[]
+
+  /**
+   * Array of 12 entries representing the nightly price for each month
+   * (index 0 = January, 11 = December).  Hotel managers can define
+   * seasonal pricing by specifying a value for one or more months.  An
+   * empty string indicates that the base price applies for that month.
+   */
+  monthlyPrices: (number | "")[]
+
+  /**
+   * Special pricing periods for this room.  Each entry contains a
+   * start date and end date (YYYY-MM-DD, year is ignored) and an
+   * optional price.  The picker allows managers to define a range
+   * like 2024-05-15 through 2024-06-10 with a specific nightly rate.
+   * Dates are stored as strings for the form and converted to
+   * startMonth/startDay and endMonth/endDay on submit.  When no
+   * special pricing periods exist the base price (and monthlyPrices)
+   * applies to all nights.
+   */
+  specialPrices: { startDate: string; endDate: string; price: number | "" }[]
 }
 
 const bedTypes = ["Single", "Double", "Queen", "King", "Twin Beds", "Bunk Bed", "Sofa Bed", "Murphy Bed"]
+
+// Names of months used for the monthly pricing inputs.  We abbreviate
+// to keep the labels concise.  These could be localised via the
+// translation hook if needed.
+const monthNames = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+]
 
 export default function HotelRoomsPage() {
   // Business context from the session.  We derive the current hotelId once
@@ -826,6 +885,10 @@ export default function HotelRoomsPage() {
     description: "",
     // Initialize with no paid options selected
     paidOptions: [],
+    // Initialise monthlyPrices with 12 empty strings (not used for date-range pricing but kept for compatibility)
+    monthlyPrices: Array.from({ length: 12 }, () => ""),
+    // Initialise special pricing periods as an empty array
+    specialPrices: [],
   })
 
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -835,6 +898,23 @@ export default function HotelRoomsPage() {
 
   // Translation hook
   const { t } = useTranslation()
+
+  // Fetch the hotel's currency settings so we can display a dynamic
+  // currency symbol next to price inputs.  We skip this query until
+  // hotelId is available.  Defaults to USD if no currency is set.
+  const { data: settingsData } = useQuery(GET_HOTEL_SETTINGS, {
+    variables: { id: hotelId },
+    skip: !hotelId,
+  })
+  const currencyCode: string = settingsData?.hotel?.settings?.currency || 'USD'
+  const currencySymbol: string = currencySymbols[currencyCode] || currencyCode
+  // Generate the price label by replacing the placeholder in the translation
+  // string.  We fallback to a basic "Price" label if the translation is
+  // missing.
+  const priceLabel: string = (() => {
+    const template = t('priceWithCurrency') || 'Price ({currencySymbol})'
+    return template.replace('{currencySymbol}', currencySymbol)
+  })()
 
   // Toast for user feedback
   const { toast } = useToast()
@@ -1167,8 +1247,8 @@ export default function HotelRoomsPage() {
     if (!hotelId) return
 
     // Convert the comma‑separated amenities and images into arrays
-    const imagesArray = formState.images
-      ? formState.images
+    const imagesArray = formState?.images
+      ? formState?.images
         .split(",")
         .map((i) => i.trim())
         .filter(Boolean)
@@ -1177,32 +1257,64 @@ export default function HotelRoomsPage() {
     // Build the input object matching RoomInput
     const input: any = {
       hotelId,
-      number: formState.number,
-      type: formState.type,
-      floor: formState.floor !== "" ? Number(formState.floor) : undefined,
-      capacity: formState.capacity !== "" ? Number(formState.capacity) : undefined,
+      number: formState?.number,
+      type: formState?.type,
+      floor: formState?.floor !== "" ? Number(formState?.floor) : undefined,
+      capacity: formState?.capacity !== "" ? Number(formState?.capacity) : undefined,
       // Price is required in the backend (Float!), so default to 0 when empty
-      price: formState.price !== "" ? Number(formState.price) : 0,
-      status: formState.status,
-      amenities: formState.amenities,
+      price: formState?.price !== "" ? Number(formState?.price) : 0,
+      status: formState?.status,
+      amenities: formState?.amenities,
       features: [],
       condition: "good",
       images: imagesArray,
       // New descriptive fields - extract type strings from bed type objects
-      bedType: formState.bedType.map((bed) => bed.type),
-      numberOfBeds: formState.numberOfBeds !== "" ? Number(formState.numberOfBeds) : undefined,
-      numberOfBathrooms: formState.numberOfBathrooms !== "" ? Number(formState.numberOfBathrooms) : undefined,
-      description: formState.description || undefined,
+      bedType: formState?.bedType.map((bed) => bed.type),
+      numberOfBeds: formState?.numberOfBeds !== "" ? Number(formState?.numberOfBeds) : undefined,
+      numberOfBathrooms: formState?.numberOfBathrooms !== "" ? Number(formState?.numberOfBathrooms) : undefined,
+      description: formState?.description || undefined,
       // Include selected paid options when creating or updating a room.
       // We map each selected option to a plain object containing its
       // name, description, category and price.  When no options are
       // selected the resulting array will be empty.
-      paidOptions: formState.paidOptions.map((o) => ({
+      paidOptions: formState?.paidOptions.map((o) => ({
         name: o.name,
         description: o.description ?? undefined,
         category: o.category ?? undefined,
         price: o.price,
       })),
+      // Convert the per‑month pricing array into monthly pricing sessions.  For each
+      // month with a defined price we create a session starting and
+      // ending in that month.  Months without a value are omitted and
+      // will default to the base price on the backend.
+      monthlyPrices: formState?.monthlyPrices
+        .map((p, idx) => {
+          if (p === "" || p === null || p === undefined) return null
+          return { startMonth: idx + 1, endMonth: idx + 1, price: Number(p) }
+        })
+        .filter((s) => s !== null),
+
+      // Convert special pricing periods from date strings (with dummy
+      // year) into month/day objects.  We only include entries where
+      // both dates and price are defined.  This allows hotel
+      // managers to define arbitrary date ranges for seasonal pricing.
+      specialPrices: formState?.specialPrices
+        .filter((sp) => sp?.startDate && sp?.endDate && sp?.price !== "" && sp?.price != null)
+        .map((sp) => {
+          const partsStart = sp?.startDate.split("-")
+          const partsEnd = sp?.endDate.split("-")
+          const sm = partsStart[1] ? Number(partsStart[1]) : 0
+          const sd = partsStart[2] ? Number(partsStart[2]) : 0
+          const em = partsEnd[1] ? Number(partsEnd[1]) : 0
+          const ed = partsEnd[2] ? Number(partsEnd[2]) : 0
+          return {
+            startMonth: sm,
+            startDay: sd,
+            endMonth: em,
+            endDay: ed,
+            price: Number(sp?.price),
+          }
+        }),
     }
 
     try {
@@ -1244,6 +1356,46 @@ export default function HotelRoomsPage() {
       // Populate selected paid options when editing.  Fallback to an empty
       // array if the field is undefined to avoid leaving stale options.
       paidOptions: Array.isArray(room.paidOptions) ? room.paidOptions : [],
+
+      // Populate special pricing periods.  Convert stored month/day values
+      // into ISO date strings with a dummy year (2024) for the date picker.
+      specialPrices: (() => {
+        if (Array.isArray(room.specialPrices) && room.specialPrices.length > 0) {
+          return room.specialPrices.map((sp: any) => {
+            const mmStart = String(sp?.startMonth).padStart(2, '0');
+            const ddStart = String(sp?.startDay).padStart(2, '0');
+            const mmEnd = String(sp?.endMonth).padStart(2, '0');
+            const ddEnd = String(sp?.endDay).padStart(2, '0');
+            return {
+              startDate: `2024-${mmStart}-${ddStart}`,
+              endDate: `2024-${mmEnd}-${ddEnd}`,
+              price: sp?.price,
+            };
+          });
+        }
+        return [];
+      })(),
+
+      // Build a 12‑month pricing array.  For each month we look for a
+      // pricing session that covers it.  If found we use the session
+      // price; otherwise we fall back to the room's base price if
+      // provided.  The result is an array of length 12 where each
+      // element corresponds to a month (index 0 = January).
+      monthlyPrices: (() => {
+        const arr: (number | "")[] = Array.from({ length: 12 }, () => "")
+        const sessions = Array.isArray(room.monthlyPrices) ? room.monthlyPrices : []
+        for (let m = 1; m <= 12; m++) {
+          const session = sessions.find((s: any) => m >= s.startMonth && m <= s.endMonth)
+          if (session) {
+            arr[m - 1] = session.price
+          } else if (room.price != null) {
+            arr[m - 1] = room.price
+          } else {
+            arr[m - 1] = ""
+          }
+        }
+        return arr
+      })(),
     })
 
     setTimeout(() => {
@@ -1288,7 +1440,7 @@ export default function HotelRoomsPage() {
                 >
                   <input
                     type="checkbox"
-                    checked={formState.paidOptions.some((o) => o.name === option.name)}
+                    checked={formState?.paidOptions.some((o) => o.name === option.name)}
                     onChange={(e) => handlePaidOptionToggle(option, e.target.checked)}
                     className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                   />
@@ -1534,7 +1686,7 @@ export default function HotelRoomsPage() {
                             </div>
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-700">
-                                {t("priceLabel") || "Price"}
+                                {priceLabel || 'Price'}
                               </Label>
                               <Input
                                 type="number"
@@ -1834,7 +1986,7 @@ export default function HotelRoomsPage() {
                   <Input
                     id="number"
                     type="text"
-                    value={formState.number}
+                    value={formState?.number}
                     onChange={(e) => setFormState({ ...formState, number: e.target.value })}
                     className="border-2 border-gray-200 focus:border-blue-500 transition-colors"
                     placeholder="e.g., 101"
@@ -1845,7 +1997,7 @@ export default function HotelRoomsPage() {
                   <Label htmlFor="type" className="text-sm font-semibold text-gray-700">
                     {t("roomTypeLabel")}
                   </Label>
-                  <Select value={formState.type} onValueChange={(value) => setFormState({ ...formState, type: value })}>
+                  <Select value={formState?.type} onValueChange={(value) => setFormState({ ...formState, type: value })}>
                     <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 transition-colors">
                       <SelectValue />
                     </SelectTrigger>
@@ -1876,7 +2028,7 @@ export default function HotelRoomsPage() {
                   <Input
                     id="capacity"
                     type="number"
-                    value={formState.capacity}
+                    value={formState?.capacity}
                     onChange={(e) =>
                       setFormState({ ...formState, capacity: e.target.value === "" ? "" : Number(e.target.value) })
                     }
@@ -1886,12 +2038,12 @@ export default function HotelRoomsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="price" className="text-sm font-semibold text-gray-700">
-                    {t("priceLabel")}
+                    {priceLabel}
                   </Label>
                   <Input
                     id="price"
                     type="number"
-                    value={formState.price}
+                    value={formState?.price}
                     onChange={(e) =>
                       setFormState({ ...formState, price: e.target.value === "" ? "" : Number(e.target.value) })
                     }
@@ -1907,7 +2059,7 @@ export default function HotelRoomsPage() {
                   <Input
                     id="floor"
                     type="number"
-                    value={formState.floor}
+                    value={formState?.floor}
                     onChange={(e) =>
                       setFormState({ ...formState, floor: e.target.value === "" ? "" : Number(e.target.value) })
                     }
@@ -1915,6 +2067,94 @@ export default function HotelRoomsPage() {
                     placeholder="1"
                   />
                 </div>
+              </div>
+
+              {/* Special Pricing Periods */}
+              <div className="space-y-4">
+                <Label className="text-sm font-semibold text-gray-700">
+                  Special Pricing Periods
+                </Label>
+                {formState?.specialPrices?.map((sp, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-xs font-medium text-gray-600">Start Date</span>
+                      <Input
+                        type="date"
+                        value={sp?.startDate}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setFormState((prev) => {
+                            const arr = [...prev.specialPrices]
+                            arr[idx] = { ...arr[idx], startDate: val }
+                            return { ...prev, specialPrices: arr }
+                          })
+                        }}
+                        className="border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-xs font-medium text-gray-600">End Date</span>
+                      <Input
+                        type="date"
+                        value={sp?.endDate}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setFormState((prev) => {
+                            const arr = [...prev.specialPrices]
+                            arr[idx] = { ...arr[idx], endDate: val }
+                            return { ...prev, specialPrices: arr }
+                          })
+                        }}
+                        className="border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col space-y-1">
+                      <span className="text-xs font-medium text-gray-600">Price</span>
+                      <Input
+                        type="number"
+                        value={sp?.price as any}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : Number(e.target.value)
+                          setFormState((prev) => {
+                            const arr = [...prev.specialPrices]
+                            arr[idx] = { ...arr[idx], price: val }
+                            return { ...prev, specialPrices: arr }
+                          })
+                        }}
+                        className="border-2 border-gray-200 focus:border-blue-500 transition-colors"
+                        placeholder={formState?.price ? String(formState?.price) : ''}
+                        min={0}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormState((prev) => {
+                            const arr = [...prev.specialPrices]
+                            arr.splice(idx, 1)
+                            return { ...prev, specialPrices: arr }
+                          })
+                        }}
+                        className="text-red-600 text-xs hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormState((prev) => ({
+                      ...prev,
+                      specialPrices: [...prev.specialPrices, { startDate: '', endDate: '', price: '' }],
+                    }))
+                  }}
+                  className="px-3 py-2 border border-gray-200 rounded text-blue-600 text-sm hover:bg-gray-50"
+                >
+                  Add Period
+                </button>
               </div>
 
               {/* Amenities */}
@@ -1931,7 +2171,7 @@ export default function HotelRoomsPage() {
                       >
                         <input
                           type="checkbox"
-                          checked={formState.amenities.includes(amenity.name)}
+                          checked={formState?.amenities.includes(amenity.name)}
                           onChange={(e) => {
                             const checked = e.target.checked
                             setFormState((prevState) => {
@@ -1956,9 +2196,9 @@ export default function HotelRoomsPage() {
                   {t("bedTypesLabel")}
                 </Label>
                 {/* Selected Bed Types Display */}
-                {formState.bedType.length > 0 && (
+                {formState?.bedType.length > 0 && (
                   <div className="flex flex-wrap gap-2 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-                    {formState.bedType.map((bed) => (
+                    {formState?.bedType.map((bed) => (
                       <Badge
                         key={bed.id}
                         variant="secondary"
@@ -2004,7 +2244,7 @@ export default function HotelRoomsPage() {
                   <Input
                     id="numberOfBeds"
                     type="number"
-                    value={formState.numberOfBeds}
+                    value={formState?.numberOfBeds}
                     onChange={(e) =>
                       setFormState({ ...formState, numberOfBeds: e.target.value === "" ? "" : Number(e.target.value) })
                     }
@@ -2019,7 +2259,7 @@ export default function HotelRoomsPage() {
                   <Input
                     id="numberOfBathrooms"
                     type="number"
-                    value={formState.numberOfBathrooms}
+                    value={formState?.numberOfBathrooms}
                     onChange={(e) =>
                       setFormState({
                         ...formState,
@@ -2039,7 +2279,7 @@ export default function HotelRoomsPage() {
                 </Label>
                 <Textarea
                   id="description"
-                  value={formState.description}
+                  value={formState?.description}
                   onChange={(e) => setFormState({ ...formState, description: e.target.value })}
                   rows={4}
                   className="border-2 border-gray-200 focus:border-blue-500 transition-colors resize-none"
@@ -2054,7 +2294,7 @@ export default function HotelRoomsPage() {
                 </Label>
                 <Textarea
                   id="images"
-                  value={formState.images}
+                  value={formState?.images}
                   onChange={(e) => setFormState({ ...formState, images: e.target.value })}
                   rows={2}
                   className="border-2 border-gray-200 focus:border-blue-500 transition-colors resize-none"

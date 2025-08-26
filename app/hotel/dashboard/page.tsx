@@ -384,6 +384,13 @@ export default function HotelDashboardPage() {
             >
               {t("last6Months") || "Last 6 Months"}
             </button>
+            <button
+              type="button"
+              onClick={() => handleQuickRange(12)}
+              className="px-3 py-1 border rounded-md text-sm bg-white hover:bg-gray-50"
+            >
+              {t("lastYear") || "Last 12 Months"}
+            </button>
           </div>
         </div>
       </div>
@@ -417,7 +424,7 @@ export default function HotelDashboardPage() {
         <div className="bg-white rounded-lg shadow-sm border p-4 flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">{t("revenueToday")}</p>
-            <p className="text-2xl font-semibold text-gray-900">{formatCurrency(stats.revenueToday, currency)}</p>
+            <p className="text-2xl font-semibold text-gray-900">{formatCurrency(stats.revenueToday, currency, currency)}</p>
           </div>
           <DollarSign className="h-8 w-8 text-purple-500" />
         </div>
@@ -432,7 +439,7 @@ export default function HotelDashboardPage() {
                 <BarChart data={stats.monthlyRevenue.map((m: any) => ({ ...m, revenue: convertAmount(m.revenue, 'USD', currency) }))}>
                 <XAxis dataKey="month" stroke="#6b7280" />
                 <YAxis stroke="#6b7280" />
-                <RechartTooltip formatter={(value: any) => formatCurrency(value as number, currency)} />
+                <RechartTooltip formatter={(value: any) => formatCurrency(value as number, currency, currency)} />
                 <Bar dataKey="revenue" fill="#3b82f6" />
               </BarChart>
             </ResponsiveContainer>
@@ -493,7 +500,7 @@ export default function HotelDashboardPage() {
                       {parseDate(r.checkOut)?.toLocaleDateString() || ""}
                     </td>
                     <td className="px-4 py-2">{r.guests}</td>
-                    <td className="px-4 py-2">{formatCurrency(r.totalAmount ?? 0, currency)}</td>
+                    <td className="px-4 py-2">{formatCurrency(r.totalAmount ?? 0, currency, currency)}</td>
                     <td className="px-4 py-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClasses(r.status)}`}>
                         {t(r.status.toLowerCase())}

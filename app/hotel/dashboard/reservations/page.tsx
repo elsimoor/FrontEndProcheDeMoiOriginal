@@ -372,7 +372,7 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
                   <TableCell>{res.checkIn ? new Date(res.checkIn).toLocaleDateString() : "N/A"}</TableCell>
                   <TableCell>{res.checkOut ? new Date(res.checkOut).toLocaleDateString() : "N/A"}</TableCell>
                   <TableCell>{res.guests}</TableCell>
-                  <TableCell>{formatCurrency(res.totalAmount ?? 0, currency)}</TableCell>
+                  <TableCell>{formatCurrency(res.totalAmount ?? 0, currency, currency)}</TableCell>
                   <TableCell>
                     <Badge variant={res.status === 'confirmed' ? 'default' : res.status === 'pending' ? 'secondary' : 'destructive'}>
                       {res.status}

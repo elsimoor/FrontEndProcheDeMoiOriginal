@@ -33,8 +33,10 @@ export default function AdminSidebar() {
     { name: t("hotels"), href: "/admin/hotels", icon: Hotel },
     { name: t("restaurants"), href: "/admin/restaurants", icon: UtensilsCrossed },
     { name: t("salons"), href: "/admin/salons", icon: Scissors },
-    // New approvals page where administrators review pending businesses
+    // Approvals page where administrators review pending businesses
     { name: "Approvals", href: "/admin/approvals", icon: LayoutDashboard },
+    // Users management page for promoting accounts to admin
+    { name: "Users", href: "/admin/users", icon: LayoutDashboard },
   ]
   return (
     <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">

@@ -416,6 +416,19 @@ const GET_ROOMS = gql`
       capacity
       description
       bedType       # <-- added
+      # Fetch date‑range and monthly pricing to compute dynamic rates
+      specialPrices {
+        startMonth
+        startDay
+        endMonth
+        endDay
+        price
+      }
+      monthlyPrices {
+        startMonth
+        endMonth
+        price
+      }
     }
   }
 `
@@ -446,6 +459,19 @@ const GET_AVAILABLE_ROOMS = gql`
       capacity
       description
       bedType       # <-- added
+      # Fetch date‑range and monthly pricing to compute dynamic rates
+      specialPrices {
+        startMonth
+        startDay
+        endMonth
+        endDay
+        price
+      }
+      monthlyPrices {
+        startMonth
+        endMonth
+        price
+      }
     }
   }
 `
@@ -532,27 +558,105 @@ export default function RoomsListPage() {
   // Normalize
   const roomsArray: any[] = roomsData?.rooms ?? roomsData?.availableRooms ?? []
 
-  // Group rooms by type, keep first room as representative, count items
+  // Compute the number of nights for the selected date range.  If no
+  // dates are provided (i.e. the search page is loaded without check‑in
+  // and check‑out), nights will be zero and the base price is used.
+  const nights = hasDates && checkIn && checkOut
+    ? Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24))
+    : 0
+
+  /**
+   * Calculate the total cost of a stay for a given room using the
+   * date‑range and monthly pricing rules.  Pricing precedence:
+   * 1. If the night falls within a special pricing period, use that rate.
+   * 2. Otherwise, if a monthly pricing session covers the month, use that rate.
+   * 3. Otherwise, use the room's base price.
+   * Date ranges may wrap the year boundary; this helper correctly
+   * determines if a date falls within such ranges.  Returns 0 when
+   * check‑in/out are missing.
+   */
+  function calculatePriceForStay(room: any, startDate: string, endDate: string): number {
+    if (!room || !startDate || !endDate) return 0
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    let total = 0
+    for (let date = new Date(start); date < end; date.setDate(date.getDate() + 1)) {
+      const m = date.getMonth() + 1 // month (1–12)
+      const d = date.getDate() // day of month
+      let nightly = room.price
+      let appliedSpecial = false
+      // Special pricing periods take highest precedence
+      if (Array.isArray(room.specialPrices) && room.specialPrices.length > 0) {
+        const spSession = room.specialPrices.find((sp: any) => {
+          const { startMonth, startDay, endMonth, endDay } = sp
+          if (startMonth < endMonth || (startMonth === endMonth && startDay <= endDay)) {
+            // Range does not cross year boundary
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) &&
+              (m < endMonth || (m === endMonth && d <= endDay))
+            )
+          } else {
+            // Range crosses year boundary
+            return (
+              (m > startMonth || (m === startMonth && d >= startDay)) ||
+              (m < endMonth || (m === endMonth && d <= endDay))
+            )
+          }
+        })
+        if (spSession) {
+          nightly = spSession.price
+          appliedSpecial = true
+        }
+      }
+      // Monthly pricing when no special price applies
+      if (!appliedSpecial && Array.isArray(room.monthlyPrices) && room.monthlyPrices.length > 0) {
+        const mpSession = room.monthlyPrices.find((mp: any) => m >= mp.startMonth && m <= mp.endMonth)
+        if (mpSession) nightly = mpSession.price
+      }
+      total += nightly
+    }
+    return total
+  }
+
+  // Group rooms by type and compute an average nightly price for the
+  // selected date range.  When nights=0 (no check‑in/out provided) the
+  // base price is used.  If multiple rooms of the same type exist,
+  // choose the lowest average nightly price among them to display to
+  // the user.
   const grouped: Record<string, any> = {}
   roomsArray.forEach((room: any) => {
     if (!room) return
     if (!roomsData?.availableRooms && room.status !== "available") return
-
+    // Compute the per‑night price for this room given the current dates
+    let perNight = room.price
+    if (nights > 0 && checkIn && checkOut) {
+      const total = calculatePriceForStay(room, checkIn, checkOut)
+      perNight = nights > 0 ? total / nights : room.price
+    }
     if (!grouped[room.type]) {
       grouped[room.type] = {
         type: room.type,
-        price: room.price,
+        price: perNight,
         amenities: room.amenities || [],
         features: room.features || [],
         image: room.images?.[0] ?? null,
         roomId: room.id,
         description: room.description,
         count: 1,
-        // --- KEY: format from room.bedType ---
         bedInfo: formatBedTypes(room.bedType),
       }
     } else {
       grouped[room.type].count += 1
+      // Keep the lowest per‑night price among rooms of the same type
+      if (perNight < grouped[room.type].price) {
+        grouped[room.type].price = perNight
+        grouped[room.type].roomId = room.id
+        grouped[room.type].image = room.images?.[0] ?? grouped[room.type].image
+        grouped[room.type].description = room.description
+        grouped[room.type].amenities = room.amenities || grouped[room.type].amenities
+        grouped[room.type].features = room.features || grouped[room.type].features
+        grouped[room.type].bedInfo = formatBedTypes(room.bedType)
+      }
     }
   })
 
@@ -744,7 +848,7 @@ export default function RoomsListPage() {
                   {/* Price */}
                   <div className="w-32 p-6 flex flex-col justify-center items-end">
                     <span className="text-xl font-bold text-gray-900">
-                      {formatCurrency(room.price, currency)}{t("perNight")}
+                      {formatCurrency(room.price, currency, currency)}{t("perNight")}
                     </span>
                   </div>
                 </div>

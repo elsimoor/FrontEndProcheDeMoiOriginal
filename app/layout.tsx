@@ -5,6 +5,7 @@ import { Inter } from "next/font/google"
 import ClientApolloProvider from "@/components/ClientApolloProvider"
 import { LanguageProvider } from "@/context/LanguageContext"
 // import { AuthProvider } from "@/context/AuthContext"
+import Clarity from '@microsoft/clarity';
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -13,6 +14,12 @@ export const metadata: Metadata = {
   description: "Comprehensive dashboard for hotel, restaurant, and salon management",
   generator: 'v0.dev'
 }
+
+
+
+const projectId = "t0fm911f9d"
+
+Clarity.init(projectId);
 
 export default function RootLayout({
   children,

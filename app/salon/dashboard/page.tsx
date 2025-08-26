@@ -419,6 +419,13 @@ export default function SalonDashboard() {
             >
               {t('last6Months') || 'Last 6 Months'}
             </button>
+            <button
+              type="button"
+              onClick={() => handleQuickRange(12)}
+              className="px-3 py-1 border rounded-md text-sm bg-white hover:bg-gray-50"
+            >
+              {t('lastYear') || 'Last 12 Months'}
+            </button>
           </div>
         </div>
       </div>
