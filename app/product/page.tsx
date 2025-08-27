@@ -170,7 +170,13 @@ export default function ProductPage() {
 
               <div className="space-y-3">
                 <Link
-                  href="/restaurant"
+                  // Direct visitors interested in the restaurant module to the public
+                  // reservation portal instead of the internal dashboard.  The
+                  // `/u/accueil` route hosts the new user-facing booking and
+                  // privatisation flows for restaurants.  Using this link
+                  // provides a seamless transition from the product page to
+                  // the customer reservation experience.
+                  href="/u/accueil"
                   className="block w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-6 rounded-xl text-center font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200"
                 >
                   {t("learnMore")}

@@ -470,19 +470,33 @@ export default function PaymentSuccessPage() {
                           // prevents the helper from assuming the amount is already in USD when the restaurant
                           // currency is MAD.  If the businessType is unknown, default to MAD as well.
                           const businessType = reservationData.reservation.businessType?.toLowerCase?.() || ''
-                          const targetCurrency = businessType === 'restaurant' ? 'MAD' : 'USD'
-                          // When displaying the total amount we assume the
-                          // reservation amount is already recorded in the
-                          // restaurant's currency.  Passing the same
-                          // currency as both the target and base prevents
-                          // the helper from applying an unnecessary
-                          // conversion (e.g. 200DH -> 20DH).  The
-                          // exchangeRates table is then only used when
-                          // converting between distinct currencies.
+                          /*
+                           * Determine the display currency based on the module.  For
+                           * restaurant and salon bookings we assume the total
+                           * amount is stored in the platform’s base currency
+                           * (USD).  To display the value in Moroccan Dirhams
+                           * (MAD) we convert from USD using the helper.  For
+                           * hotels we display the amount in USD by default.  If
+                           * the business type is unknown we also fall back to
+                           * MAD to avoid dividing the price by the exchange
+                           * rate (e.g. 550 MAD being displayed as 55 MAD).
+                           */
+                          let targetCurrency: string
+                          if (businessType === 'restaurant' || businessType === 'salon') {
+                            targetCurrency = 'MAD'
+                          } else {
+                            targetCurrency = 'USD'
+                          }
+                          // Always assume the stored amount is in USD for the
+                          // purposes of conversion.  Passing 'USD' as the
+                          // baseCurrency ensures that values saved in USD are
+                          // multiplied by the MAD exchange rate when
+                          // appropriate.  When targetCurrency is USD this is
+                          // effectively a no‑op.
                           const formatted = formatCurrency(
                             reservationData.reservation.totalAmount ?? 0,
                             targetCurrency,
-                            targetCurrency
+                            'USD'
                           )
                           return formatted
                         })()

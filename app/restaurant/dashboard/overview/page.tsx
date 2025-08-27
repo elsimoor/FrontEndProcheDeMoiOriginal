@@ -114,14 +114,48 @@ export default function RestaurantOverviewPage() {
   // single selectedDate state for the calendar and reservation table.
   const [startRange, setStartRange] = useState<Date | undefined>(() => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    /*
+     * Initialise the start of the date range to the beginning of today.
+     * We explicitly set the time components (hours/minutes/seconds/ms)
+     * to 00:00:00.000 so that when this date is converted to an ISO
+     * string (and truncated to YYYY‑MM‑DD) it represents the same
+     * calendar day regardless of the local timezone.  Without
+     * resetting the time, a Date created at the current time would
+     * include the current hours/minutes which, when passed through
+     * moment.utc, could shift the date one day backwards in UTC and
+     * cause off‑by‑one errors in the backend filters.
+     */
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    d.setHours(0, 0, 0, 0);
+    return d;
   });
-  const [endRange, setEndRange] = useState<Date | undefined>(() => new Date());
+  const [endRange, setEndRange] = useState<Date | undefined>(() => {
+    const now = new Date();
+    /*
+     * Initialise the end of the date range to the very end of today.
+     * Setting the time to 23:59:59.999 ensures that reservations
+     * created at any time today are included when filtering on
+     * createdAt <= endRange.  If we leave the time at 00:00:00 the
+     * end date would represent the start of the day which excludes
+     * bookings made later the same day.
+     */
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    d.setHours(23, 59, 59, 999);
+    return d;
+  });
   // Helper to quickly set a range relative to today for metrics.
   const handleQuickRange = (months: number) => {
+    // Compute a date range relative to today.  The end date is always the
+    // current day at 23:59:59.999, and the start date is the same day
+    // a given number of months ago at 00:00:00.000.  Without
+    // normalising the times this range would exclude same‑day
+    // reservations because the end date would default to 00:00 and thus
+    // not include later timestamps.
     const end = new Date();
+    end.setHours(23, 59, 59, 999);
     const start = new Date();
     start.setMonth(start.getMonth() - months);
+    start.setHours(0, 0, 0, 0);
     setStartRange(start);
     setEndRange(end);
   };
@@ -151,9 +185,19 @@ export default function RestaurantOverviewPage() {
 
   const { data: metricsData, loading: metricsLoading, error: metricsError } = useQuery(GET_DASHBOARD_METRICS, {
     variables: {
-        restaurantId,
-        from: startRange ? moment.utc(startRange).format("YYYY-MM-DD") : undefined,
-        to: endRange ? moment.utc(endRange).format("YYYY-MM-DD") : undefined,
+      restaurantId,
+      /*
+       * Pass the range boundaries as full ISO 8601 timestamps rather than
+       * truncating to the date portion.  When only a date string is
+       * provided, moment.utc() interprets it as midnight UTC which can
+       * inadvertently exclude same‑day reservations when the user’s
+       * local timezone is ahead of UTC.  By sending complete ISO
+       * timestamps (e.g. `2025‑08‑27T00:00:00.000Z` and
+       * `2025‑08‑27T23:59:59.999Z`), the backend correctly expands them to
+       * the start and end of the day in UTC without shifting the date.
+       */
+      from: startRange ? startRange.toISOString() : undefined,
+      to: endRange ? endRange.toISOString() : undefined,
     },
     skip: !restaurantId || !startRange || !endRange,
   });
@@ -168,8 +212,14 @@ export default function RestaurantOverviewPage() {
 
   const { data: reservationsData, loading: reservationsLoading, refetch: refetchReservations } = useQuery(GET_RESERVATIONS_BY_DATE, {
     variables: {
-        restaurantId,
-        date: moment.utc(selectedDate).format("YYYY-MM-DD"),
+      restaurantId,
+      // Provide the full ISO timestamp for the selected date.  The
+      // reservationsByDate resolver expects a date in UTC and will
+      // normalise it to the start of the day and add one day.  Passing
+      // an ISO timestamp avoids off‑by‑one errors when the user’s
+      // timezone differs from UTC.  If no date is selected we skip
+      // specifying the variable entirely.
+      date: selectedDate ? selectedDate.toISOString() : undefined,
     },
     skip: !restaurantId || !selectedDate,
   });
@@ -301,8 +351,21 @@ export default function RestaurantOverviewPage() {
             <input
               id="overview-start"
               type="date"
-              value={startRange ? moment.utc(startRange).format('YYYY-MM-DD') : ''}
-              onChange={(e) => setStartRange(e.target.value ? new Date(e.target.value) : undefined)}
+              value={startRange
+                ? `${startRange.getFullYear()}-${String(startRange.getMonth() + 1).padStart(2, '0')}-${String(
+                    startRange.getDate()
+                  ).padStart(2, '0')}`
+                : ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  const d = new Date(e.target.value);
+                  // Normalize to the start of the selected day (00:00)
+                  d.setHours(0, 0, 0, 0);
+                  setStartRange(d);
+                } else {
+                  setStartRange(undefined);
+                }
+              }}
               className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </div>
@@ -313,8 +376,21 @@ export default function RestaurantOverviewPage() {
             <input
               id="overview-end"
               type="date"
-              value={endRange ? moment.utc(endRange).format('YYYY-MM-DD') : ''}
-              onChange={(e) => setEndRange(e.target.value ? new Date(e.target.value) : undefined)}
+              value={endRange
+                ? `${endRange.getFullYear()}-${String(endRange.getMonth() + 1).padStart(2, '0')}-${String(
+                    endRange.getDate()
+                  ).padStart(2, '0')}`
+                : ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  const d = new Date(e.target.value);
+                  // Normalize to the end of the selected day (23:59:59.999)
+                  d.setHours(23, 59, 59, 999);
+                  setEndRange(d);
+                } else {
+                  setEndRange(undefined);
+                }
+              }}
               className="border border-gray-300 rounded-md p-2 text-sm"
             />
           </div>

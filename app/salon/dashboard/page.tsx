@@ -80,20 +80,46 @@ export default function SalonDashboard() {
   const [sessionLoading, setSessionLoading] = useState(true)
   const [sessionError, setSessionError] = useState<string | null>(null)
 
-  // Date range for filtering dashboard statistics.  Defaults to the
-  // beginning of the current month through today.  Changing these
-  // values will recompute analytics relative to the chosen period.
+  // Date range for filtering dashboard statistics.  Defaults to today
+  // for both start and end.  This aligns the salon dashboard
+  // overview with the revenue recognition policy used across
+  // modules, showing bookings made today by default.  Users can
+  // still extend the range via the date inputs or quick range buttons.
   const [startDate, setStartDate] = useState<Date | undefined>(() => {
     const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
+    // Initialise the start date to today at 00:00 local time.  Setting
+    // the time explicitly prevents toISOString() from shifting the
+    // date into the previous day when converting to UTC.  This value
+    // will later be normalised to the start of the day within the
+    // analytics computation.
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    d.setHours(0, 0, 0, 0)
+    return d
   })
-  const [endDate, setEndDate] = useState<Date | undefined>(() => new Date())
+  const [endDate, setEndDate] = useState<Date | undefined>(() => {
+    const now = new Date()
+    // Initialise the end date to the very end of today (23:59:59.999).
+    // Without this, the default time of 00:00 would cause the
+    // analytics filter to exclude bookings created later in the day.
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    d.setHours(23, 59, 59, 999)
+    return d
+  })
   // Helper to quickly set a range relative to today.  The end date is
   // always today and the start date is the given number of months ago.
   const handleQuickRange = (months: number) => {
+    // Quickly set a range spanning the given number of months back from today.
+    // The start date is normalised to 00:00 and the end date to
+    // 23:59:59.999 to ensure all reservations created on the end day
+    // are included.  Without adjusting the time components the end
+    // date would default to midnight, excluding bookings later in the
+    // day and forcing users to extend the range by one day to see
+    // today’s reservations.
     const end = new Date()
+    end.setHours(23, 59, 59, 999)
     const start = new Date()
     start.setMonth(start.getMonth() - months)
+    start.setHours(0, 0, 0, 0)
     setStartDate(start)
     setEndDate(end)
   }
@@ -220,8 +246,19 @@ export default function SalonDashboard() {
    */
   const analytics = useMemo(() => {
     // If no range is selected, default to the current month through today.
+    // Convert the start and end dates to Date objects and normalise
+    // them to span the entire day.  The start date is set to
+    // midnight (00:00) and the end date is set to 23:59:59.999.  If
+    // we leave the default time at 00:00 for the end date, any
+    // reservation created later in the same day would not satisfy
+    // `d <= end` and thus be excluded from the filtered set.  This
+    // adjustment ensures that selecting a date range like
+    // 2025‑08‑27 to 2025‑08‑27 includes all bookings created on
+    // 2025‑08‑27 regardless of their creation time.
     const start = startDate ? new Date(startDate) : new Date()
+    start.setHours(0, 0, 0, 0)
     const end = endDate ? new Date(endDate) : new Date()
+    end.setHours(23, 59, 59, 999)
     // Ensure start is not after end
     if (start > end) {
       return {
@@ -235,9 +272,15 @@ export default function SalonDashboard() {
         recent: [],
       }
     }
-    // Filter reservations within the selected period
+    // Filter reservations within the selected period based on when the
+    // booking was created rather than the service date.  Using
+    // r.createdAt ensures that bookings scheduled in the future are
+    // attributed to the day they were made.  If createdAt is missing
+    // (which should be rare) we exclude the reservation from the
+    // filtered set.
     const filtered = reservations.filter((r) => {
-      const d = new Date(r.date)
+      if (!r.createdAt) return false
+      const d = new Date(r.createdAt)
       return d >= start && d <= end
     })
     const totalBookings = filtered.length
@@ -269,12 +312,16 @@ export default function SalonDashboard() {
       const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
       const count = filtered.filter((r) => {
-        const d = new Date(r.date)
+        if (!r.createdAt) return false
+        const d = new Date(r.createdAt)
         return d >= monthStart && d <= monthEnd
       }).length
       trends.push({ name: label, bookings: count })
     }
-    // Revenue by service type
+    // Revenue by service type: compute totals based on filtered
+    // reservations.  Each reservation contributes its service price if
+    // the booking was created within the selected period.  Service
+    // names default to "Autre" when undefined.
     const revenueByService: { name: string; revenue: number }[] = []
     Object.keys(serviceCounts).forEach((name) => {
       const revenue = filtered
@@ -282,18 +329,36 @@ export default function SalonDashboard() {
         .reduce((sum, r) => sum + (r.serviceId?.price || 0), 0)
       revenueByService.push({ name, revenue })
     })
-    // Recent bookings (5 most recent within the period)
+    // Recent bookings (5 most recent within the period) based on creation date
     const recent = [...filtered]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return db - da
+      })
       .slice(0, 5)
     return {
-      filtered,
+      /*
+       * Include the full list of reservations that fall within the selected
+       * date range.  This mirrors the hotel dashboard’s behaviour of
+       * displaying all bookings created today by default and allows the
+       * table below to list every matching reservation instead of a
+       * truncated “recent” subset.  The `reservationsInRange` array is
+       * identical to the filtered list computed above.
+       */
+      reservationsInRange: filtered,
       totalBookings,
       totalRevenue,
       occupancyRate,
       distribution,
       trends,
       revenueByService,
+      /*
+       * Keep the recent bookings list for compatibility with the
+       * existing “Réservations récentes” section.  This list is the
+       * 5 most recently created reservations within the period and is
+       * sorted in descending order by createdAt.
+       */
       recent,
     }
   }, [reservations, services, staff, startDate, endDate])
@@ -374,10 +439,19 @@ export default function SalonDashboard() {
             <input
               id="salon-start"
               type="date"
-              value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
+              value={startDate
+                ? `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+                : ''}
               onChange={(e) => {
                 const value = e.target.value
-                setStartDate(value ? new Date(value) : undefined)
+                if (value) {
+                  const d = new Date(value)
+                  // Normalise the start date to the beginning of the selected day
+                  d.setHours(0, 0, 0, 0)
+                  setStartDate(d)
+                } else {
+                  setStartDate(undefined)
+                }
               }}
               className="border border-gray-300 rounded-md p-2 text-sm"
             />
@@ -389,10 +463,19 @@ export default function SalonDashboard() {
             <input
               id="salon-end"
               type="date"
-              value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
+              value={endDate
+                ? `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+                : ''}
               onChange={(e) => {
                 const value = e.target.value
-                setEndDate(value ? new Date(value) : undefined)
+                if (value) {
+                  const d = new Date(value)
+                  // Normalise the end date to the end of the selected day
+                  d.setHours(23, 59, 59, 999)
+                  setEndDate(d)
+                } else {
+                  setEndDate(undefined)
+                }
               }}
               className="border border-gray-300 rounded-md p-2 text-sm"
             />
@@ -527,6 +610,78 @@ export default function SalonDashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/*
+       * Reservations table for the selected date range.  This mirrors the
+       * hotel dashboard by listing all reservations whose creation
+       * date falls between the chosen start and end dates.  When the
+       * range spans only a single day (the default), the table
+       * effectively shows today’s bookings.  If there are no
+       * reservations in the period a friendly message is displayed.
+       */}
+      <div className="bg-white rounded-lg shadow-sm border p-4">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">{t('todaysReservations')}</h2>
+        {analytics.reservationsInRange.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-left divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t('clientLabel')}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t('serviceLabel')}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t('dateLabelColumn')}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t('timeLabel')}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t('staffLabel')}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t('amount') || 'Amount'}</th>
+                  <th className="px-4 py-2 font-medium text-gray-700">{t('statusLabelColumn')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {analytics.reservationsInRange.map((booking: any) => (
+                  <tr key={booking.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-900">
+                      {booking.customerInfo?.name || '—'}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                      {booking.serviceId?.name || '—'}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                      {booking.date}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                      {booking.time || '—'}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                      {booking.staffId?.name || '—'}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                      {formatCurrency(booking.serviceId?.price || 0, currency)}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          booking.status === 'confirmed'
+                            ? 'bg-green-100 text-green-800'
+                            : booking.status === 'completed'
+                            ? 'bg-purple-100 text-purple-800'
+                            : booking.status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : booking.status === 'cancelled'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {t(booking.status as any)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>{t('noReservationsToday')}</p>
+        )}
       </div>
 
       {/* Recent bookings */}

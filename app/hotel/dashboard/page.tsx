@@ -121,14 +121,14 @@ export default function HotelDashboardPage() {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  // Date range for filtering dashboard statistics.  Defaults to the
-  // beginning of the current month through today.  Changing these
-  // values will recompute statistics for the selected period.  We
-  // store ISO date strings to match the native date input format.
+  // Date range for filtering dashboard statistics.  Defaults to today for
+  // both the start and end date.  This ensures that the dashboard
+  // overview initially reflects bookings made today instead of the
+  // entire month.  The user can still expand the range via the
+  // date inputs and quick range buttons.
   const [startDate, setStartDate] = useState<string>(() => {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return start.toISOString().split("T")[0];
+    return now.toISOString().split("T")[0];
   });
   const [endDate, setEndDate] = useState<string>(() => {
     const now = new Date();
@@ -214,20 +214,34 @@ export default function HotelDashboardPage() {
     // Parse the start and end dates.  If they are empty strings
     // (which should not happen), default to today so comparisons
     // always have a valid date object.
+    // Parse the start and end dates and normalise them to full‑day
+    // boundaries.  Without adjusting the end time to the last
+    // millisecond of the selected day, the filter below would
+    // exclude reservations created later on the same day (e.g. a
+    // booking at 15:00 would not satisfy `createdAt <= end` when
+    // `end` is 00:00).  We therefore set the start to 00:00 and the
+    // end to 23:59:59.999 to make the range inclusive of the entire
+    // end date.  When either startDate or endDate is undefined we
+    // fall back to today.
     const start = startDate ? new Date(startDate) : new Date();
+    // Normalise start to the beginning of the day
+    start.setHours(0, 0, 0, 0);
     const end = endDate ? new Date(endDate) : new Date();
+    // Normalise end to the end of the day to include all times on
+    // that date
+    end.setHours(23, 59, 59, 999);
 
-    // Filter reservations whose creation or check‑in date falls within
-    // the selected range.  We treat a reservation as part of the
-    // range if either its creation date or its check‑in date lies
-    // between the start and end dates (inclusive).
+    // Filter reservations whose creation date falls within the selected range.
+    // Previously we included reservations based on either their creation or
+    // check‑in date, which caused bookings made earlier but checking in
+    // today to appear in today’s revenue.  To accurately reflect
+    // revenue generated on the day the booking was placed, we only
+    // match on the reservation’s createdAt timestamp.  Reservations
+    // lacking a createdAt (unlikely) are excluded from the range.
     const reservationsInRange = reservations.filter((r: any) => {
       const createdAt = parseDate(r.createdAt);
-      const checkIn = parseDate(r.checkIn);
-      let match = false;
-      if (createdAt && createdAt >= start && createdAt <= end) match = true;
-      if (checkIn && checkIn >= start && checkIn <= end) match = true;
-      return match;
+      if (!createdAt) return false;
+      return createdAt >= start && createdAt <= end;
     });
 
     // Guests currently staying within the range: a reservation counts
@@ -262,18 +276,19 @@ export default function HotelDashboardPage() {
 
     // Monthly revenue for the last six months relative to the end
     // date.  Each month is represented as an object with a label and
-    // total revenue aggregated from reservations with check‑in or
-    // creation dates in that month.
+    // total revenue aggregated from reservations based on their
+    // creation date rather than check‑in.  Using createdAt aligns the
+    // monthly revenue chart with the revenue recognition policy used
+    // elsewhere in the dashboard.  If createdAt is missing we ignore
+    // the reservation for monthly totals.
     const months = getLastSixMonths(end);
     const monthlyRevenue = months.map(({ month, year }) => {
       const total = reservations.reduce((acc: number, r: any) => {
-        const checkIn = parseDate(r.checkIn);
         const createdAt = parseDate(r.createdAt);
-        const date = checkIn || createdAt;
         if (
-          date &&
-          date.getFullYear() === year &&
-          date.toLocaleString(undefined, { month: "short" }) === month
+          createdAt &&
+          createdAt.getFullYear() === year &&
+          createdAt.toLocaleString(undefined, { month: "short" }) === month
         ) {
           return acc + (r.totalAmount || 0);
         }
