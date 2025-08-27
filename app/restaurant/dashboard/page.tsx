@@ -628,9 +628,12 @@ const UPDATE_RESERVATION_DETAILS = gql`
     }
 `
 
+// Use the admin mutation to cancel a reservation from the restaurant dashboard.
+// We keep the operation name as CancelReservation but call the backend
+// field `cancelReservationAdmin` to properly cancel as admin.
 const CANCEL_RESERVATION = gql`
     mutation CancelReservation($id: ID!) {
-        cancelReservation(id: $id) {
+        cancelReservationAdmin(id: $id) {
             id
         }
     }
@@ -790,13 +793,17 @@ export default function RestaurantOverviewPage() {
   }
 
   // Fetch restaurant settings to determine the currency.  Skip until
-  // restaurantId is known.  Default to EUR if no setting is provided.
+  // restaurantId is known.  Default to MAD (Dirham) if no setting is provided
+  // to ensure prices and metrics are shown consistently in the local
+  // currency.
   const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
     variables: { id: restaurantId },
     skip: !restaurantId,
   })
-  const currency: string = settingsData?.restaurant?.settings?.currency || "EUR"
-  const currencySymbol: string = currencySymbols[currency] || "€"
+  const currency: string = settingsData?.restaurant?.settings?.currency || "MAD"
+  // Determine the currency symbol; fallback to the currency code itself
+  // when not defined.  Avoid defaulting to Euro.
+  const currencySymbol: string = currencySymbols[currency] ?? currency
 
   const handleCancelReservation = async () => {
     if (!cancelingReservationId) return

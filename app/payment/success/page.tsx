@@ -206,6 +206,8 @@ import { useLanguage } from "@/context/LanguageContext"
 import { gql, useMutation, useQuery } from "@apollo/client"
 import { useEffect } from "react"
 import { CheckCircle, Download, Calendar, Clock, Users, FileText, Mail, User } from "lucide-react"
+// Import currency helpers to format the total amount correctly
+import { formatCurrency, currencySymbols } from '@/lib/currency'
 
 // GraphQL mutation to confirm a reservation after payment success.  This
 // updates the reservation status to confirmed, marks the payment as
@@ -460,7 +462,31 @@ export default function PaymentSuccessPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-medium text-gray-700">Total Amount</span>
                     <span className="text-2xl font-bold text-emerald-600">
-                      {reservationData.reservation.totalAmount.toFixed(2)} MAD
+                      {
+                        (() => {
+                          // Determine the display currency.  For restaurant bookings we default to MAD (DH),
+                          // otherwise fall back to USD.  When amounts are stored in the base currency (USD),
+                          // convert them into the target currency.  Passing the base currency as 'USD'
+                          // prevents the helper from assuming the amount is already in USD when the restaurant
+                          // currency is MAD.  If the businessType is unknown, default to MAD as well.
+                          const businessType = reservationData.reservation.businessType?.toLowerCase?.() || ''
+                          const targetCurrency = businessType === 'restaurant' ? 'MAD' : 'USD'
+                          // When displaying the total amount we assume the
+                          // reservation amount is already recorded in the
+                          // restaurant's currency.  Passing the same
+                          // currency as both the target and base prevents
+                          // the helper from applying an unnecessary
+                          // conversion (e.g. 200DH -> 20DH).  The
+                          // exchangeRates table is then only used when
+                          // converting between distinct currencies.
+                          const formatted = formatCurrency(
+                            reservationData.reservation.totalAmount ?? 0,
+                            targetCurrency,
+                            targetCurrency
+                          )
+                          return formatted
+                        })()
+                      }
                     </span>
                   </div>
                 </div>

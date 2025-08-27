@@ -50,9 +50,13 @@ const UPDATE_RESERVATION_DETAILS = gql`
     }
 `;
 
+// The dashboard uses the admin mutation to cancel a reservation.  The
+// underlying field name is `cancelReservationAdmin` but we keep the
+// operation name as `CancelReservation` for clarity.  This calls the
+// correct backend resolver and returns the cancelled reservation ID.
 const CANCEL_RESERVATION = gql`
     mutation CancelReservation($id: ID!) {
-        cancelReservation(id: $id) {
+        cancelReservationAdmin(id: $id) {
             id
         }
     }
@@ -206,8 +210,14 @@ export default function RestaurantOverviewPage() {
     variables: { id: restaurantId },
     skip: !restaurantId,
   });
-  const currency: string = settingsData?.restaurant?.settings?.currency || 'EUR';
-  const currencySymbol: string = currencySymbols[currency] || '€';
+  // Use MAD (Moroccan Dirham) as the fallback currency when the restaurant
+  // settings do not define a specific currency.  This ensures that all
+  // dashboard metrics and revenue figures display in Dirhams by default.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'MAD';
+  // Determine the currency symbol; fallback to the currency code itself
+  // when not defined.  Avoid defaulting to Euro which can cause
+  // confusion for restaurants operating with other currencies.
+  const currencySymbol: string = currencySymbols[currency] ?? currency;
 
   const handleCancelReservation = async () => {
     if (!cancelingReservationId) return;

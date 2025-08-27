@@ -166,7 +166,7 @@
 //                           <SelectItem key={menuDetail.nom} value={menuDetail.nom}>
 //                             {/* Display menu name and its price converted into the restaurant's currency. */}
 //                             {menuDetail.nom}
-//                             {menuDetail.prix ? ` - ${formatCurrency(menuDetail.prix, currency)}` : ''}
+//                             {menuDetail.prix ? ` - ${formatCurrency(menuDetail.prix, currency, currency)}` : ''}
 //                           </SelectItem>
 //                         ))
 //                       : selectedOption?.menusDeGroupe?.map((m) => (
@@ -289,12 +289,12 @@ function PrivatisationContent() {
   })
 
   // Fetch the restaurant currency for formatting menu prices.  Skip
-  // until we know the restaurantId.  Default to USD if not set.
+  // until we know the restaurantId.  Default to MAD (Dirham) if not set.
   const { data: settingsData } = useQuery(GET_RESTAURANT_SETTINGS, {
     variables: { id: restaurantId },
     skip: !restaurantId,
   })
-  const currency: string = settingsData?.restaurant?.settings?.currency || "USD"
+  const currency: string = settingsData?.restaurant?.settings?.currency || "MAD"
 
   const selectedOption = data?.privatisationOptionsByRestaurant.find((opt) => opt.id === selectedOptionId)
 
@@ -404,7 +404,9 @@ function PrivatisationContent() {
                                 <span>{menuDetail.nom}</span>
                                 {menuDetail.prix && (
                                   <span className="text-orange-600 font-semibold ml-2">
-                                    {formatCurrency(menuDetail.prix, currency)}
+                                    {/* Prices stored on privatisation options are already expressed in the restaurant's currency.  Passing
+                                     * the currency as both the target and base prevents conversion (e.g. USD→MAD). */}
+                                    {formatCurrency(menuDetail.prix, currency, currency)}
                                   </span>
                                 )}
                               </div>

@@ -94,7 +94,10 @@ export default function RestaurantPaymentsPage() {
     variables: { id: businessId },
     skip: !businessId,
   });
-  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
+  // Default to MAD (Dirham) when the restaurant's currency is not
+  // specified.  This ensures payment amounts are converted and
+  // displayed consistently in the local currency.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'MAD';
 
   if (sessionLoading || loading) {
     return <div className="p-6">{t("loading")}</div>;

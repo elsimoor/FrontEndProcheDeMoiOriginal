@@ -90,9 +90,10 @@ export default function RestaurantLandingCardsPage() {
     skip: !businessId,
   });
 
-  // Determine the currency and a friendly symbol.  Default to USD if
-  // settings are unavailable.
-  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
+  // Determine the currency and a friendly symbol.  Default to MAD (Dirham)
+  // if settings are unavailable, ensuring card prices display in the
+  // local currency by default.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'MAD';
   const currencySymbol: string = currencySymbols[currency] ?? currency;
   const [createLandingCard, { loading: creating }] = useMutation(CREATE_LANDING_CARD, {
     onCompleted: () => {

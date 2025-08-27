@@ -123,7 +123,10 @@ export default function RestaurantInvoicesPage() {
     variables: { id: businessId },
     skip: !businessId,
   });
-  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
+  // Default to MAD (Moroccan Dirham) when no currency is set in the
+  // restaurant settings.  This provides a consistent currency display
+  // across the dashboard.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'MAD';
 
   const {
     data: invoicesData,

@@ -525,7 +525,15 @@ function ConfirmationContent() {
   const { t } = useTranslation()
 
   const restaurantId = searchParams.get("restaurantId")
-  const customerInfo = { name: "Guest User", email: "guest@example.com", phone: "0000000000" }
+
+  // Manage user‑provided contact details.  We use state variables so that
+  // the inputs remain controlled.  These fields are mandatory and
+  // must be filled out before the reservation can be confirmed.  If
+  // they remain empty the handleConfirm method will surface an
+  // error via a toast notification.
+  const [customerName, setCustomerName] = useState<string>("")
+  const [customerEmail, setCustomerEmail] = useState<string>("")
+  const [customerPhone, setCustomerPhone] = useState<string>("")
 
   // Details from URL
   const type = searchParams.get("type") || "standard"
@@ -607,14 +615,25 @@ function ConfirmationContent() {
   // document containing additional information or requirements.
   const [reservationFileUrlInput, setReservationFileUrlInput] = useState<string>("")
 
-  // Extract the currency from the settings.  Default to USD if not provided.
-  const currency: string = settingsData?.restaurant?.settings?.currency || "USD"
+  // Extract the currency from the settings.  Default to MAD (Dirham) if not provided.
+  const currency: string = settingsData?.restaurant?.settings?.currency || "MAD"
 
   const handleConfirm = async () => {
     // Validate required details before proceeding.  Missing values
     // should prevent the request and inform the user via a toast.
     if (!date || !heure || !personnes) {
       toast.error(t("missingReservationDetails"))
+      return
+    }
+
+    // Customer contact details are required.  Check that all
+    // customer fields have been filled out; if not display a
+    // descriptive error message.  The translation key
+    // "missingCustomerInfo" may be undefined, so we fall back to
+    // an English string.  This prevents the reservation from being
+    // created without contact information.
+    if (!customerName || !customerEmail || !customerPhone) {
+      toast.error(t("missingCustomerInfo") ?? "Please provide your name, email and phone number before confirming.")
       return
     }
     // When privatisation is selected, ensure all required
@@ -641,7 +660,11 @@ function ConfirmationContent() {
               espace,
               dureeHeures: 4, // Example value, should be part of privatisation option
               source: "new-ui",
-              customerInfo,
+              customerInfo: {
+                name: customerName,
+                email: customerEmail,
+                phone: customerPhone,
+              },
               paymentMethod: paymentMethod || undefined,
               reservationFileUrl: reservationFileUrlInput || undefined,
             },
@@ -658,7 +681,11 @@ function ConfirmationContent() {
               personnes: Number.parseInt(personnes, 10),
               emplacement: emplacement || "",
               source: "new-ui",
-              customerInfo,
+              customerInfo: {
+                name: customerName,
+                email: customerEmail,
+                phone: customerPhone,
+              },
               paymentMethod: paymentMethod || undefined,
               reservationFileUrl: reservationFileUrlInput || undefined,
             },
@@ -754,7 +781,11 @@ function ConfirmationContent() {
   // treat the computed total as being in the base currency (USD) and convert
   // into the restaurant's currency.  If the conversion fails, the helper
   // falls back to appending the currency code.
-  const formattedTotalPrice = formatCurrency(totalPrice, currency)
+  // Format the total price for display using the restaurant's currency.  When displaying prices
+  // already expressed in the restaurant's currency, pass the currency as both the target and
+  // base currency to prevent unintended conversions (e.g. USD→MAD).  Without specifying
+  // baseCurrency, formatCurrency assumes the amount is in USD and will apply exchange rates.
+  const formattedTotalPrice = formatCurrency(totalPrice, currency, currency)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-red-50 flex items-start justify-center px-6 py-16">
@@ -845,6 +876,76 @@ function ConfirmationContent() {
                   <p className="font-semibold text-orange-600 text-sm uppercase tracking-wide">{t("addressLabel")}</p>
                 </div>
                 <p className="text-gray-800 font-bold text-lg">123 Main Street, Anytown</p>
+              </div>
+            </div>
+          </div>
+
+          {/*
+            Customer information card
+
+            We insert a new card between the reservation details card and the
+            payment card.  This card collects the guest’s name, email and
+            phone number.  These fields are bound to the state
+            variables declared near the top of the component.  We reuse
+            the existing input component to maintain consistent styling
+            across the application.  The titles and placeholders are
+            passed through the translation hook when available; in
+            non‑translated languages the fallback values (e.g.
+            "Your Information", "Name") will be displayed.  Each
+            field is marked as required and will be validated in the
+            handleConfirm function.
+          */}
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-6 border-2 border-red-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-red-500 rounded-full">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800">
+                {t("customerInfoTitle") ?? "Your Information"}
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700" htmlFor="customerName">
+                  {t("nameLabel") ?? "Name"}
+                </label>
+                <Input
+                  id="customerName"
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder={t("namePlaceholder") ?? "Enter your full name"}
+                  className="p-4 text-base rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 bg-white hover:border-red-300 transition-colors"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700" htmlFor="customerEmail">
+                  {t("emailLabel") ?? "Email"}
+                </label>
+                <Input
+                  id="customerEmail"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder={t("emailPlaceholder") ?? "Enter your email"}
+                  className="p-4 text-base rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 bg-white hover:border-red-300 transition-colors"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700" htmlFor="customerPhone">
+                  {t("phoneLabel") ?? "Phone"}
+                </label>
+                <Input
+                  id="customerPhone"
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder={t("phonePlaceholder") ?? "Enter your phone number"}
+                  className="p-4 text-base rounded-xl border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 bg-white hover:border-red-300 transition-colors"
+                  required
+                />
               </div>
             </div>
           </div>

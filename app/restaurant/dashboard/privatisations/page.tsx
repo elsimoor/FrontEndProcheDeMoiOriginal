@@ -134,9 +134,9 @@ export default function PrivatisationPage() {
   const settings = restaurantData?.restaurant?.settings;
 
   // Determine the currency and its symbol from the restaurant settings.  We
-  // default to USD when a currency is not specified.  These values
-  // are used to format prices and adjust labels throughout the form.
-  const currency: string = settings?.currency || 'USD';
+  // default to MAD (Dirham) when a currency is not specified.  These
+  // values are used to format prices and adjust labels throughout the form.
+  const currency: string = settings?.currency || 'MAD';
   const currencySymbol: string = currencySymbols[currency] ?? currency;
 
   const formSchema = baseFormSchema

@@ -113,7 +113,10 @@ export default function RestaurantInvoiceDetailsPage() {
     variables: { id: restaurantId },
     skip: !restaurantId,
   });
-  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD';
+  // Fallback to MAD (Dirham) for the currency when the restaurant settings
+  // do not specify one.  This ensures invoice details are displayed
+  // consistently in the local currency.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'MAD';
 
   // Handler to download the invoice PDF.  It calls the
   // `generateInvoicePdf` mutation and then triggers a file download in

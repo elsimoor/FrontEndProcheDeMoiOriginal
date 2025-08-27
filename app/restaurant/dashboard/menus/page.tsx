@@ -805,8 +805,10 @@ export default function RestaurantMenus() {
     skip: !restaurantId,
   })
 
-  // Determine the currency and symbol.  Default to USD when not set.
-  const currency: string = settingsData?.restaurant?.settings?.currency || 'USD'
+  // Determine the currency and symbol.  Default to MAD (Dirham) when not
+  // set in the restaurant settings.  This ensures menu prices are
+  // displayed consistently in the local currency.
+  const currency: string = settingsData?.restaurant?.settings?.currency || 'MAD'
   const currencySymbol: string = currencySymbols[currency] ?? currency
 
   const [createMenuItem] = useMutation(CREATE_MENU_ITEM)
