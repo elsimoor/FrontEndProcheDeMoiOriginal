@@ -12,7 +12,11 @@ import * as z from "zod";
 import { gql, useQuery, useMutation } from "@apollo/client";
 import { useState, useEffect } from "react";
 import useTranslation from "@/hooks/useTranslation";
-import { toast } from "sonner";
+// Use our toast shim from react-toastify instead of the sonner library.  This
+// ensures toast notifications have a consistent look and feel across the
+// entire application and leverages the global toaster mounted in
+// `app/layout.tsx`.
+import { toast } from "react-toastify";
 
 const GET_RESTAURANT_SETTINGS = gql`
   query Restaurant($id: ID!) {

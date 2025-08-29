@@ -4,6 +4,9 @@ import { gql, useQuery, useMutation } from "@apollo/client";
 // Helpers to format prices according to the hotel's selected currency
 import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { useEffect, useState } from "react";
+// Import toast from react-toastify.  This shim provides toast
+// notifications for loading, creation, deletion and feature actions.
+import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
 // Translation hooks for localisation
@@ -108,6 +111,17 @@ export default function HotelLandingCardsPage() {
     fetchSession();
   }, [router]);
 
+  // Show a loading toast when the landing cards or settings data is being fetched.
+  useEffect(() => {
+    if (loading) {
+      toast.info({
+        title: 'Loading...',
+        description: t('pleaseWaitWhileWeLoadYourData') || 'Please wait while we load your data.',
+        duration: 3000,
+      });
+    }
+  }, [loading]);
+
   // Fetch landing cards for this hotel.  Skip query until we know the businessId.
   const { data, loading, error, refetch } = useQuery(GET_LANDING_CARDS, {
     variables: { businessType: "hotel", businessId },
@@ -144,17 +158,27 @@ export default function HotelLandingCardsPage() {
         specialOffer: false,
       });
       refetch();
+      toast.success(t('landingCardCreatedSuccessfully') || 'Card created successfully');
+    },
+    onError: () => {
+      toast.error(t('failedToCreateCard') || 'Failed to create card');
     },
   });
 
   const [deleteLandingCard] = useMutation(DELETE_LANDING_CARD, {
     onCompleted: () => refetch(),
+    onError: () => {
+      toast.error(t('failedToDeleteCard') || 'Failed to delete card');
+    },
   });
 
   // Mutation hook to set a card as featured.  When completed, we refetch
   // the landing cards to reflect the new featured status.
   const [setFeaturedCard, { loading: settingFeatured }] = useMutation(SET_FEATURED_CARD, {
     onCompleted: () => refetch(),
+    onError: () => {
+      toast.error(t('failedToSetFeatured') || 'Failed to set featured');
+    },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,14 +213,24 @@ export default function HotelLandingCardsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteLandingCard({ variables: { id } });
+    try {
+      await deleteLandingCard({ variables: { id } });
+      toast.success(t('cardDeletedSuccessfully') || 'Card deleted successfully');
+    } catch (err) {
+      // Error handling is done in onError
+    }
   };
 
   // Handler to set a particular card as featured.  Requires businessId to
   // be known.  If businessId is not yet available, this function is a no‑op.
   const handleSetFeatured = async (id: string) => {
     if (!businessId) return;
-    await setFeaturedCard({ variables: { id, businessId, businessType: "hotel" } });
+    try {
+      await setFeaturedCard({ variables: { id, businessId, businessType: 'hotel' } });
+      toast.success(t('cardSetFeaturedSuccessfully') || 'Card set as featured');
+    } catch (err) {
+      // Error handling is done in onError
+    }
   };
 
   if (loading) return <p>{t("loading")}</p>;

@@ -59,9 +59,16 @@ const SheetContent = React.forwardRef<
 >(({ side = "right", className, children, ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
-    <SheetPrimitive.Content
+  <SheetPrimitive.Content
       ref={ref}
-      className={cn(sheetVariants({ side }), className)}
+      /*
+       * Add overflow-y-auto so that long content within the sheet can be
+       * scrolled.  Without this the sheet panel becomes impossible to
+       * scroll when its contents exceed the viewport height (e.g. when
+       * creating a new reservation).  This addresses the issue where
+       * users reported being unable to scroll the side panel.
+       */
+      className={cn(sheetVariants({ side }), "overflow-y-auto", className)}
       {...props}
     >
       {children}

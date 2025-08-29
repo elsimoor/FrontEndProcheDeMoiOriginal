@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react"
 import useTranslation from "@/hooks/useTranslation"
 import { gql, useQuery, useMutation } from "@apollo/client"
+// Import toast from react-toastify.  The shim integrates with our internal
+// Toaster to display notifications for all CRUD actions and loading states.
+import { toast } from "react-toastify"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -50,7 +53,16 @@ export default function RoomTypesPage() {
   const [hotelId, setHotelId] = useState<string | null>(null)
   const [sessionLoading, setSessionLoading] = useState(true)
   const [sessionError, setSessionError] = useState<string | null>(null)
-
+  // Fetch existing room types once the hotelId is available
+  const {
+    data: roomTypesData,
+    loading: roomTypesLoading,
+    error: roomTypesError,
+    refetch: refetchRoomTypes,
+  } = useQuery(GET_ROOM_TYPES, {
+    variables: { hotelId },
+    skip: !hotelId,
+  })
   useEffect(() => {
     async function fetchSession() {
       try {
@@ -74,16 +86,21 @@ export default function RoomTypesPage() {
     fetchSession()
   }, [])
 
-  // Fetch existing room types once the hotelId is available
-  const {
-    data: roomTypesData,
-    loading: roomTypesLoading,
-    error: roomTypesError,
-    refetch: refetchRoomTypes,
-  } = useQuery(GET_ROOM_TYPES, {
-    variables: { hotelId },
-    skip: !hotelId,
-  })
+  // Show a loading toast when session or room types are being fetched.  We
+  // listen for changes to the loading flags and trigger a toast when
+  // either becomes true.  This provides feedback during network
+  // operations.  The toast disappears after the specified duration.
+  useEffect(() => {
+    if (sessionLoading || roomTypesLoading) {
+      toast.info({
+        title: "Loading...",
+        description: t("pleaseWaitWhileWeLoadYourData") || "Please wait while we load your data.",
+        duration: 3000,
+      })
+    }
+  }, [sessionLoading, roomTypesLoading])
+
+
 
   // Prepare mutations
   const [createRoomType, { loading: creating }] = useMutation(CREATE_ROOM_TYPE)
@@ -99,8 +116,12 @@ export default function RoomTypesPage() {
       await createRoomType({ variables: { input: { hotelId, name: newTypeName.trim() } } })
       setNewTypeName("")
       refetchRoomTypes()
+      // Notify the user that the room type was created
+      toast.success(t("roomTypeCreatedSuccessfully") || "Room type created successfully")
     } catch (err) {
       console.error(err)
+      // Show an error toast if creation failed
+      toast.error(t("failedToCreateRoomType") || "Failed to create room type")
     }
   }
 
@@ -109,8 +130,11 @@ export default function RoomTypesPage() {
       try {
         await deleteRoomType({ variables: { id } })
         refetchRoomTypes()
+        // Notify the user that the room type was deleted
+        toast.success(t("roomTypeDeletedSuccessfully") || "Room type deleted successfully")
       } catch (err) {
         console.error(err)
+        toast.error(t("failedToDeleteRoomType") || "Failed to delete room type")
       }
     }
   }

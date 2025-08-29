@@ -2,11 +2,21 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, Wifi, Car, Coffee, Dumbbell, Waves, Utensils, X } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+// Import a specific set of icons for UI controls.  For the service icon
+// selection we import the entire Lucide icon library to allow users
+// to choose from any available icon.  The named imports (Plus, Edit,
+// Trash2, X) are retained for other UI elements.
+import * as LucideIcons from "lucide-react"
+import { Plus, Edit, Trash2, X } from "lucide-react"
 
 // Import translation hook
 import useTranslation from "@/hooks/useTranslation"
+// Import the react-toastify shim.  This exposes a global `toast` function
+// and no-op `ToastContainer` for compatibility with the react-toastify API.
+// Import toast from react-toastify.  The shim implementation wraps our
+// internal useToast hook to display notifications.
+import { toast } from "react-toastify"
 
 // Apollo Client hooks for fetching and mutating data
 import { gql, useQuery, useMutation } from "@apollo/client"
@@ -130,12 +140,44 @@ const cleanTypename = (arr: any[]) => arr.map(({ __typename, ...rest }) => rest)
 export default function HotelOptions() {
   // Translation hook
   const { t } = useTranslation();
+  // Toast for loading feedback
   const [activeTab, setActiveTab] = useState("services")
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
   const [modalType, setModalType] = useState<
     "service" | "amenity" | "policy" | "roomPaidOption" | "roomViewOption"
   >("service")
+
+  // Build a list of icon names from the Lucide icon library.  We include
+  // every exported component whose name starts with an uppercase letter.
+  // Sorting the list ensures icons are grouped alphabetically.  This
+  // computation is memoised so it only runs once.  We intentionally
+  // avoid slicing here so that all icons are available; a search input
+  // below filters the list for usability.
+  const iconOptions: string[] = useMemo(() => {
+    return Object.keys(LucideIcons)
+      .filter((name) => /^[A-Z]/.test(name))
+      .sort()
+  }, [])
+
+  // Search term for filtering icons.  When the user types in the
+  // search input, we update this state.  Filtering is case‑insensitive.
+  const [iconSearch, setIconSearch] = useState("")
+
+  // Filter the list of icons according to the search term.  When no
+  // search term is provided we return a subset of the full list to
+  // improve performance.  Otherwise we include all matches.  The
+  // filtering is memoised to avoid recomputing on every render.
+  const filteredIconOptions = useMemo(() => {
+    const term = iconSearch.toLowerCase()
+    // When search is empty show the first 200 icons to keep the
+    // dropdown manageable.  Otherwise return all matches to the
+    // search term.
+    const candidates = iconOptions.filter((name) =>
+      name.toLowerCase().includes(term),
+    )
+    return term === "" ? candidates.slice(0, 200) : candidates
+  }, [iconOptions, iconSearch])
 
   // Business identifier for the currently logged in hotel.  This is derived
   // from the server session via the /api/session endpoint.  We default to
@@ -173,6 +215,7 @@ export default function HotelOptions() {
     fetchSession()
   }, [])
 
+
   // Query the hotel once the hotelId is available.  We skip the query
   // entirely while loading the session or if hotelId is null.
   const {
@@ -184,6 +227,24 @@ export default function HotelOptions() {
     variables: { id: hotelId },
     skip: !hotelId,
   })
+
+  // Display a loading toast when data is being fetched.  We monitor the
+  // session and hotel queries; when either is loading we show a
+  // brief toast to inform the user that data is loading.  The toast
+  // automatically disappears after a short duration.  Because the
+  // global toast limit is 1, only the most recent loading toast
+  // will appear.  Note: this useEffect must be defined after
+  // hotelLoading is declared to avoid referencing it before
+  // initialization.
+  useEffect(() => {
+    if (sessionLoading || hotelLoading) {
+      toast.info({
+        title: 'Loading...',
+        description: 'Please wait while we load your data.',
+        duration: 3000,
+      })
+    }
+  }, [sessionLoading, hotelLoading])
 
   // Determine the hotel's currency from settings.  Default to USD when
   // not available.  We compute a symbol for the currency using the
@@ -222,37 +283,80 @@ export default function HotelOptions() {
   useEffect(() => {
     if (hotelData && hotelData.hotel) {
       const h = hotelData.hotel
-      setServices(
-        (h.services || []).map((service: any, index: number) => ({
-          id: index + 1,
-          icon: service.category === "Food & Beverage"
-            ? "Utensils"
-            : service.category === "Transportation"
-              ? "Car"
-              : service.category === "Wellness"
-                ? "Waves"
-                : service.category === "Fitness"
-                  ? "Dumbbell"
-                  : service.category === "Business"
-                    ? "Coffee"
-                    : service.category === "Technology"
-                      ? "Wifi"
-                      : "Utensils",
-          ...service,
-        }))
-      )
-      setAmenities(
-        (h.amenities || []).map((amenity: any, index: number) => ({
-          id: index + 1,
-          ...amenity,
-        }))
-      )
-      setPolicies(
-        (h.policies || []).map((policy: any, index: number) => ({
-          id: index + 1,
-          ...policy,
-        }))
-      )
+
+      // Helper to derive a default icon from a service category.  If the
+      // category does not match any known values we default to "Utensils".
+      const getDefaultIcon = (category: string | undefined) => {
+        switch (category) {
+          case "Food & Beverage":
+            return "Utensils"
+          case "Transportation":
+            return "Car"
+          case "Wellness":
+            return "Waves"
+          case "Fitness":
+            return "Dumbbell"
+          case "Business":
+            return "Coffee"
+          case "Technology":
+            return "Wifi"
+          default:
+            return "Utensils"
+        }
+      }
+
+      // When rebuilding the services array from the fetched data, try to
+      // preserve the icon chosen by the user during this session.  We
+      // match on basic fields (name, description, category, price and
+      // availability) to find a corresponding entry in the previous
+      // services state.  If a match is found we reuse its icon; otherwise
+      // we fall back to a default icon based on category.
+      setServices((prevServices) => {
+        return (h.services || []).map((service: any, index: number) => {
+          // Determine the hotel key to use when retrieving persisted icons.
+          // Prefer the current hotelId state if available; otherwise fall back
+          // to the id from the fetched hotel data.  This ensures saved
+          // icons can be loaded even if the hotelId state has not yet been
+          // initialised when this effect runs.
+          const hotelKey = hotelId || h.id
+          let savedIcon: string | null = null
+          try {
+            if (hotelKey) {
+              savedIcon = localStorage.getItem(`hotel-service-icon-${hotelKey}-${service.name}`)
+            }
+          } catch (e) {
+            // Accessing localStorage may throw in rare cases (e.g. disabled),
+            // but we silently ignore and fall back to defaults.
+          }
+          const existing = prevServices.find(
+            (s) =>
+              s.name === service.name &&
+              s.description === service.description &&
+              s.category === service.category &&
+              s.price === service.price &&
+              s.available === service.available
+          )
+          // Determine the icon in order of precedence:
+          // 1) savedIcon from localStorage if available
+          // 2) existing icon from previous state if matched
+          // 3) a default icon based on category
+          const icon = savedIcon || existing?.icon || getDefaultIcon(service.category)
+          return {
+            id: index + 1,
+            icon,
+            ...service,
+          }
+        })
+      })
+
+      setAmenities((h.amenities || []).map((amenity: any, index: number) => ({
+        id: index + 1,
+        ...amenity,
+      })))
+      setPolicies((h.policies || []).map((policy: any, index: number) => ({
+        id: index + 1,
+        ...policy,
+      })))
 
       // Initialise paid room options.  Each option is assigned a unique id
       // based on its index for React list rendering.
@@ -276,22 +380,10 @@ export default function HotelOptions() {
 
 
   const IconsStringToComponent = (iconName: string) => {
-    switch (iconName) {
-      case "Utensils":
-        return Utensils
-      case "Car":
-        return Car
-      case "Coffee":
-        return Coffee
-      case "Dumbbell":
-        return Dumbbell
-      case "Waves":
-        return Waves
-      case "Wifi":
-        return Wifi
-      default:
-        return Utensils // Default icon if not found
-    }
+    // Dynamically resolve the requested icon from the Lucide icon library.
+    // If the icon name does not exist we fall back to the Utensils icon.
+    const Icon = (LucideIcons as any)[iconName]
+    return Icon || (LucideIcons as any).Utensils
   }
 
 
@@ -345,10 +437,34 @@ export default function HotelOptions() {
 
     if (modalType === "service") {
       let updatedServices: any[]
+      // Persist the chosen icon in localStorage.  Compute keys using the
+      // current hotelId and service names.  When editing we remove the
+      // old key if the name has changed.  We wrap calls in try/catch to
+      // guard against unavailable localStorage (e.g. SSR or disabled storage).
       if (editingItem) {
-        updatedServices = services.map((service) => (service.id === editingItem.id ? { ...service, ...formData } : service))
+        updatedServices = services.map((service) =>
+          service.id === editingItem.id ? { ...service, ...formData } : service
+        )
+        try {
+          if (hotelId) {
+            // If the service name was changed, remove the old persisted key
+            if (editingItem.name && editingItem.name !== formData.name) {
+              localStorage.removeItem(
+                `hotel-service-icon-${hotelId}-${editingItem.name}`
+              )
+            }
+            // Save the new icon under the new name
+            localStorage.setItem(
+              `hotel-service-icon-${hotelId}-${formData.name}`,
+              formData.icon || "Utensils"
+            )
+          }
+        } catch (e) {
+          // ignore localStorage errors
+        }
       } else {
-        const newId = services.length > 0 ? Math.max(...services.map((s) => s.id)) + 1 : 1
+        const newId =
+          services.length > 0 ? Math.max(...services.map((s) => s.id)) + 1 : 1
         const newService: Service = {
           id: newId,
           icon: formData.icon || "Utensils",
@@ -359,6 +475,16 @@ export default function HotelOptions() {
           available: formData.available,
         }
         updatedServices = [...services, newService]
+        try {
+          if (hotelId) {
+            localStorage.setItem(
+              `hotel-service-icon-${hotelId}-${newService.name}`,
+              newService.icon
+            )
+          }
+        } catch (e) {
+          // ignore localStorage errors
+        }
       }
       setServices(updatedServices)
       await persistChanges(
@@ -366,7 +492,13 @@ export default function HotelOptions() {
         amenities.map(({ id, ...rest }) => rest),
         policies.map(({ id, ...rest }) => rest),
         roomPaidOptions.map(({ id, ...rest }) => rest),
-        roomViewOptions.map(({ id, ...rest }) => rest),
+        roomViewOptions.map(({ id, ...rest }) => rest)
+      )
+      // Notify user of successful service creation or update
+      toast.success(
+        editingItem
+          ? t("serviceUpdatedSuccessfully") || "Service updated successfully"
+          : t("serviceCreatedSuccessfully") || "Service created successfully"
       )
     } else if (modalType === "amenity") {
       let updatedAmenities: any[]
@@ -392,6 +524,12 @@ export default function HotelOptions() {
         roomPaidOptions.map(({ id, ...rest }) => rest),
         roomViewOptions.map(({ id, ...rest }) => rest),
       )
+      // Notify user of successful amenity creation or update
+      toast.success(
+        editingItem
+          ? t("amenityUpdatedSuccessfully") || "Amenity updated successfully"
+          : t("amenityCreatedSuccessfully") || "Amenity created successfully"
+      )
     } else if (modalType === "policy") {
       let updatedPolicies: any[]
       if (editingItem) {
@@ -413,6 +551,12 @@ export default function HotelOptions() {
         updatedPolicies.map(({ id, ...rest }) => rest),
         roomPaidOptions.map(({ id, ...rest }) => rest),
         roomViewOptions.map(({ id, ...rest }) => rest),
+      )
+      // Notify user of successful policy creation or update
+      toast.success(
+        editingItem
+          ? t("policyUpdatedSuccessfully") || "Policy updated successfully"
+          : t("policyCreatedSuccessfully") || "Policy created successfully"
       )
     } else if (modalType === "roomPaidOption") {
       // Handle creation or editing of a paid room option
@@ -442,6 +586,12 @@ export default function HotelOptions() {
         policies.map(({ id, ...rest }) => rest),
         updatedOptions.map(({ id, ...rest }) => rest),
         roomViewOptions.map(({ id, ...rest }) => rest),
+      )
+      // Notify user of successful paid option creation or update
+      toast.success(
+        editingItem
+          ? t("paidOptionUpdatedSuccessfully") || "Paid option updated successfully"
+          : t("paidOptionCreatedSuccessfully") || "Paid option created successfully"
       )
     } else if (modalType === "roomViewOption") {
       // Handle creation or editing of a room view option
@@ -473,6 +623,12 @@ export default function HotelOptions() {
         roomPaidOptions.map(({ id, ...rest }) => rest),
         updatedViews.map(({ id, ...rest }) => rest),
       )
+      // Notify user of successful view option creation or update
+      toast.success(
+        editingItem
+          ? t("viewOptionUpdatedSuccessfully") || "View option updated successfully"
+          : t("viewOptionCreatedSuccessfully") || "View option created successfully"
+      )
     }
 
     setShowModal(false)
@@ -501,9 +657,18 @@ export default function HotelOptions() {
       let updatedPolicies = policies
       let updatedPaidOptions = roomPaidOptions
       let updatedViewOptions = roomViewOptions
-      if (type === "service") {
+    if (type === "service") {
+        // Find the service to delete so we can remove its persisted icon
+        const svc = services.find((service) => service.id === id)
         updatedServices = services.filter((service) => service.id !== id)
         setServices(updatedServices)
+        try {
+          if (hotelId && svc?.name) {
+            localStorage.removeItem(`hotel-service-icon-${hotelId}-${svc.name}`)
+          }
+        } catch (e) {
+          // ignore localStorage errors
+        }
       } else if (type === "amenity") {
         updatedAmenities = amenities.filter((amenity) => amenity.id !== id)
         setAmenities(updatedAmenities)
@@ -541,6 +706,8 @@ export default function HotelOptions() {
           },
         })
         await refetchHotel()
+        // Notify user that the item was deleted
+        toast.success(t("itemDeletedSuccessfully") || "Item deleted successfully")
       } catch (err) {
         console.error(err)
       }
@@ -986,17 +1153,26 @@ export default function HotelOptions() {
                       maintain a two‑column layout. */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+                    {/* Search input for icons.  Allows the user to filter the icon list by name. */}
+                    <input
+                      type="text"
+                      placeholder="Search icons…"
+                      value={iconSearch}
+                      onChange={(e) => setIconSearch(e.target.value)}
+                      className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                     <select
                       value={formData.icon || "Utensils"}
                       onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="Utensils">Utensils</option>
-                      <option value="Car">Car</option>
-                      <option value="Coffee">Coffee</option>
-                      <option value="Dumbbell">Dumbbell</option>
-                      <option value="Waves">Waves</option>
-                      <option value="Wifi">Wifi</option>
+                      {/* Render a dropdown option for each icon available in the Lucide icon library.  We default
+                          the first option to Utensils to provide a sensible starting point. */}
+                      {filteredIconOptions.map((iconName) => (
+                        <option key={iconName} value={iconName}>
+                          {iconName}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>

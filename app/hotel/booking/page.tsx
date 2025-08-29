@@ -7,6 +7,9 @@ import Link from "next/link";
 import { Calendar, Users, Bed, Wifi, Car, Coffee, Dumbbell, Waves } from "lucide-react";
 import { gql, useQuery, useMutation } from "@apollo/client";
 
+// Toast notifications for user feedback
+import { toast } from "react-toastify";
+
 // Import currency helpers to format amounts based on hotel settings
 import { formatCurrency, currencySymbols } from "@/lib/currency";
 
@@ -265,13 +268,15 @@ export default function HotelBookingPage() {
     if (!hotelId) return;
     // Validate open periods
     if (!isWithinOpeningPeriod()) {
-      alert("Hotel is not open for the selected dates");
+      // Show an error toast if the hotel is closed for the selected dates
+      toast.error("Hotel is not open for the selected dates");
       return;
     }
     // Find a room id for the selected type (pick first available).  If no rooms exist, error.
     const selectedRoomType = roomTypes.find((r: any) => r.id === bookingData.roomType);
     if (!selectedRoomType || !selectedRoomType.rooms || selectedRoomType.rooms.length === 0) {
-      alert("No rooms available for the selected type");
+      // Show an error toast when no rooms are available
+      toast.error("No rooms available for the selected type");
       return;
     }
     const room = selectedRoomType.rooms[0];
@@ -297,7 +302,8 @@ export default function HotelBookingPage() {
           },
         },
       });
-      alert("Booking request submitted successfully!");
+      // Notify the user that the booking was submitted successfully
+      toast.success("Booking request submitted successfully!");
       // Optionally reset form
       setBookingData({
         checkIn: "",
@@ -310,7 +316,8 @@ export default function HotelBookingPage() {
       });
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to create reservation");
+      // Show an error toast when creating the reservation fails
+      toast.error(err.message || "Failed to create reservation");
     }
   };
 

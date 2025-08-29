@@ -21,7 +21,11 @@ import moment from "moment";
 // Import currency helpers to format metrics based on restaurant settings
 import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { DayContent, DayContentProps } from "react-day-picker";
-import { toast } from "sonner";
+// Use our toast shim from react-toastify instead of the sonner library.  This
+// ensures toast notifications have a consistent look and feel across the
+// entire application and leverages the global toaster mounted in
+// `app/layout.tsx`.
+import { toast } from "react-toastify";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Translation hook

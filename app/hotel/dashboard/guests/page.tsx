@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import useTranslation from "@/hooks/useTranslation"
+// Import toast from react-toastify.  Used to display notifications for
+// loading states and CRUD actions.
+import { toast } from "react-toastify"
 import { gql, useQuery, useMutation } from "@apollo/client";
 
 /**
@@ -77,7 +80,17 @@ export default function HotelGuestsPage() {
   const [businessType, setBusinessType] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
-
+  // Fetch guests for the current business
+  const {
+    data: guestsData,
+    loading: guestsLoading,
+    error: guestsError,
+    refetch: refetchGuests,
+  } = useQuery(GET_GUESTS, {
+    variables: { businessId, businessType },
+    skip: !businessId || !businessType,
+  });
+  
   useEffect(() => {
     async function fetchSession() {
       try {
@@ -104,16 +117,20 @@ export default function HotelGuestsPage() {
     fetchSession();
   }, []);
 
-  // Fetch guests for the current business
-  const {
-    data: guestsData,
-    loading: guestsLoading,
-    error: guestsError,
-    refetch: refetchGuests,
-  } = useQuery(GET_GUESTS, {
-    variables: { businessId, businessType },
-    skip: !businessId || !businessType,
-  });
+  // Show a loading toast when the session or guests are loading.  This
+  // provides feedback to the user during network requests.  The toast
+  // disappears automatically after the specified duration.
+  useEffect(() => {
+    if (sessionLoading || guestsLoading) {
+      toast.info({
+        title: 'Loading...',
+        description: t('pleaseWaitWhileWeLoadYourData') || 'Please wait while we load your data.',
+        duration: 3000,
+      });
+    }
+  }, [sessionLoading, guestsLoading]);
+
+
 
   // Mutations
   const [createGuest] = useMutation(CREATE_GUEST);
@@ -156,13 +173,16 @@ export default function HotelGuestsPage() {
     try {
       if (editingId) {
         await updateGuest({ variables: { id: editingId, input } });
+        toast.success(t('guestUpdatedSuccessfully') || 'Guest updated successfully');
       } else {
         await createGuest({ variables: { input } });
+        toast.success(t('guestCreatedSuccessfully') || 'Guest created successfully');
       }
       resetForm();
       refetchGuests();
     } catch (err) {
       console.error(err);
+      toast.error(t('failedToSaveGuest') || 'Failed to save guest');
     }
   };
 
@@ -180,8 +200,14 @@ export default function HotelGuestsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm(t("deleteGuestConfirm"))) {
-      await deleteGuest({ variables: { id } });
-      refetchGuests();
+      try {
+        await deleteGuest({ variables: { id } });
+        refetchGuests();
+        toast.success(t('guestDeletedSuccessfully') || 'Guest deleted successfully');
+      } catch (err) {
+        console.error(err);
+        toast.error(t('failedToDeleteGuest') || 'Failed to delete guest');
+      }
     }
   };
 

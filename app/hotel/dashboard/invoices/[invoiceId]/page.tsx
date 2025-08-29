@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { gql, useQuery, useMutation } from "@apollo/client";
 import { Button } from "@/components/ui/button";
+
+// Import toast for notifications
+import { toast } from "react-toastify";
 import {
   Table,
   TableHeader,
@@ -122,7 +125,8 @@ export default function InvoiceDetailsPage() {
       }
     } catch (err) {
       console.error(err);
-      alert(t("failedDownloadInvoice"));
+      // Show a toast when the invoice PDF cannot be downloaded
+      toast.error(t("failedDownloadInvoice") || "Failed to download invoice");
     }
   };
 

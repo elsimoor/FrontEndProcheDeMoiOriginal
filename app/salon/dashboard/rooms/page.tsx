@@ -5,6 +5,9 @@ import { gql, useQuery, useMutation } from "@apollo/client"
 import { Plus, Edit, Trash2, X } from "lucide-react"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 import { uploadImage, deleteImage } from "@/app/lib/firebase"
+// Toast helper to provide user feedback for success and error operations.  Using
+// react-toastify here ensures consistent notifications across modules.
+import { toast } from "react-toastify"
 
 // Translation hook for localised text
 import useTranslation from "@/hooks/useTranslation"
@@ -144,9 +147,12 @@ export default function SalonRooms() {
         ...prev,
         images: [...(prev.images || []), ...urls],
       }))
+      // Show a success toast to indicate images were uploaded
+      toast.success(t('imagesUploadedSuccessfully') || 'Images uploaded successfully')
     } catch (err) {
       console.error(err)
-      alert("Failed to upload images")
+      // Notify the user when image upload fails
+      toast.error(t('failedToUploadImages') || "Failed to upload images")
     } finally {
       setUploading(false)
     }
@@ -164,9 +170,12 @@ export default function SalonRooms() {
         ...prev,
         images: (prev.images || []).filter((img) => img !== url),
       }))
+      // Show a success toast after image deletion
+      toast.success(t('imageDeletedSuccessfully') || 'Image deleted successfully')
     } catch (err) {
       console.error(err)
-      alert("Failed to delete image")
+      // Provide an error toast on failure
+      toast.error(t('failedToDeleteImage') || "Failed to delete image")
     }
   }
 
@@ -207,13 +216,17 @@ export default function SalonRooms() {
     try {
       if (editingRoom) {
         await updateTable({ variables: { id: editingRoom.id, input } })
+        // Display a toast on successful update
+        toast.success(t('roomUpdatedSuccessfully') || 'Room updated successfully')
       } else {
         await createTable({ variables: { input } })
+        toast.success(t('roomCreatedSuccessfully') || 'Room created successfully')
       }
       setShowModal(false)
     } catch (err) {
       console.error(err)
-      alert("Failed to save room")
+      // Use an error toast for save failures
+      toast.error(t('failedToSaveRoom') || "Failed to save room")
     }
   }
 
@@ -221,9 +234,12 @@ export default function SalonRooms() {
     if (!confirm(t("deleteRoomPrompt"))) return
     try {
       await deleteTable({ variables: { id } })
+      // Success toast after deletion
+      toast.success(t('roomDeletedSuccessfully') || 'Room deleted successfully')
     } catch (err) {
       console.error(err)
-      alert("Failed to delete room")
+      // Error toast when deletion fails
+      toast.error(t('failedToDeleteRoom') || "Failed to delete room")
     }
   }
 

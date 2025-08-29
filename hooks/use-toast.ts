@@ -9,7 +9,14 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+// How long to wait (in ms) after a toast closes before it is removed
+// from the state.  The previous implementation set this to an extremely
+// long duration (1,000,000 ms ≈ 16 minutes) which caused closed toasts
+// to linger in memory and occasionally re‑render.  A value around
+// 1–2 seconds is sufficient to allow the close animation to finish
+// before the toast object is pruned.  Keeping this short ensures that
+// subsequent notifications aren’t blocked by stale entries.
+const TOAST_REMOVE_DELAY = 2000
 
 type ToasterToast = ToastProps & {
   id: string

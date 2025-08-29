@@ -5,6 +5,9 @@ import { gql, useQuery, useMutation } from "@apollo/client";
 import { formatCurrency, currencySymbols } from "@/lib/currency";
 import useTranslation from "@/hooks/useTranslation";
 import { useEffect, useState } from "react";
+// Import the toast helper from our react‑toastify shim.  This exposes a global
+// toast API similar to react‑toastify and ensures consistent styling across the app.
+import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
 const GET_LANDING_CARDS = gql`
@@ -97,6 +100,7 @@ export default function SalonLandingCardsPage() {
   const currency: string = settingsData?.salon?.settings?.currency || 'USD';
   const currencySymbol: string = currencySymbols[currency] ?? currency;
   const [createLandingCard, { loading: creating }] = useMutation(CREATE_LANDING_CARD, {
+    // On successful creation, clear the form, refetch cards and display a success toast
     onCompleted: () => {
       setFormData({
         title: "",
@@ -110,10 +114,23 @@ export default function SalonLandingCardsPage() {
         specialOffer: false,
       });
       refetch();
+      // Show success notification.  If a translation key for card creation exists we
+      // leverage it; otherwise fallback to a generic message.
+      toast.success(t("cardCreatedSuccessfully") || "Landing card created successfully");
+    },
+    onError: () => {
+      // Provide feedback on failure using an error toast
+      toast.error(t("failedToCreateCard") || "Failed to create landing card");
     },
   });
   const [deleteLandingCard] = useMutation(DELETE_LANDING_CARD, {
-    onCompleted: () => refetch(),
+    onCompleted: () => {
+      refetch();
+      toast.success(t("cardDeletedSuccessfully") || "Landing card deleted successfully");
+    },
+    onError: () => {
+      toast.error(t("failedToDeleteCard") || "Failed to delete landing card");
+    },
   });
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -511,6 +511,9 @@ import { formatCurrency } from "@/lib/currency"
 import useTranslation from "@/hooks/useTranslation"
 import { useLanguage } from "@/context/LanguageContext"
 
+// Toast notifications for user feedback
+import { toast } from "react-toastify"
+
 /*
  * Checkout page
  *
@@ -728,7 +731,8 @@ export default function CheckoutPage() {
     if (!room) return
     // Basic validation: ensure guest information is provided
     if (!guestInfo.name || !guestInfo.email || !guestInfo.phone) {
-      alert("Please provide your name, email and phone number to complete the booking.")
+      // Show an error toast when required fields are missing
+      toast.error("Please provide your name, email and phone number to complete the booking.")
       return
     }
     try {
@@ -785,11 +789,13 @@ export default function CheckoutPage() {
         // Redirect the user to the Stripe hosted checkout page
         window.location.href = url
       } else {
-        alert("Failed to initiate payment session.")
+        // Notify the user if the payment session could not be created
+        toast.error("Failed to initiate payment session.")
       }
     } catch (e: any) {
       console.error(e)
-      alert(e.message || "Failed to create reservation")
+      // Display an error toast when the reservation fails
+      toast.error(e.message || "Failed to create reservation")
     }
   }
 

@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 
 // Translation hook
 import useTranslation from "@/hooks/useTranslation";
+// Import toast for notifications throughout the room detail page
+import { toast } from "react-toastify";
 
 /**
  * Detailed room management page.  This page fetches a single room by
@@ -166,6 +168,20 @@ export default function HotelRoomDetailsPage() {
   });
 
   const [updateRoom] = useMutation(UPDATE_ROOM);
+
+  // Show a loading toast when any of the major queries are in flight.  We
+  // watch the loading flags from the session, rooms, room types and
+  // hotel options queries and emit a brief info toast whenever any
+  // becomes true.  This provides feedback during network operations.
+  useEffect(() => {
+    if (sessionLoading || roomsLoading || roomTypesLoading || hotelOptionsLoading) {
+      toast.info({
+        title: 'Loading...',
+        description: t('pleaseWaitWhileWeLoadYourData') || 'Please wait while we load your data.',
+        duration: 3000,
+      });
+    }
+  }, [sessionLoading, roomsLoading, roomTypesLoading, hotelOptionsLoading]);
 
   // Upload all selected files to Firebase and append their URLs to the
   // images array in the form state.  Clears the selected files once
@@ -336,11 +352,11 @@ export default function HotelRoomDetailsPage() {
     };
     try {
       await updateRoom({ variables: { id: formState.id, input } });
-      alert(t("roomUpdatedSuccess"));
+      toast.success(t("roomUpdatedSuccess") || "Room updated successfully");
       router.push("/hotel/dashboard/rooms");
     } catch (err) {
       console.error(err);
-      alert(t("roomUpdateFailed"));
+      toast.error(t("roomUpdateFailed") || "Failed to update room");
     }
   };
 

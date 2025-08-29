@@ -12,6 +12,9 @@ import { addDays } from "date-fns";
 import useTranslation from "@/hooks/useTranslation";
 import { useLanguage } from "@/context/LanguageContext";
 
+// Import toast from react-toastify for notifications
+import { toast } from "react-toastify";
+
 /*
  * Hotel reservation search page
  *
@@ -63,7 +66,8 @@ export default function HotelSearchPage() {
   // Persist the current search data and navigate to the rooms list
   const handleSearch = () => {
     if (!date?.from || !date?.to) {
-      alert(t("selectDatesAlert"));
+      // Display an error toast when the user tries to search without selecting dates
+      toast.error(t("selectDatesAlert") || "Please select your check-in and check-out dates");
       return;
     }
     const booking = {

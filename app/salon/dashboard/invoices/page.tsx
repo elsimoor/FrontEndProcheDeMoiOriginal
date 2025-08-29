@@ -30,6 +30,8 @@ import {
 
 // Translation hook for localising strings
 import useTranslation from "@/hooks/useTranslation";
+// Import toast to display success and error notifications for invoice operations
+import { toast } from "react-toastify";
 
 /**
  * GraphQL query to list invoices for a given salon business.  It
@@ -202,10 +204,11 @@ export default function SalonInvoicesPage() {
       setShowForm(false);
       setSelectedReservationId("");
       await refetchInvoices();
-      alert(t("invoiceCreatedSuccess"));
+      // Show a success toast after creating the invoice
+      toast.success(t("invoiceCreatedSuccess") || "Invoice created successfully");
     } catch (err) {
       console.error(err);
-      alert(t("invoiceCreateFailed"));
+      toast.error(t("invoiceCreateFailed") || "Failed to create invoice");
     }
   };
 
@@ -226,7 +229,8 @@ export default function SalonInvoicesPage() {
       }
     } catch (err) {
       console.error(err);
-      alert(t("failedDownloadInvoice"));
+      // Use a toast to inform the user if the download fails
+      toast.error(t("failedDownloadInvoice") || "Failed to download invoice");
     }
   };
 

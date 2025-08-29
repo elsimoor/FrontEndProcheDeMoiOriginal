@@ -21,6 +21,11 @@ import {
   Eye,
 } from "lucide-react"
 
+// Import the toast helper from our react‑toastify shim.  This provides
+// a consistent API for notifications across the application.  The
+// global toast container is mounted in the root layout.
+import { toast } from "react-toastify"
+
 /**
  * Reservation interface tailored for the salon module.  Each reservation includes
  * customer information, service and staff associations, date/time details,
@@ -403,6 +408,12 @@ export default function SalonBookings() {
           },
         })
       }
+      // Provide feedback depending on whether the reservation was created or updated
+      if (editingReservation) {
+        toast.success(t("reservationUpdatedSuccessfully") || "Reservation updated successfully")
+      } else {
+        toast.success(t("reservationCreatedSuccessfully") || "Reservation created successfully")
+      }
       // Refresh data and reset form
       await refetchReservations()
       setShowModal(false)
@@ -410,7 +421,8 @@ export default function SalonBookings() {
       resetForm()
     } catch (error) {
       console.error(error)
-      // Optionally show error toast
+      // Show an error toast when creation or update fails
+      toast.error(t("failedToSaveReservation") || "Failed to save reservation")
     }
   }
 
@@ -463,8 +475,12 @@ export default function SalonBookings() {
       try {
         await deleteReservation({ variables: { id } })
         await refetchReservations()
+        // Show a success toast after deletion
+        toast.success(t('reservationDeletedSuccessfully') || 'Reservation deleted successfully')
       } catch (error) {
         console.error(error)
+        // Show an error toast on failure
+        toast.error(t('failedToDeleteReservation') || 'Failed to delete reservation')
       }
     }
   }
@@ -482,8 +498,10 @@ export default function SalonBookings() {
         },
       })
       await refetchReservations()
+      toast.success(t('reservationUpdatedSuccessfully') || 'Reservation updated successfully')
     } catch (error) {
       console.error(error)
+      toast.error(t('failedToUpdateReservation') || 'Failed to update reservation')
     }
   }
 
@@ -500,8 +518,10 @@ export default function SalonBookings() {
         },
       })
       await refetchReservations()
+      toast.success(t('reservationUpdatedSuccessfully') || 'Reservation updated successfully')
     } catch (error) {
       console.error(error)
+      toast.error(t('failedToUpdateReservation') || 'Failed to update reservation')
     }
   }
 

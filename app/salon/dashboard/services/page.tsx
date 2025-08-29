@@ -7,6 +7,9 @@ import { gql, useQuery, useMutation } from "@apollo/client"
 // Helpers to format prices according to the salon's selected currency
 import { formatCurrency, currencySymbols } from "@/lib/currency"
 import { Search, Plus, Edit, Trash2, X, Clock, DollarSign, Star, Scissors } from "lucide-react"
+// Import toast from our react‑toastify shim.  This provides a consistent API for
+// notifications and ensures a global toast container handles rendering.
+import { toast } from "react-toastify"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 import { uploadImage, deleteImage } from "@/app/lib/firebase"
 
@@ -250,9 +253,11 @@ const GET_SALON_SETTINGS = gql`
         ...prev,
         images: [...(prev.images || []), ...urls],
       }))
+      // Provide success feedback after uploading images
+      toast.success(t('imagesUploadedSuccessfully') || 'Images uploaded successfully')
     } catch (err) {
       console.error(err)
-      alert("Failed to upload images")
+      toast.error(t('failedToUploadImages') || "Failed to upload images")
     } finally {
       setUploading(false)
     }
@@ -271,9 +276,10 @@ const GET_SALON_SETTINGS = gql`
         ...prev,
         images: (prev.images || []).filter((img) => img !== url),
       }))
+      toast.success(t('imageDeletedSuccessfully') || 'Image deleted successfully')
     } catch (err) {
       console.error(err)
-      alert("Failed to delete image")
+      toast.error(t('failedToDeleteImage') || "Failed to delete image")
     }
   }
 
@@ -311,16 +317,17 @@ const GET_SALON_SETTINGS = gql`
     try {
       await deleteService({ variables: { id } })
       await refetchServices()
+      toast.success(t('serviceDeletedSuccessfully') || 'Service deleted successfully')
     } catch (err) {
       console.error(err)
-      alert("Failed to delete service")
+      toast.error(t('failedToDeleteService') || "Failed to delete service")
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!salonId || !businessType) {
-      alert("Unable to save service: salon context unavailable.")
+      toast.error(t('unableToSaveServiceNoContext') || "Unable to save service: salon context unavailable.")
       return
     }
     const input = {
@@ -343,8 +350,10 @@ const GET_SALON_SETTINGS = gql`
     try {
       if (editingService) {
         await updateService({ variables: { id: editingService.id, input } })
+        toast.success(t('serviceUpdatedSuccessfully') || 'Service updated successfully')
       } else {
         await createService({ variables: { input } })
+        toast.success(t('serviceCreatedSuccessfully') || 'Service created successfully')
       }
       await refetchServices()
       setShowModal(false)
@@ -352,7 +361,7 @@ const GET_SALON_SETTINGS = gql`
       resetForm()
     } catch (err) {
       console.error(err)
-      alert("Failed to save service")
+      toast.error(t('failedToSaveService') || "Failed to save service")
     }
   }
 

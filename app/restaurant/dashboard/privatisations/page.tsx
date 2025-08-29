@@ -14,7 +14,11 @@ import { gql, useQuery, useMutation } from "@apollo/client";
 // Helpers to format prices according to the restaurant's selected currency
 import { formatCurrency, currencySymbols } from "@/lib/currency";
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
+// Use our toast shim from react-toastify instead of the sonner library.  This
+// ensures toast notifications have a consistent look and feel across the
+// entire application and leverages the global toaster mounted in
+// `app/layout.tsx`.
+import { toast } from "react-toastify";
 
 const GET_RESTAURANT_SETTINGS = gql`
   query RestaurantForPrivatisation($id: ID!) {

@@ -32,6 +32,9 @@ import { formatCurrency, currencySymbols } from "@/lib/currency";
 
 // Translation hook
 import useTranslation from "@/hooks/useTranslation";
+// Import toast from react-toastify.  This shim provides notifications for
+// loading, success and error events in the invoices page.
+import { toast } from "react-toastify";
 
 /**
  * GraphQL queries and mutations for invoice management.
@@ -161,6 +164,19 @@ export default function HotelInvoicesPage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedReservationId, setSelectedReservationId] = useState<string>("");
 
+  // Show a loading toast while session or invoices are loading.  This effect
+  // runs whenever the loading flags change and triggers a brief info
+  // notification to inform the user that data is being fetched.
+  useEffect(() => {
+    if (sessionLoading || invoicesLoading) {
+      toast.info({
+        title: 'Loading...',
+        description: t('pleaseWaitWhileWeLoadYourData') || 'Please wait while we load your data.',
+        duration: 3000,
+      });
+    }
+  }, [sessionLoading, invoicesLoading]);
+
   const handleCreateInvoice = async () => {
     if (!selectedReservationId || !businessId) return;
     // Find the reservation to extract its totalAmount.  If no
@@ -185,10 +201,11 @@ export default function HotelInvoicesPage() {
       setShowForm(false);
       setSelectedReservationId("");
       await refetchInvoices();
-      alert(t("invoiceCreatedSuccess"));
+      // Notify the user that the invoice was created successfully
+      toast.success(t("invoiceCreatedSuccess") || "Invoice created successfully");
     } catch (err) {
       console.error(err);
-      alert(t("invoiceCreateFailed"));
+      toast.error(t("invoiceCreateFailed") || "Failed to create invoice");
     }
   };
 
@@ -204,7 +221,7 @@ export default function HotelInvoicesPage() {
       }
     } catch (err) {
       console.error(err);
-      alert(t("failedDownloadInvoice"));
+      toast.error(t("failedDownloadInvoice") || "Failed to download invoice");
     }
   };
 

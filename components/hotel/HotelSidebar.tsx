@@ -25,6 +25,7 @@ import {
   CreditCard,
   UtensilsCrossed,
   Sparkles,
+  Ban,
 } from "lucide-react"
 import useTranslation from "@/hooks/useTranslation"
 
@@ -66,6 +67,9 @@ export default function HotelSidebar({ sidebarOpen, setSidebarOpen }: { sidebarO
     // Expose the settings page for hotel owners.  This page allows them
     // to update general information, notification preferences and policies.
     { name: t("settings"), href: "/hotel/dashboard/settings", icon: Cog },
+
+    // Cancellation policies allow owners to configure refund rules for guest cancellations
+    { name: t("cancellationPolicies"), href: "/hotel/dashboard/cancellation", icon: Ban },
   ]
 
   // On mount fetch the session to determine which other services this

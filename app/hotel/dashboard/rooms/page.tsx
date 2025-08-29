@@ -563,7 +563,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 // Import toast hook to display success/error messages
-import { useToast } from "@/hooks/use-toast"
+// Use the react-toastify shim for toast notifications
+// Import toast from react-toastify.  The shim provides the same API as
+// the real library and integrates with our Toaster.
+import { toast } from "react-toastify"
 
 /**
  * This page provides CRUD (create, read, update, delete) operations for hotel
@@ -709,6 +712,17 @@ const GET_ROOM_TYPES = gql`
   }
 `
 
+// Mutation to create a new room type.  This allows hoteliers to
+// define additional categories directly from the room creation form.
+const CREATE_ROOM_TYPE = gql`
+  mutation CreateRoomType($input: RoomTypeInput!) {
+    createRoomType(input: $input) {
+      id
+      name
+    }
+  }
+`
+
 // Query to fetch the hotel's paid room options.  These options are defined
 // on the parent hotel and can be attached to rooms as add‑ons.  We
 // fetch them separately so that they can be displayed in the room
@@ -846,6 +860,25 @@ export default function HotelRoomsPage() {
     skip: !hotelId,
   })
 
+  // Define a list of built‑in room types.  These are always available
+  // to select when creating or editing a room.  When the hotel
+  // manager creates additional custom types via the RoomTypes API
+  // they will be merged with these defaults.
+  const defaultRoomTypes = ["Standard", "Deluxe", "Suite", "Executive"]
+  // Extract custom type names from the query result.  When none
+  // exist this yields an empty array.
+  const customRoomTypeNames: string[] = roomTypesData?.roomTypes?.map((rt: any) => rt.name) || []
+  // Merge default and custom types, removing duplicates.  This
+  // prevents default options from disappearing once a custom type is
+  // created (previously the presence of any custom type replaced the
+  // defaults entirely).
+  const roomTypeOptions: string[] = Array.from(new Set([...defaultRoomTypes, ...customRoomTypeNames]))
+
+  // Prepare a mutation for creating new room types directly from the
+  // room form.  When invoked we pass a RoomTypeInput containing the
+  // hotelId and the desired name.
+  const [createRoomType] = useMutation(CREATE_ROOM_TYPE)
+
   // Fetch hotel amenities
   const { data: hotelData, loading: hotelLoading } = useQuery(GET_HOTEL_AMENITIES, {
     variables: { hotelId },
@@ -911,13 +944,38 @@ export default function HotelRoomsPage() {
   // Generate the price label by replacing the placeholder in the translation
   // string.  We fallback to a basic "Price" label if the translation is
   // missing.
-  const priceLabel: string = (() => {
-    const template = t('priceWithCurrency') || 'Price ({currencySymbol})'
-    return template.replace('{currencySymbol}', currencySymbol)
-  })()
+  // Use a simpler price label without automatically appending a currency
+  // symbol.  Hotel managers reported that showing the currency symbol
+  // (e.g. "$" or "€") inside the label was confusing when entering
+  // numeric values.  We therefore provide a plain "Price" label and
+  // rely on separate UI elements to indicate currency.
+  const priceLabel: string = t('priceLabel') || t('price') || 'Price'
 
-  // Toast for user feedback
-  const { toast } = useToast()
+  // Toast notifications are provided via react-toastify shim.  Importing
+  // `toast` at the top allows us to call it directly.
+
+  // Display a simple loading toast for major loading states on the hotel
+  // dashboard.  This provides visual feedback to the user that data
+  // fetching is in progress.  We include session loading, rooms loading,
+  // room types loading, hotel amenities loading and hotel paid options
+  // loading.  When any of these booleans becomes true the toast will be
+  // shown.  Because the toast limit is set to 1 globally, only the
+  // latest loading toast will appear at a time.
+  useEffect(() => {
+    if (
+      sessionLoading ||
+      roomsLoading ||
+      roomTypesLoading ||
+      hotelLoading ||
+      hotelOptionsLoading
+    ) {
+      toast.info({
+        title: 'Loading...',
+        description: 'Please wait while we load your data.',
+        duration: 3000,
+      })
+    }
+  }, [sessionLoading, roomsLoading, roomTypesLoading, hotelLoading, hotelOptionsLoading])
 
   // AI generation modal state
   const [aiModalOpen, setAiModalOpen] = useState(false)
@@ -929,6 +987,116 @@ export default function HotelRoomsPage() {
   const [aiInput, setAiInput] = useState("")
   // Loading state while awaiting a response from the assistant
   const [aiSending, setAiSending] = useState(false)
+
+  // Reference to the editable description field.  We use a
+  // contenteditable div to allow rich text formatting (bold,
+  // underline, headings, colour, etc.).  The browser's
+  // document.execCommand API is used to apply formatting commands.
+  const descRef = useRef<HTMLDivElement | null>(null)
+  // Selected colour for the description text.  When the colour
+  // picker changes we update this state and apply it via
+  // execCommand('foreColor', colour) from the toolbar.
+  const [descColor, setDescColor] = useState<string>("#000000")
+  // Helper to invoke document.execCommand.  Note: document.execCommand
+  // is deprecated but still widely supported for basic formatting.  It
+  // provides a simple way to implement a lightweight WYSIWYG editor
+  // without adding heavy dependencies.  See MDN for details.
+  const execCommand = (cmd: string, value?: string) => {
+    if (typeof document !== "undefined") {
+      document.execCommand(cmd, false, value)
+    }
+  }
+
+  /**
+   * Executes a formatting command on the description editor.  This helper
+   * focuses the editable div before running the command to ensure the
+   * selection is applied correctly.  It then schedules an update of the
+   * formatting state on the next tick.  Without focusing first the
+   * browser may ignore the command if the toolbar button had focus.  The
+   * timeout allows the DOM to process the command before we query the
+   * current format state.
+   */
+  const runCommand = (cmd: string, value?: string) => {
+    if (descRef.current) {
+      descRef.current.focus()
+    }
+    execCommand(cmd, value)
+    // Defer updating the format state to ensure command has applied
+    setTimeout(() => {
+      updateFormatState()
+    }, 0)
+  }
+
+  // State to track which formatting commands are currently active in the
+  // description editor.  This allows us to visually highlight toolbar
+  // buttons (e.g. bold, italic, underline, headings) when the caret is
+  // within text that has those styles applied.  The keys mirror
+  // execCommand commands and the values are booleans.
+  const [formatState, setFormatState] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    heading1: false,
+    heading2: false,
+    unorderedList: false,
+    orderedList: false,
+  })
+
+  /**
+   * Synchronise the editable description field with the form state.  When
+   * the form state's description changes (for example when editing an
+   * existing room or resetting the form), we update the innerHTML of
+   * the contenteditable div.  We avoid updating the DOM when the
+   * current innerHTML already matches the form state to prevent
+   * disrupting the user's caret position.  After updating the HTML we
+   * refresh the formatting state so that toolbar buttons accurately
+   * reflect the current selection.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const el = descRef.current
+    const expected = formState?.description || ''
+    if (el && el.innerHTML !== expected) {
+      el.innerHTML = expected
+      // Update the formatting state after synchronising content
+      setTimeout(() => {
+        updateFormatState()
+      }, 0)
+    }
+  }, [formState?.description])
+
+  /**
+   * Updates the formatState based on the current selection within the
+   * contenteditable div.  We call document.queryCommandState for
+   * inline styles (bold, italic, underline) and queryCommandValue
+   * for block formatting (formatBlock for h1/h2).  The command value
+   * returns the current block tag name (e.g. 'H1', 'H2', 'P').  We
+   * normalise it to uppercase before comparison.  This function is
+   * invoked after executing commands and whenever the user moves the
+   * caret or selects text.
+   */
+  const updateFormatState = () => {
+    if (typeof document === 'undefined') return
+    try {
+      const bold = document.queryCommandState('bold')
+      const italic = document.queryCommandState('italic')
+      const underline = document.queryCommandState('underline')
+      const block = String(document.queryCommandValue('formatBlock') || '').toUpperCase()
+      const unorderedList = document.queryCommandState('insertUnorderedList')
+      const orderedList = document.queryCommandState('insertOrderedList')
+      setFormatState({
+        bold: !!bold,
+        italic: !!italic,
+        underline: !!underline,
+        heading1: block === 'H1',
+        heading2: block === 'H2',
+        unorderedList: !!unorderedList,
+        orderedList: !!orderedList,
+      })
+    } catch (e) {
+      // queryCommandState can throw in some browsers; ignore errors
+    }
+  }
 
   // When the AI returns a set of rooms we store them here for review.  The
   // user can edit these room objects before committing them to the
@@ -1000,7 +1168,7 @@ export default function HotelRoomsPage() {
           }
         }
         setGeneratedRooms(uniqueRooms)
-        toast({
+        toast.success({
           title: t("roomsGeneratedSuccessfully") || "Rooms generated",
           description:
             uniqueRooms.length > 0
@@ -1023,10 +1191,9 @@ export default function HotelRoomsPage() {
       setAiMessages((prev) => [...prev, { role: "assistant", content: assistantMessage }])
     } catch (error) {
       console.error(error)
-      toast({
+      toast.error({
         title: t("errorGeneratingRooms") || "Error",
         description: t("somethingWentWrongPleaseTryAgain") || "Something went wrong, please try again.",
-        variant: "destructive",
       })
     } finally {
       setAiSending(false)
@@ -1195,7 +1362,7 @@ export default function HotelRoomsPage() {
         }
         await createRoom({ variables: { input } })
       }
-      toast({
+      toast.success({
         title: t("roomsCreatedSuccessfully") || "Rooms created",
         description:
           uniqueRooms.length > 0
@@ -1209,10 +1376,9 @@ export default function HotelRoomsPage() {
       setAiMessages([])
     } catch (error) {
       console.error(error)
-      toast({
+      toast.error({
         title: t("errorCreatingRooms") || "Error",
         description: t("somethingWentWrongPleaseTryAgain") || "Something went wrong, please try again.",
-        variant: "destructive",
       })
     }
   }
@@ -1324,9 +1490,23 @@ export default function HotelRoomsPage() {
         await createRoom({ variables: { input } })
       }
       resetForm()
-      refetchRooms()
+      await refetchRooms()
+      // Provide feedback to the user via a toast.  Without this
+      // confirmation it can be unclear whether the room has been
+      // successfully saved.  We use translation keys when available
+      // and fallback to English strings.
+      // Show a success toast when the room is created or updated
+      toast.success(
+        editingId
+          ? t("roomUpdatedSuccessfully") || "Room updated successfully"
+          : t("roomCreatedSuccessfully") || "Room created successfully"
+      )
     } catch (err) {
       console.error(err)
+      toast.error(
+        t("somethingWentWrongPleaseTryAgain") ||
+          "Something went wrong, please try again."
+      )
     }
   }
 
@@ -1409,8 +1589,15 @@ export default function HotelRoomsPage() {
   // Handle deletion of a room
   const handleDelete = async (id: string) => {
     if (confirm(t("deleteRoomConfirm"))) {
-      await deleteRoom({ variables: { id } })
-      refetchRooms()
+      try {
+        await deleteRoom({ variables: { id } })
+        refetchRooms()
+        // Show a success toast after deletion
+        toast.success(t("roomDeletedSuccessfully") || "Room deleted successfully")
+      } catch (err) {
+        console.error(err)
+        toast.error(t("failedToDeleteRoom") || "Failed to delete room")
+      }
     }
   }
 
@@ -1650,20 +1837,16 @@ export default function HotelRoomsPage() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {roomTypesData?.roomTypes && roomTypesData.roomTypes.length > 0 ? (
-                                    roomTypesData.roomTypes.map((rt: any) => (
-                                      <SelectItem key={rt.id} value={rt.name}>
-                                        {rt.name}
-                                      </SelectItem>
-                                    ))
-                                  ) : (
-                                    <>
-                                      <SelectItem value="Standard">Standard</SelectItem>
-                                      <SelectItem value="Deluxe">Deluxe</SelectItem>
-                                      <SelectItem value="Suite">Suite</SelectItem>
-                                      <SelectItem value="Executive">Executive</SelectItem>
-                                    </>
-                                  )}
+                                  {/* Always show a combined list of default and custom room types.
+                                      Previously the defaults disappeared when custom types were
+                                      defined because of a conditional render.  We compute
+                                      roomTypeOptions ahead of time by merging defaultRoomTypes
+                                      and any types returned from the backend. */}
+                                  {roomTypeOptions.map((type) => (
+                                    <SelectItem key={type} value={type}>
+                                      {type}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -1997,25 +2180,47 @@ export default function HotelRoomsPage() {
                   <Label htmlFor="type" className="text-sm font-semibold text-gray-700">
                     {t("roomTypeLabel")}
                   </Label>
-                  <Select value={formState?.type} onValueChange={(value) => setFormState({ ...formState, type: value })}>
-                    <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 transition-colors">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roomTypesData?.roomTypes && roomTypesData.roomTypes.length > 0 ? (
-                        roomTypesData.roomTypes.map((rt: any) => (
-                          <SelectItem key={rt.id} value={rt.name}>{rt.name}</SelectItem>
-                        ))
-                      ) : (
-                        <>
-                          <SelectItem value="Standard">Standard</SelectItem>
-                          <SelectItem value="Deluxe">Deluxe</SelectItem>
-                          <SelectItem value="Suite">Suite</SelectItem>
-                          <SelectItem value="Executive">Executive</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  {/* Use a flex container to place the select and add‑type button
+                      side by side.  This allows the hotelier to add a new
+                      room type directly from the room form without
+                      navigating away. */}
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={formState?.type}
+                      onValueChange={(value) => setFormState({ ...formState, type: value })}
+                    >
+                      <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 transition-colors">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roomTypeOptions.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {/* Button to add a new room type.  When clicked we prompt
+                        the user for a name, then call the CREATE_ROOM_TYPE
+                        mutation and refetch room types. */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={async () => {
+                        if (!hotelId) return;
+                        const name = window.prompt("Enter new room type name:");
+                        if (name && name.trim()) {
+                          try {
+                            await createRoomType({ variables: { input: { hotelId, name: name.trim() } } });
+                            await refetchRoomTypes();
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -2277,13 +2482,102 @@ export default function HotelRoomsPage() {
                 <Label htmlFor="description" className="text-sm font-semibold text-gray-700">
                   {t("roomDescriptionLabel")}
                 </Label>
-                <Textarea
-                  id="description"
-                  value={formState?.description}
-                  onChange={(e) => setFormState({ ...formState, description: e.target.value })}
-                  rows={4}
-                  className="border-2 border-gray-200 focus:border-blue-500 transition-colors resize-none"
-                  placeholder="Describe the room features, view, and unique amenities..."
+                {/* Simple formatting toolbar for the description field.  Users can
+                    apply bold, italic, underline, headings and text colour
+                    without leaving the page.  The commands are executed via
+                    document.execCommand. */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Bold button.  Highlighted when the current selection is bold */}
+                  <button
+                    type="button"
+                    className={`px-2 py-1 border rounded text-sm font-semibold ${formatState.bold ? 'bg-blue-100 text-blue-700' : ''}`}
+                    onClick={() => runCommand('bold')}
+                    title="Bold"
+                  >
+                    B
+                  </button>
+                  {/* Italic button.  Highlighted when italic text is active */}
+                  <button
+                    type="button"
+                    className={`px-2 py-1 border rounded text-sm font-semibold italic ${formatState.italic ? 'bg-blue-100 text-blue-700' : ''}`}
+                    onClick={() => runCommand('italic')}
+                    title="Italic"
+                  >
+                    I
+                  </button>
+                  {/* Underline button.  Highlighted when underline is active */}
+                  <button
+                    type="button"
+                    className={`px-2 py-1 border rounded text-sm font-semibold underline ${formatState.underline ? 'bg-blue-100 text-blue-700' : ''}`}
+                    onClick={() => runCommand('underline')}
+                    title="Underline"
+                  >
+                    U
+                  </button>
+                  {/* Heading 1 button.  Highlighted when current block is H1 */}
+                  <button
+                    type="button"
+                    className={`px-2 py-1 border rounded text-sm font-semibold ${formatState.heading1 ? 'bg-blue-100 text-blue-700' : ''}`}
+                    onClick={() => runCommand('formatBlock', 'H1')}
+                    title="Heading 1"
+                  >
+                    H1
+                  </button>
+                  {/* Heading 2 button.  Highlighted when current block is H2 */}
+                  <button
+                    type="button"
+                    className={`px-2 py-1 border rounded text-sm font-semibold ${formatState.heading2 ? 'bg-blue-100 text-blue-700' : ''}`}
+                    onClick={() => runCommand('formatBlock', 'H2')}
+                    title="Heading 2"
+                  >
+                    H2
+                  </button>
+                  {/* Colour picker.  On change we set the colour and apply foreColor to the selection. */}
+                  <input
+                    type="color"
+                    value={descColor}
+                    onChange={(e) => {
+                      setDescColor(e.target.value);
+                      runCommand('foreColor', e.target.value);
+                    }}
+                    className="h-8 w-8 p-0 border rounded"
+                    title="Choose text colour"
+                  />
+                  {/* Bullet list button.  Calls insertUnorderedList and updates format state */}
+                  <button
+                    type="button"
+                    className={`px-2 py-1 border rounded text-sm font-semibold ${formatState.unorderedList ? 'bg-blue-100 text-blue-700' : ''}`}
+                    onClick={() => runCommand('insertUnorderedList')}
+                    title="Bullet list"
+                  >
+                    •
+                  </button>
+                  {/* Numbered list button.  Calls insertOrderedList and updates format state */}
+                  <button
+                    type="button"
+                    className={`px-2 py-1 border rounded text-sm font-semibold ${formatState.orderedList ? 'bg-blue-100 text-blue-700' : ''}`}
+                    onClick={() => runCommand('insertOrderedList')}
+                    title="Numbered list"
+                  >
+                    1.
+                  </button>
+                </div>
+                <div
+                  ref={descRef}
+                  contentEditable
+                  className="border-2 border-gray-200 focus:border-blue-500 transition-colors p-2 rounded-md min-h-[100px]"
+                  onInput={() => {
+                    // When the user edits the description we read the
+                    // current HTML from the element and update the form
+                    // state.  We do not re-render the inner HTML via
+                    // dangerouslySetInnerHTML to avoid losing the caret.
+                    const html = descRef.current?.innerHTML || ''
+                    setFormState((prev) => ({ ...prev, description: html }))
+                    // Update the formatting state to reflect any new styles
+                    updateFormatState()
+                  }}
+                  onKeyUp={updateFormatState}
+                  onMouseUp={updateFormatState}
                 />
               </div>
 

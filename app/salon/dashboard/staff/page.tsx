@@ -21,6 +21,11 @@ import {
 // Translation hook for resolving UI strings based on the current locale
 import useTranslation from "@/hooks/useTranslation"
 
+// Toast notifications helper from our react‑toastify shim.  Using this
+// ensures consistent toast styling across the app and leverages the
+// global `ToastContainer` mounted in `app/layout.tsx`.
+import { toast } from "react-toastify"
+
 /**
  * Availability structure as returned by the backend for a staff member.  A staff
  * member can specify availability per day with start and end times and a
@@ -316,12 +321,19 @@ export default function SalonStaff() {
           },
         })
       }
+      // Provide success feedback after creating or updating a staff member.
+      if (editingStaff) {
+        toast.success(t("staffUpdatedSuccessfully") || "Staff member updated successfully")
+      } else {
+        toast.success(t("staffCreatedSuccessfully") || "Staff member created successfully")
+      }
       setShowModal(false)
       setEditingStaff(null)
       resetForm()
     } catch (error) {
       console.error(error)
-      // Optionally show an error toast
+      // Show an error toast when saving fails
+      toast.error(t("failedToSaveStaff") || "Failed to save staff member")
     }
   }
 
@@ -363,8 +375,12 @@ export default function SalonStaff() {
     if (confirm("Are you sure you want to delete this staff member?")) {
       try {
         await deleteStaff({ variables: { id } })
+        // Show a success message when the staff member is deleted
+        toast.success(t("staffDeletedSuccessfully") || "Staff member deleted successfully")
       } catch (error) {
         console.error(error)
+        // Provide an error toast if deletion fails
+        toast.error(t("failedToDeleteStaff") || "Failed to delete staff member")
       }
     }
   }

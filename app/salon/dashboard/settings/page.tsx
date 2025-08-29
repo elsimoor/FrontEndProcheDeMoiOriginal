@@ -6,6 +6,8 @@ import { Save, Bell, CreditCard, Shield, Image as ImageIcon } from "lucide-react
 import { gql, useQuery, useMutation } from "@apollo/client"
 // Firebase image upload helper
 import { uploadImage } from "@/app/lib/firebase"
+// Import toast to display success and error notifications when saving settings
+import { toast } from "react-toastify"
 import { ImageUpload } from "@/components/ui/ImageUpload"
 
 /**
@@ -240,11 +242,12 @@ export default function SalonSettings() {
     try {
       await updateSalon({ variables: { id: salonId, input } })
       await refetchSalon()
-      // Show translated success message
-      alert(t('settingsSavedSuccess'))
+      // Display a success toast after saving settings.  Fallback to a default message if translation is missing
+      toast.success(t('settingsSavedSuccess') || 'Settings saved successfully')
     } catch (err) {
       console.error(err)
-      alert(t('settingsSaveFailed'))
+      // Provide an error toast on failure
+      toast.error(t('settingsSaveFailed') || 'Failed to save settings')
     }
   }
 

@@ -5,6 +5,10 @@ import { gql, useQuery, useMutation } from "@apollo/client"
 // Helpers to format prices according to the salon's selected currency
 import { formatCurrency, currencySymbols } from "@/lib/currency"
 import { Plus } from "lucide-react"
+// Import the toast helper from our react‑toastify shim.  Using this ensures
+// notifications are displayed consistently across the application and leverage
+// the global toast container mounted in the root layout.
+import { toast } from "react-toastify"
 
 // Translation hook for multi‑language support
 import useTranslation from "@/hooks/useTranslation"
@@ -160,7 +164,8 @@ export default function SalonOptions() {
 
   const handleAddOption = async () => {
     if (!selectedServiceForNew || !newOption.name) {
-      alert("Select a service and fill out the option name.")
+      // Inform the user when a required field is missing via a toast rather than a blocking alert
+      toast.info(t('selectServiceAndName') || "Select a service and fill out the option name.")
       return
     }
     const svc = services.find((s) => s.id === selectedServiceForNew)
@@ -196,15 +201,18 @@ export default function SalonOptions() {
       await updateService({ variables: { id: svc.id, input } })
       setNewOption({ name: "", price: "", durationImpact: "" })
       setSelectedServiceForNew("")
+      // Show a success toast after adding the option
+      toast.success(t('optionAddedSuccessfully') || "Option added successfully")
     } catch (err) {
       console.error(err)
-      alert("Failed to add option")
+      // Display an error toast when the addition fails
+      toast.error(t('failedToAddOption') || "Failed to add option")
     }
   }
 
   const handleAssignOptions = async () => {
     if (!selectedServiceForAssign) {
-      alert("Select a service to assign options to.")
+      toast.info(t('selectServiceToAssign') || "Select a service to assign options to.")
       return
     }
     const svc = services.find((s) => s.id === selectedServiceForAssign)
@@ -237,9 +245,11 @@ export default function SalonOptions() {
       await updateService({ variables: { id: svc.id, input } })
       setSelectedOptionNames([])
       setSelectedServiceForAssign("")
+      // Show a success toast after assignment
+      toast.success(t('optionsAssignedSuccessfully') || "Options assigned successfully")
     } catch (err) {
       console.error(err)
-      alert("Failed to assign options")
+      toast.error(t('failedToAssignOptions') || "Failed to assign options")
     }
   }
 

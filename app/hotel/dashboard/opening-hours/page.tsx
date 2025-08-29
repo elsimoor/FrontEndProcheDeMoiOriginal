@@ -5,6 +5,10 @@ import { gql, useQuery, useMutation } from "@apollo/client";
 import { DateRangePicker } from "../../../../components/ui/DateRangePicker";
 import useTranslation from "@/hooks/useTranslation";
 import { DateRange } from "react-day-picker";
+// Import toast from react-toastify.  This shim integrates with our internal
+// toast system to provide notifications for loading, success and error
+// states.
+import { toast } from "react-toastify";
 
 // GraphQL queries
 const GET_HOTEL_OPENING = gql`
@@ -37,7 +41,18 @@ export default function OpeningHoursPage() {
   const [hotelId, setHotelId] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  // Fetch current opening periods
+  const {
+    data: hotelData,
+    loading: hotelLoading,
+    error: hotelError,
+    refetch: refetchHotel,
+  } = useQuery(GET_HOTEL_OPENING, {
+    variables: { id: hotelId },
+    skip: !hotelId,
+  });
 
+  
   useEffect(() => {
     async function fetchSession() {
       try {
@@ -61,16 +76,19 @@ export default function OpeningHoursPage() {
     fetchSession();
   }, []);
 
-  // Fetch current opening periods
-  const {
-    data: hotelData,
-    loading: hotelLoading,
-    error: hotelError,
-    refetch: refetchHotel,
-  } = useQuery(GET_HOTEL_OPENING, {
-    variables: { id: hotelId },
-    skip: !hotelId,
-  });
+  // Show a loading toast when the session or hotel query is in progress.  The
+  // toast will automatically disappear after the specified duration.
+  useEffect(() => {
+    if (sessionLoading || hotelLoading) {
+      toast.info({
+        title: 'Loading...',
+        description: t('pleaseWaitWhileWeLoadYourData') || 'Please wait while we load your data.',
+        duration: 3000,
+      })
+    }
+  }, [sessionLoading, hotelLoading])
+
+
 
   const [updateHotel] = useMutation(UPDATE_HOTEL);
 
@@ -84,7 +102,8 @@ export default function OpeningHoursPage() {
   const handleAddPeriod = async () => {
     if (!hotelId) return;
     if (!date || !date.from || !date.to) {
-      alert(t("selectDateRange"));
+      // Show a toast error when the user hasn't selected a date range
+      toast.error(t('selectDateRange') || 'Please select a date range');
       return;
     }
     const newPeriods = [...periods, { startDate: date.from.toISOString(), endDate: date.to.toISOString() }];
@@ -98,9 +117,10 @@ export default function OpeningHoursPage() {
       });
       setDate(undefined);
       refetchHotel();
+      toast.success(t('openingPeriodAddedSuccessfully') || 'Opening period added successfully');
     } catch (err) {
       console.error(err);
-      alert(t("failedLoadHotelData"));
+      toast.error(t('failedToUpdateOpeningPeriods') || 'Failed to update opening periods');
     } finally {
       setLoadingMutation(false);
     }
@@ -119,9 +139,10 @@ export default function OpeningHoursPage() {
         },
       });
       refetchHotel();
+      toast.success(t('openingPeriodDeletedSuccessfully') || 'Opening period deleted successfully');
     } catch (err) {
       console.error(err);
-      alert(t("failedLoadHotelData"));
+      toast.error(t('failedToUpdateOpeningPeriods') || 'Failed to update opening periods');
     } finally {
       setLoadingMutation(false);
     }

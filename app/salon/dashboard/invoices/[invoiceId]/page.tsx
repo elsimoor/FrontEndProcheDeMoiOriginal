@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 // Import currency helpers
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
+// Import toast for error notifications
+import { toast } from "react-toastify";
 import {
   Table,
   TableHeader,
@@ -88,7 +90,8 @@ export default function SalonInvoiceDetailsPage() {
       }
     } catch (err) {
       console.error(err);
-      alert(t('failedDownloadInvoice'));
+      // Use an error toast instead of a blocking alert
+      toast.error(t('failedDownloadInvoice') || 'Failed to download invoice');
     }
   };
 

@@ -38,6 +38,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import useTranslation from "@/hooks/useTranslation";
+// Use the react-toastify shim for toast notifications
+// Import toast from react-toastify.  This shim provides the same API
+// as the real library and is used throughout the dashboard for
+// notifications.
+import { toast } from "react-toastify";
 
 /**
  * Reservation management page for hotel businesses.  This page allows the
@@ -122,7 +127,15 @@ const DELETE_RESERVATION = gql`
 `;
 
 interface ReservationFormState {
-  guestName: string;
+  /**
+   * Separate fields for first and last name.  Previously the form only
+   * accepted a single name value (guestName).  Splitting the name into
+   * first and last provides clearer expectations for the user and
+   * makes it easier to enforce that both values are provided.  The
+   * values are concatenated when building the ReservationInput.
+   */
+  guestFirstName: string;
+  guestLastName: string;
   guestEmail: string;
   guestPhone: string;
   roomId: string;
@@ -165,6 +178,12 @@ export default function HotelReservationsPage() {
     fetchSession();
   }, []);
 
+  // Show a toast when data is loading.  We display a brief loading message
+  // whenever any of the primary queries are in a loading state.  This
+  // provides feedback to the user outside of the dashboard to indicate
+  // that data is being fetched.  The toast limit is 1 so only the most
+  // recent loading state will appear.
+
   // Fetch rooms to populate the room select
   const {
     data: roomsData,
@@ -196,17 +215,39 @@ export default function HotelReservationsPage() {
   const currency: string = hotelSettingsData?.hotel?.settings?.currency ?? "USD";
   const currencySymbol: string = currencySymbols[currency] ?? currency;
 
+  // Compute today's date in YYYY-MM-DD format.  This value is used
+  // as the minimum selectable date for check-in and check-out inputs
+  // to prevent selecting past dates.  Without this the user could
+  // choose a date prior to the current day which should be disallowed.
+  const todayStr = new Date().toISOString().split("T")[0];
+
   // Mutations
   const [createReservation] = useMutation(CREATE_RESERVATION);
   const [deleteReservation] = useMutation(DELETE_RESERVATION);
 
   // Translation hook for multi‑language support
   const { t } = useTranslation();
+
+  // Show a loading toast when data is being fetched.  We check the
+  // loading flags of the main queries (rooms, reservations and session)
+  // after they have been defined.  This effect runs whenever any of
+  // these booleans change.  Because the global toast limit is 1, only
+  // the most recent loading toast will appear.
+  useEffect(() => {
+    if (sessionLoading || roomsLoading || reservationsLoading) {
+      toast.info({
+        title: 'Loading...',
+        description: 'Please wait while we load your data.',
+        duration: 3000,
+      })
+    }
+  }, [sessionLoading, roomsLoading, reservationsLoading])
 const [updateReservation] = useMutation(UPDATE_RESERVATION);
 
   // Form state
   const [formState, setFormState] = useState<ReservationFormState>({
-    guestName: "",
+    guestFirstName: "",
+    guestLastName: "",
     guestEmail: "",
     guestPhone: "",
     roomId: "",
@@ -222,7 +263,8 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
 
   const resetForm = () => {
     setFormState({
-      guestName: "",
+      guestFirstName: "",
+      guestLastName: "",
       guestEmail: "",
       guestPhone: "",
       roomId: "",
@@ -239,11 +281,14 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
     e.preventDefault();
     if (!businessId || !businessType) return;
     try {
+      // Concatenate first and last name into a single full name.  Trim to
+      // avoid leading/trailing spaces when one of the fields is empty.
+      const fullName = `${formState.guestFirstName} ${formState.guestLastName}`.trim();
       const input: any = {
         businessId,
         businessType,
         customerInfo: {
-          name: formState.guestName,
+          name: fullName,
           email: formState.guestEmail,
           phone: formState.guestPhone,
         },
@@ -256,18 +301,23 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
         totalAmount: formState.totalAmount !== "" ? Number(formState.totalAmount) : undefined,
         paymentStatus: "pending",
       };
-      await createReservation({ variables: { input } });
-      resetForm();
-      refetchReservations();
+      await createReservation({ variables: { input } })
+      resetForm()
+      refetchReservations()
+      // Show a success toast when the reservation is created
+      toast.success("Reservation created successfully")
     } catch (err) {
-      console.error(err);
+      console.error(err)
+      // Show an error toast on failure
+      toast.error("Failed to create reservation")
     }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm("Delete this reservation?")) {
-      await deleteReservation({ variables: { id } });
-      refetchReservations();
+      await deleteReservation({ variables: { id } })
+      refetchReservations()
+      toast.success("Reservation deleted successfully")
     }
   };
 
@@ -294,10 +344,12 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
         status: newStatus,
         paymentStatus: reservation.paymentStatus ?? 'pending',
       };
-      await updateReservation({ variables: { id: reservation.id, input } });
-      refetchReservations();
+      await updateReservation({ variables: { id: reservation.id, input } })
+      refetchReservations()
+      toast.success("Reservation updated successfully")
     } catch (err) {
-      console.error(err);
+      console.error(err)
+      toast.error("Failed to update reservation")
     }
   };
 
@@ -412,19 +464,53 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
             <SheetTitle>{t("newReservation")}</SheetTitle>
           </SheetHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+            {/* Guest name fields: separate first and last name for clarity */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="guestName">{t("guestName")}</Label>
-                <Input id="guestName" value={formState.guestName} onChange={(e) => setFormState({ ...formState, guestName: e.target.value })} required />
+                <Label htmlFor="guestFirstName">{t("firstName") ?? "First Name"}</Label>
+                <Input
+                  id="guestFirstName"
+                  value={formState.guestFirstName}
+                  onChange={(e) => setFormState({ ...formState, guestFirstName: e.target.value })}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="guestEmail">{t("guestEmail")}</Label>
-                <Input id="guestEmail" type="email" value={formState.guestEmail} onChange={(e) => setFormState({ ...formState, guestEmail: e.target.value })} required />
+                <Label htmlFor="guestLastName">{t("lastName") ?? "Last Name"}</Label>
+                <Input
+                  id="guestLastName"
+                  value={formState.guestLastName}
+                  onChange={(e) => setFormState({ ...formState, guestLastName: e.target.value })}
+                  required
+                />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="guestPhone">{t("guestPhone")}</Label>
-              <Input id="guestPhone" value={formState.guestPhone} onChange={(e) => setFormState({ ...formState, guestPhone: e.target.value })} />
+            {/* Contact details: email and phone number.  Phone number field
+                enforces a simple pattern allowing optional + prefix and
+                between 7 and 15 digits to approximate international
+                numbers.  Both fields are required. */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="guestEmail">{t("guestEmail")}</Label>
+                <Input
+                  id="guestEmail"
+                  type="email"
+                  value={formState.guestEmail}
+                  onChange={(e) => setFormState({ ...formState, guestEmail: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="guestPhone">{t("guestPhone")}</Label>
+                <Input
+                  id="guestPhone"
+                  type="tel"
+                  pattern="^\\+?[0-9]{7,15}$"
+                  value={formState.guestPhone}
+                  onChange={(e) => setFormState({ ...formState, guestPhone: e.target.value })}
+                  required
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="roomId">{t("room")}</Label>
@@ -444,11 +530,27 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="checkIn">{t("checkInDate")}</Label>
-                <Input id="checkIn" type="date" value={formState.checkIn} onChange={(e) => setFormState({ ...formState, checkIn: e.target.value })} required />
+                <Input
+                  id="checkIn"
+                  type="date"
+                  min={todayStr}
+                  value={formState.checkIn}
+                  onChange={(e) => setFormState({ ...formState, checkIn: e.target.value })}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="checkOut">{t("checkOutDate")}</Label>
-                <Input id="checkOut" type="date" value={formState.checkOut} onChange={(e) => setFormState({ ...formState, checkOut: e.target.value })} required />
+                <Input
+                  id="checkOut"
+                  type="date"
+                  /* Ensure check‑out is not before check‑in.  When no
+                     check‑in date is selected we default to today. */
+                  min={formState.checkIn || todayStr}
+                  value={formState.checkOut}
+                  onChange={(e) => setFormState({ ...formState, checkOut: e.target.value })}
+                  required
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -457,8 +559,14 @@ const [updateReservation] = useMutation(UPDATE_RESERVATION);
                 <Input id="guests" type="number" value={formState.guests} onChange={(e) => setFormState({ ...formState, guests: e.target.value === "" ? "" : Number(e.target.value) })} min={1} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="totalAmount">{t("totalAmount")} ({currencySymbol})</Label>
-                <Input id="totalAmount" type="number" value={formState.totalAmount} onChange={(e) => setFormState({ ...formState, totalAmount: e.target.value === "" ? "" : Number(e.target.value) })} min={0} />
+                <Label htmlFor="totalAmount">{t("totalAmount") || "Total Amount"}</Label>
+                <Input
+                  id="totalAmount"
+                  type="number"
+                  value={formState.totalAmount}
+                  onChange={(e) => setFormState({ ...formState, totalAmount: e.target.value === "" ? "" : Number(e.target.value) })}
+                  min={0}
+                />
               </div>
             </div>
             <div className="space-y-2">

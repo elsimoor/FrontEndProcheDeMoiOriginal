@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react"
 import { Save, Bell, CreditCard, Shield, Globe, Building, Image as ImageIcon } from "lucide-react"
 
+// Toast notifications via react-toastify
+import { toast } from "react-toastify"
+
 // Apollo Client hooks
 import { gql, useQuery, useMutation } from "@apollo/client"
 
@@ -248,10 +251,12 @@ export default function HotelSettings() {
     try {
       await updateHotel({ variables: { id: hotelId, input } })
       await refetchHotel()
-      alert(t("settingsSavedSuccess"))
+      // Show a success toast when settings are saved
+      toast.success(t("settingsSavedSuccess") || "Settings saved successfully")
     } catch (err) {
       console.error(err)
-      alert(t("settingsSaveFailed"))
+      // Show an error toast when saving settings fails
+      toast.error(t("settingsSaveFailed") || "Failed to save settings")
     }
   }
 
