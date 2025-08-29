@@ -6,6 +6,15 @@ import useTranslation from "@/hooks/useTranslation"
 // loading states and CRUD actions.
 import { toast } from "react-toastify"
 import { gql, useQuery, useMutation } from "@apollo/client";
+// Import pagination components for navigating through pages of guests
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 
 /**
  * Guest management page for hotel businesses.  This page allows the hotel
@@ -14,16 +23,35 @@ import { gql, useQuery, useMutation } from "@apollo/client";
  * `businessId` and `businessType`.
  */
 
-// GraphQL query to fetch guests belonging to a specific business
+// GraphQL query to fetch guests belonging to a specific business with pagination.
+// Returns a GuestPagination object containing the docs array and
+// pagination metadata.  The optional page and limit arguments control
+// which slice of data is returned.  The server sorts guests
+// alphabetically by name.
 const GET_GUESTS = gql`
-  query GetGuests($businessId: ID!, $businessType: String!) {
-    guests(businessId: $businessId, businessType: $businessType) {
-      id
-      name
-      email
-      phone
-      membershipLevel
-      status
+  query GetGuests($businessId: ID!, $businessType: String!, $page: Int, $limit: Int) {
+    guests(
+      businessId: $businessId
+      businessType: $businessType
+      page: $page
+      limit: $limit
+    ) {
+      docs {
+        id
+        name
+        email
+        phone
+        membershipLevel
+        status
+      }
+      totalDocs
+      limit
+      page
+      totalPages
+      hasPrevPage
+      hasNextPage
+      prevPage
+      nextPage
     }
   }
 `;
@@ -81,15 +109,36 @@ export default function HotelGuestsPage() {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
   // Fetch guests for the current business
+  // Pagination state for guests.  currentPage is 1-indexed.  A fixed
+  // number of guests per page is specified by itemsPerPage.  Adjust
+  // itemsPerPage to change how many guest rows appear in the table.
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+
   const {
     data: guestsData,
     loading: guestsLoading,
     error: guestsError,
     refetch: refetchGuests,
   } = useQuery(GET_GUESTS, {
-    variables: { businessId, businessType },
+    variables: { businessId, businessType, page: currentPage, limit: itemsPerPage },
     skip: !businessId || !businessType,
   });
+
+  // Refetch guests whenever the currentPage changes.  This effect
+  // ensures that navigating through the pagination controls updates
+  // the displayed list.  We skip refetching when the business
+  // context is not yet available.
+  useEffect(() => {
+    if (!businessId || !businessType) return;
+    refetchGuests({
+      businessId,
+      businessType,
+      page: currentPage,
+      limit: itemsPerPage,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
   
   useEffect(() => {
     async function fetchSession() {
@@ -179,7 +228,13 @@ export default function HotelGuestsPage() {
         toast.success(t('guestCreatedSuccessfully') || 'Guest created successfully');
       }
       resetForm();
-      refetchGuests();
+      // Refetch guests for the current page and limit after creating or updating
+      refetchGuests({
+        businessId,
+        businessType,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
     } catch (err) {
       console.error(err);
       toast.error(t('failedToSaveGuest') || 'Failed to save guest');
@@ -202,7 +257,13 @@ export default function HotelGuestsPage() {
     if (confirm(t("deleteGuestConfirm"))) {
       try {
         await deleteGuest({ variables: { id } });
-        refetchGuests();
+        // Refetch guests for the current page and limit after deletion
+        refetchGuests({
+          businessId,
+          businessType,
+          page: currentPage,
+          limit: itemsPerPage,
+        });
         toast.success(t('guestDeletedSuccessfully') || 'Guest deleted successfully');
       } catch (err) {
         console.error(err);
@@ -223,48 +284,101 @@ export default function HotelGuestsPage() {
       {/* List of guests */}
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">{t("existingGuests")}</h2>
-        {guestsData?.guests && guestsData.guests.length > 0 ? (
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="px-4 py-2 text-left text-sm font-medium">{t("name")}</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">{t("email")}</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">{t("phone")}</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">{t("membership")}</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">{t("statusLabel")}</th>
-                <th className="px-4 py-2 text-left text-sm font-medium">{t("actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {guestsData.guests.map((guest: any) => (
-                <tr key={guest.id} className="border-t">
-                  <td className="px-4 py-2">{guest.name}</td>
-                  <td className="px-4 py-2">{guest.email}</td>
-                  <td className="px-4 py-2">{guest.phone}</td>
-                  <td className="px-4 py-2">{guest.membershipLevel}</td>
-                  <td className="px-4 py-2 capitalize">{t(guest.status)}</td>
-                  <td className="px-4 py-2 space-x-2">
-                    <button
-                      className="px-2 py-1 text-sm bg-blue-500 text-white rounded"
-                      onClick={() => handleEdit(guest)}
-                    >
-                      {t("edit")}
-                    </button>
-                    <button
-                      className="px-2 py-1 text-sm bg-red-500 text-white rounded"
-                      onClick={() => handleDelete(guest.id)}
-                    >
-                      {t("delete")}
-                    </button>
-                  </td>
+        {/* Display the guests table when there are results.  We extract
+            the docs array from guestsData.guests.  When no docs are
+            returned we display a fallback message. */}
+        {(() => {
+          const guestDocs = guestsData?.guests?.docs ?? [];
+          return guestDocs.length > 0 ? (
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="px-4 py-2 text-left text-sm font-medium">{t("name")}</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium">{t("email")}</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium">{t("phone")}</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium">{t("membership")}</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium">{t("statusLabel")}</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium">{t("actions")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>{t("noGuestsFound")}</p>
-        )}
+              </thead>
+              <tbody>
+                {guestDocs.map((guest: any) => (
+                  <tr key={guest.id} className="border-t">
+                    <td className="px-4 py-2">{guest.name}</td>
+                    <td className="px-4 py-2">{guest.email}</td>
+                    <td className="px-4 py-2">{guest.phone}</td>
+                    <td className="px-4 py-2">{guest.membershipLevel}</td>
+                    <td className="px-4 py-2 capitalize">{t(guest.status)}</td>
+                    <td className="px-4 py-2 space-x-2">
+                      <button
+                        className="px-2 py-1 text-sm bg-blue-500 text-white rounded"
+                        onClick={() => handleEdit(guest)}
+                      >
+                        {t("edit")}
+                      </button>
+                      <button
+                        className="px-2 py-1 text-sm bg-red-500 text-white rounded"
+                        onClick={() => handleDelete(guest.id)}
+                      >
+                        {t("delete")}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>{t("noGuestsFound")}</p>
+          );
+        })()}
       </section>
+
+      {/* Pagination controls for guests */}
+      {guestsData?.guests?.totalPages > 1 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) {
+                    setCurrentPage(currentPage - 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+            {Array.from({ length: guestsData.guests.totalPages }, (_, idx) => idx + 1).map((pageNum) => (
+              <PaginationItem key={pageNum}>
+                <PaginationLink
+                  href="#"
+                  isActive={pageNum === currentPage}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (pageNum !== currentPage) {
+                      setCurrentPage(pageNum);
+                    }
+                  }}
+                >
+                  {pageNum}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const totalPages = guestsData.guests.totalPages;
+                  if (currentPage < totalPages) {
+                    setCurrentPage(currentPage + 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
 
       {/* Form for adding/editing a guest */}
       <section className="space-y-4">

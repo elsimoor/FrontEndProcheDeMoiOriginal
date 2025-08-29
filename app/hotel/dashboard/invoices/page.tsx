@@ -10,6 +10,15 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+// Import pagination components to navigate through pages of invoices
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,33 +48,57 @@ import { toast } from "react-toastify";
 /**
  * GraphQL queries and mutations for invoice management.
  */
+// Query to fetch paginated invoices for a business.  Returns an
+// InvoicePagination object containing a docs array and pagination
+// metadata.  The optional page and limit arguments allow the client
+// to request a specific page of results.  The server sorts invoices
+// by creation date descending (latest first).
 const GET_INVOICES = gql`
-  query GetInvoices($businessId: ID!) {
-    invoices(businessId: $businessId) {
-      id
-      reservationId
-      date
-      total
-      reservation {
+  query GetInvoices($businessId: ID!, $page: Int, $limit: Int) {
+    invoices(businessId: $businessId, page: $page, limit: $limit) {
+      docs {
         id
-        customerInfo {
-          name
+        reservationId
+        date
+        total
+        reservation {
+          id
+          customerInfo {
+            name
+          }
         }
       }
+      totalDocs
+      limit
+      page
+      totalPages
+      hasPrevPage
+      hasNextPage
+      prevPage
+      nextPage
     }
   }
 `;
 
+// Query to fetch reservations for invoice selection.  We request
+// a large limit to ensure that enough reservations are available
+// for invoice creation.  The server will return paginated
+// reservations sorted by creation date descending.  Since we do not
+// need pagination in the dropdown, we pass a high limit (e.g. 1000)
+// via variables when executing this query.
 const GET_RESERVATIONS = gql`
-  query GetReservationsForInvoices($businessId: ID!, $businessType: String!) {
-    reservations(businessId: $businessId, businessType: $businessType) {
-      id
-      customerInfo {
-        name
+  query GetReservationsForInvoices($businessId: ID!, $businessType: String!, $page: Int, $limit: Int) {
+    reservations(businessId: $businessId, businessType: $businessType, page: $page, limit: $limit) {
+      docs {
+        id
+        customerInfo {
+          name
+        }
+        checkIn
+        checkOut
+        totalAmount
       }
-      checkIn
-      checkOut
-      totalAmount
+      totalPages
     }
   }
 `;
@@ -105,6 +138,12 @@ export default function HotelInvoicesPage() {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
+  // Pagination state for invoices.  currentPage is 1-indexed.  A
+  // fixed number of invoices per page is specified by itemsPerPage.
+  // Adjust itemsPerPage to display more or fewer rows per page.
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     async function fetchSession() {
       try {
@@ -129,20 +168,30 @@ export default function HotelInvoicesPage() {
     fetchSession();
   }, []);
 
-  // Fetch existing invoices for this hotel
+  // Fetch existing invoices for this hotel with pagination.  The page
+  // and limit variables control which slice of results is returned.
   const {
     data: invoicesData,
     loading: invoicesLoading,
     error: invoicesError,
     refetch: refetchInvoices,
   } = useQuery(GET_INVOICES, {
-    variables: { businessId },
+    variables: { businessId, page: currentPage, limit: itemsPerPage },
     skip: !businessId,
   });
 
+  // Refetch invoices whenever the currentPage changes.  This ensures
+  // that navigating through pagination updates the displayed
+  // invoices.  We skip refetching when businessId is not yet set.
+  useEffect(() => {
+    if (!businessId) return;
+    refetchInvoices({ businessId, page: currentPage, limit: itemsPerPage });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
+
   // Fetch reservations to populate the invoice creation form
   const { data: reservationsData } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId, businessType },
+    variables: { businessId, businessType, page: 1, limit: 1000 },
     skip: !businessId || !businessType,
   });
 
@@ -200,7 +249,11 @@ export default function HotelInvoicesPage() {
       await createInvoice({ variables: { input } });
       setShowForm(false);
       setSelectedReservationId("");
-      await refetchInvoices();
+      await refetchInvoices({
+        businessId,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
       // Notify the user that the invoice was created successfully
       toast.success(t("invoiceCreatedSuccess") || "Invoice created successfully");
     } catch (err) {
@@ -235,8 +288,10 @@ export default function HotelInvoicesPage() {
     return <div className="p-6 text-red-600">{t("failedLoadInvoices")}</div>;
   }
 
-  const invoices = invoicesData?.invoices ?? [];
-  const reservations = reservationsData?.reservations ?? [];
+  // Extract the list of invoice documents from the paginated response.
+  const invoices = invoicesData?.invoices?.docs ?? [];
+  // Extract the reservation documents from the paginated response.
+  const reservations = reservationsData?.reservations?.docs ?? [];
 
   return (
     <div className="p-6 space-y-6">
@@ -263,14 +318,71 @@ export default function HotelInvoicesPage() {
                 <TableCell>{new Date(inv.date).toLocaleDateString()}</TableCell>
                 <TableCell className="text-right">{formatCurrency(inv.total ?? 0, currency, currency)}</TableCell>
                 <TableCell className="space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => window.location.href = `/hotel/dashboard/invoices/${inv.id}`}>{t("view")}</Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>{t("download")}</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => (window.location.href = `/hotel/dashboard/invoices/${inv.id}`)}
+                  >
+                    {t("view")}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDownload(inv.id)}>
+                    {t("download")}
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination controls for invoices */}
+      {invoicesData?.invoices?.totalPages > 1 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) {
+                    setCurrentPage(currentPage - 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+            {Array.from({ length: invoicesData.invoices.totalPages }, (_, idx) => idx + 1).map(
+              (pageNum) => (
+                <PaginationItem key={pageNum}>
+                  <PaginationLink
+                    href="#"
+                    isActive={pageNum === currentPage}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pageNum !== currentPage) {
+                        setCurrentPage(pageNum);
+                      }
+                    }}
+                  >
+                    {pageNum}
+                  </PaginationLink>
+                </PaginationItem>
+              ),
+            )}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const totalPages = invoicesData.invoices.totalPages;
+                  if (currentPage < totalPages) {
+                    setCurrentPage(currentPage + 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
 
       {/* Dialog for creating an invoice */}
       <Dialog open={showForm} onOpenChange={setShowForm}>

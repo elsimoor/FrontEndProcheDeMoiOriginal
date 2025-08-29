@@ -38,19 +38,30 @@ import { toast } from "react-toastify";
  * retrieves invoice metadata along with the associated reservation and
  * customer name for display in the table.
  */
+// Query to fetch paginated invoices for the salon dashboard.  The
+// backend returns an InvoicePagination object, so we request the
+// docs array and include pagination fields for future UI
+// enhancements.  Optional page and limit variables allow control
+// over pagination.
 const GET_INVOICES = gql`
-  query GetInvoices($businessId: ID!) {
-    invoices(businessId: $businessId) {
-      id
-      reservationId
-      date
-      total
-      reservation {
+  query GetInvoices($businessId: ID!, $page: Int, $limit: Int) {
+    invoices(businessId: $businessId, page: $page, limit: $limit) {
+      docs {
         id
-        customerInfo {
-          name
+        reservationId
+        date
+        total
+        reservation {
+          id
+          customerInfo {
+            name
+          }
         }
       }
+      totalDocs
+      totalPages
+      page
+      limit
     }
   }
 `;
@@ -61,17 +72,29 @@ const GET_INVOICES = gql`
  * field for appointments, plus the totalAmount.  The `businessType`
  * variable ensures we are pulling reservations only for salons.
  */
+// Query to fetch paginated reservations for invoice creation.  The
+// backend returns a ReservationPagination object, so we request
+// docs and include page/limit variables.  A large limit ensures
+// enough reservations are available for the dropdown.
 const GET_RESERVATIONS = gql`
-  query GetSalonReservationsForInvoices($businessId: ID!, $businessType: String!) {
-    reservations(businessId: $businessId, businessType: $businessType) {
-      id
-      customerInfo {
-        name
+  query GetSalonReservationsForInvoices(
+    $businessId: ID!,
+    $businessType: String!,
+    $page: Int,
+    $limit: Int
+  ) {
+    reservations(businessId: $businessId, businessType: $businessType, page: $page, limit: $limit) {
+      docs {
+        id
+        customerInfo {
+          name
+        }
+        checkIn
+        checkOut
+        date
+        totalAmount
       }
-      checkIn
-      checkOut
-      date
-      totalAmount
+      totalPages
     }
   }
 `;
@@ -160,13 +183,17 @@ export default function SalonInvoicesPage() {
     error: invoicesError,
     refetch: refetchInvoices,
   } = useQuery(GET_INVOICES, {
-    variables: { businessId },
+    // Request all invoices with a high limit.  Adjust page and limit
+    // when implementing UI pagination.
+    variables: { businessId, page: 1, limit: 1000 },
     skip: !businessId,
   });
 
   // Fetch reservations to populate the invoice creation form
   const { data: reservationsData } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId, businessType },
+    // Use a high limit so the dropdown has sufficient options.  Adjust
+    // as needed for pagination UI.
+    variables: { businessId, businessType, page: 1, limit: 1000 },
     skip: !businessId || !businessType,
   });
 
@@ -185,7 +212,8 @@ export default function SalonInvoicesPage() {
    */
   const handleCreateInvoice = async () => {
     if (!selectedReservationId || !businessId) return;
-    const reservation = reservationsData?.reservations?.find((r: any) => r.id === selectedReservationId);
+    // Look up the selected reservation within the paginated docs array
+    const reservation = reservationsData?.reservations?.docs?.find((r: any) => r.id === selectedReservationId);
     const totalAmount = reservation?.totalAmount ?? 0;
     const input: any = {
       reservationId: selectedReservationId,
@@ -203,7 +231,8 @@ export default function SalonInvoicesPage() {
       await createInvoice({ variables: { input } });
       setShowForm(false);
       setSelectedReservationId("");
-      await refetchInvoices();
+      // Refetch invoices using the same pagination variables to refresh the list
+      await refetchInvoices({ businessId, page: 1, limit: 1000 });
       // Show a success toast after creating the invoice
       toast.success(t("invoiceCreatedSuccess") || "Invoice created successfully");
     } catch (err) {
@@ -248,8 +277,10 @@ export default function SalonInvoicesPage() {
     return <div className="p-6 text-red-600">{t("errorLoadingInvoices")}</div>;
   }
 
-  const invoices = invoicesData?.invoices ?? [];
-  const reservations = reservationsData?.reservations ?? [];
+  // Extract docs arrays from the paginated responses.  Fall back to
+  // empty arrays to prevent runtime errors.
+  const invoices = invoicesData?.invoices?.docs ?? [];
+  const reservations = reservationsData?.reservations?.docs ?? [];
 
   return (
     <div className="p-6 space-y-6">

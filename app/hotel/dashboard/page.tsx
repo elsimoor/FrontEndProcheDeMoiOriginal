@@ -574,23 +574,41 @@ const GET_ROOMS = gql`
   }
 `;
 
+// Query to fetch paginated reservations for the dashboard.  Since the
+// backend now returns a ReservationPagination object, we must
+// request the docs array and supply page/limit variables.  We
+// specify a large limit to retrieve all reservations for the date
+// range and metrics computation.  Adjust the limit if your hotel
+// expects more than 1000 reservations at once.
 const GET_RESERVATIONS = gql`
-  query GetReservations($businessId: ID!, $businessType: String!) {
-    reservations(businessId: $businessId, businessType: $businessType) {
-      id
-      customerInfo {
-        name
-      }
-      roomId {
+  query GetReservations(
+    $businessId: ID!
+    $businessType: String!
+    $page: Int
+    $limit: Int
+  ) {
+    reservations(
+      businessId: $businessId
+      businessType: $businessType
+      page: $page
+      limit: $limit
+    ) {
+      docs {
         id
-        number
+        customerInfo {
+          name
+        }
+        roomId {
+          id
+          number
+        }
+        checkIn
+        checkOut
+        guests
+        status
+        totalAmount
+        createdAt
       }
-      checkIn
-      checkOut
-      guests
-      status
-      totalAmount
-      createdAt
     }
   }
 `;
@@ -686,7 +704,9 @@ export default function HotelDashboardPage() {
   });
 
   const { data: reservationsData, loading: reservationsLoading, error: reservationsError } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId: hotelId, businessType },
+    // Supply pagination parameters.  We request page 1 and a large
+    // limit to retrieve all reservations for the dashboard metrics.
+    variables: { businessId: hotelId, businessType, page: 1, limit: 1000 },
     skip: !hotelId || !businessType,
   });
 
@@ -701,7 +721,9 @@ export default function HotelDashboardPage() {
   const stats = useMemo(() => {
     if (!roomsData || !reservationsData) return null;
     const rooms = roomsData.rooms;
-    const reservations = reservationsData.reservations;
+    // Extract the reservations array from the paginated response.  When
+    // docs is undefined fallback to an empty array to avoid errors.
+    const reservations = reservationsData.reservations?.docs ?? [];
 
     const start = startDate ? new Date(startDate) : new Date();
     start.setHours(0, 0, 0, 0);

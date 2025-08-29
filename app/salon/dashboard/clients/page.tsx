@@ -91,40 +91,53 @@ export default function SalonClients() {
 
   // Fetch reservations to compute client data
   const GET_RESERVATIONS = gql`
-    query GetReservations($businessId: ID!, $businessType: String!) {
-      reservations(businessId: $businessId, businessType: $businessType) {
-        id
-        customerInfo {
-          name
-          email
-          phone
-        }
-        date
-        serviceId {
+    query GetReservations(
+      $businessId: ID!,
+      $businessType: String!,
+      $page: Int,
+      $limit: Int
+    ) {
+      reservations(businessId: $businessId, businessType: $businessType, page: $page, limit: $limit) {
+        docs {
           id
-          name
-          price
+          customerInfo {
+            name
+            email
+            phone
+          }
+          date
+          serviceId {
+            id
+            name
+            price
+          }
+          staffId {
+            id
+            name
+          }
+          paymentStatus
+          createdAt
         }
-        staffId {
-          id
-          name
-        }
-        paymentStatus
-        createdAt
+        totalDocs
+        totalPages
+        page
+        limit
       }
     }
   `
 
   const { data: reservationsData, loading: reservationsLoading, error: reservationsError } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId: salonId, businessType },
+    // Request all reservations with a high limit.  Adjust page and
+    // limit if implementing pagination UI in future.
+    variables: { businessId: salonId, businessType, page: 1, limit: 1000 },
     skip: !salonId || !businessType,
   })
 
   // Compute clients whenever reservations change
   useEffect(() => {
-    if (!reservationsData?.reservations) return
+    if (!reservationsData?.reservations?.docs) return
     const aggregated: Record<string, Client> = {}
-    reservationsData.reservations.forEach((res: any) => {
+    reservationsData.reservations.docs.forEach((res: any) => {
       const email = res.customerInfo.email
       if (!email) return
       if (!aggregated[email]) {

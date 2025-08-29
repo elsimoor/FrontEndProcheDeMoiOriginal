@@ -22,22 +22,35 @@ import {
  * endpoint is used to derive the active business context.
  */
 
+// Query to fetch paginated payments for a restaurant business.  The
+// backend returns a PaymentPagination object, so we request the docs
+// array and include pagination variables for potential UI pagination.
 const GET_PAYMENTS = gql`
-  query GetPayments($businessId: ID!) {
-    payments(businessId: $businessId) {
-      id
-      amount
-      currency
-      status
-      paymentMethod
-      createdAt
-      reservationId
-      reservation {
+  query GetPayments($businessId: ID!, $page: Int, $limit: Int) {
+    payments(businessId: $businessId, page: $page, limit: $limit) {
+      docs {
         id
-        customerInfo {
-          name
+        amount
+        currency
+        status
+        paymentMethod
+        createdAt
+        reservationId
+        reservation {
+          id
+          customerInfo {
+            name
+          }
         }
       }
+      totalDocs
+      totalPages
+      page
+      limit
+      hasPrevPage
+      hasNextPage
+      prevPage
+      nextPage
     }
   }
 `;
@@ -85,7 +98,9 @@ export default function RestaurantPaymentsPage() {
   }, []);
 
   const { data, loading, error } = useQuery(GET_PAYMENTS, {
-    variables: { businessId },
+    // Request all payments at once with a high limit.  Adjust page and
+    // limit if implementing client-side pagination in the future.
+    variables: { businessId, page: 1, limit: 1000 },
     skip: !businessId,
   });
 
@@ -112,7 +127,9 @@ export default function RestaurantPaymentsPage() {
     return <div className="p-6 text-red-600">{t("errorLoadingPayments")}</div>;
   }
 
-  const payments = data?.payments ?? [];
+  // Extract payment documents from the paginated response.  When
+  // payments or docs is undefined, default to an empty array.
+  const payments = data?.payments?.docs ?? [];
 
   return (
     <div className="p-6 space-y-6">

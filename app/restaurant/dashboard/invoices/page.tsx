@@ -29,33 +29,56 @@ import {
 } from "@/components/ui/select";
 
 // GraphQL queries and mutations for restaurant invoices
+// Query to fetch paginated invoices for the restaurant dashboard.  The
+// backend returns an InvoicePagination object, so we request the
+// docs array and include pagination fields for potential UI
+// pagination.  We accept optional page and limit variables.
 const GET_INVOICES = gql`
-  query GetInvoices($businessId: ID!) {
-    invoices(businessId: $businessId) {
-      id
-      reservationId
-      date
-      total
-      reservation {
+  query GetInvoices($businessId: ID!, $page: Int, $limit: Int) {
+    invoices(businessId: $businessId, page: $page, limit: $limit) {
+      docs {
         id
-        customerInfo {
-          name
+        reservationId
+        date
+        total
+        reservation {
+          id
+          customerInfo {
+            name
+          }
         }
       }
+      totalDocs
+      totalPages
+      page
+      limit
     }
   }
 `;
 
+// Query to fetch paginated reservations for invoice creation.  The
+// backend returns a ReservationPagination object, so we request
+// docs and include page/limit variables.  A large limit ensures
+// enough reservations are available in the dropdown.  Adjust the
+// limit if your restaurant handles more than 1000 reservations.
 const GET_RESERVATIONS = gql`
-  query GetRestaurantReservationsForInvoices($businessId: ID!, $businessType: String!) {
-    reservations(businessId: $businessId, businessType: $businessType) {
-      id
-      customerInfo {
-        name
+  query GetRestaurantReservationsForInvoices(
+    $businessId: ID!,
+    $businessType: String!,
+    $page: Int,
+    $limit: Int
+  ) {
+    reservations(businessId: $businessId, businessType: $businessType, page: $page, limit: $limit) {
+      docs {
+        id
+        customerInfo {
+          name
+        }
+        checkIn
+        checkOut
+        totalAmount
       }
-      checkIn
-      checkOut
-      totalAmount
+      totalDocs
     }
   }
 `;
@@ -134,12 +157,18 @@ export default function RestaurantInvoicesPage() {
     error: invoicesError,
     refetch: refetchInvoices,
   } = useQuery(GET_INVOICES, {
-    variables: { businessId },
+    // Request all invoices with a high limit.  If you wish to
+    // implement UI pagination, adjust page and limit accordingly
+    // and update the pagination controls.
+    variables: { businessId, page: 1, limit: 1000 },
     skip: !businessId,
   });
 
   const { data: reservationsData } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId, businessType },
+    // Fetch all reservations for the invoice form.  We pass a high
+    // limit to ensure sufficient results.  Pagination is not needed
+    // for the dropdown.
+    variables: { businessId, businessType, page: 1, limit: 1000 },
     skip: !businessId || !businessType,
   });
 
@@ -151,7 +180,9 @@ export default function RestaurantInvoicesPage() {
 
   const handleCreateInvoice = async () => {
     if (!selectedReservationId || !businessId) return;
-    const reservation = reservationsData?.reservations?.find((r: any) => r.id === selectedReservationId);
+    // Look up the selected reservation within the paginated docs array.  When
+    // docs is undefined, fall back to an empty array to avoid errors.
+    const reservation = reservationsData?.reservations?.docs?.find((r: any) => r.id === selectedReservationId);
     const totalAmount = reservation?.totalAmount ?? 0;
     const input: any = {
       reservationId: selectedReservationId,
@@ -210,8 +241,10 @@ export default function RestaurantInvoicesPage() {
     return <div className="p-6 text-red-600">{t("errorLoadingInvoices")}</div>;
   }
 
-  const invoices = invoicesData?.invoices ?? [];
-  const reservations = reservationsData?.reservations ?? [];
+  // Extract docs arrays from the paginated responses.  Fall back to empty
+  // arrays when docs is undefined to avoid runtime errors.
+  const invoices = invoicesData?.invoices?.docs ?? [];
+  const reservations = reservationsData?.reservations?.docs ?? [];
 
   return (
     <div className="p-6 space-y-6">

@@ -170,29 +170,40 @@ export default function SalonDashboard() {
 
   // GraphQL queries
   const GET_RESERVATIONS = gql`
-    query GetReservations($businessId: ID!, $businessType: String!) {
-      reservations(businessId: $businessId, businessType: $businessType) {
-        id
-        customerInfo {
-          name
-          email
-          phone
-        }
-        date
-        time
-        status
-        serviceId {
+    query GetReservations(
+      $businessId: ID!,
+      $businessType: String!,
+      $page: Int,
+      $limit: Int
+    ) {
+      reservations(businessId: $businessId, businessType: $businessType, page: $page, limit: $limit) {
+        docs {
           id
-          name
-          duration
-          price
+          customerInfo {
+            name
+            email
+            phone
+          }
+          date
+          time
+          status
+          serviceId {
+            id
+            name
+            duration
+            price
+          }
+          staffId {
+            id
+            name
+            role
+          }
+          createdAt
         }
-        staffId {
-          id
-          name
-          role
-        }
-        createdAt
+        totalDocs
+        totalPages
+        page
+        limit
       }
     }
   `
@@ -218,7 +229,12 @@ export default function SalonDashboard() {
   `
 
   const { data: reservationsData, loading: reservationsLoading, error: reservationsError } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId: salonId, businessType },
+    // Request all reservations with a high limit.  We pass page and limit
+    // variables to match the backend's pagination API.  Without these
+    // arguments the GraphQL server would reject the query because
+    // reservations returns a ReservationPagination.  Adjust the limit if
+    // you plan to implement client‑side pagination on the dashboard.
+    variables: { businessId: salonId, businessType, page: 1, limit: 1000 },
     skip: !salonId || !businessType,
   })
   const { data: servicesData, loading: servicesLoading, error: servicesError } = useQuery(GET_SERVICES, {
@@ -231,7 +247,10 @@ export default function SalonDashboard() {
   })
 
   // Derive arrays from query data
-  const reservations: Reservation[] = reservationsData?.reservations ?? []
+  // reservationsData.reservations is a ReservationPagination object; use
+  // the docs array to get the actual list of reservations.  When
+  // reservationsData or docs is undefined, default to an empty array.
+  const reservations: Reservation[] = reservationsData?.reservations?.docs ?? []
   const services: Service[] = servicesData?.services ?? []
   const staff: StaffMember[] = staffData?.staff ?? []
 

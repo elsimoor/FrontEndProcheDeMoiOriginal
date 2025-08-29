@@ -115,34 +115,55 @@ export default function SalonBookings() {
   }, [])
 
   // GraphQL queries and mutations
+  // Query to fetch paginated reservations for salon bookings.  The
+  // backend returns a ReservationPagination object, so we request the
+  // docs array and include pagination fields.  We accept optional page
+  // and limit variables.  Increase the limit if your salon stores more
+  // than 1000 reservations.
   const GET_RESERVATIONS = gql`
-    query GetReservations($businessId: ID!, $businessType: String!) {
-      reservations(businessId: $businessId, businessType: $businessType) {
-        id
-        customerInfo {
-          name
-          email
-          phone
-        }
-        date
-        time
-        duration
-        serviceId {
+    query GetReservations(
+      $businessId: ID!
+      $businessType: String!
+      $page: Int
+      $limit: Int
+    ) {
+      reservations(
+        businessId: $businessId
+        businessType: $businessType
+        page: $page
+        limit: $limit
+      ) {
+        docs {
           id
-          name
-          price
+          customerInfo {
+            name
+            email
+            phone
+          }
+          date
+          time
           duration
+          serviceId {
+            id
+            name
+            price
+            duration
+          }
+          staffId {
+            id
+            name
+            role
+          }
+          status
+          paymentStatus
+          notes
+          specialRequests
+          createdAt
         }
-        staffId {
-          id
-          name
-          role
-        }
-        status
-        paymentStatus
-        notes
-        specialRequests
-        createdAt
+        totalDocs
+        totalPages
+        page
+        limit
       }
     }
   `
@@ -210,7 +231,9 @@ export default function SalonBookings() {
     error: reservationsError,
     refetch: refetchReservations,
   } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId: salonId, businessType },
+    // Request all reservations with a high limit.  You can adjust
+    // page and limit to implement pagination later.
+    variables: { businessId: salonId, businessType, page: 1, limit: 1000 },
     skip: !salonId || !businessType,
   })
 
@@ -276,7 +299,7 @@ export default function SalonBookings() {
 
   // Compute filtered reservations based on search, status, date filters
   const filteredReservations: Reservation[] = useMemo(() => {
-    const list: any[] = reservationsData?.reservations || []
+    const list: any[] = reservationsData?.reservations?.docs || []
     const now = new Date()
     const todayStr = now.toISOString().split("T")[0]
     const tomorrow = new Date(now)
@@ -415,7 +438,8 @@ export default function SalonBookings() {
         toast.success(t("reservationCreatedSuccessfully") || "Reservation created successfully")
       }
       // Refresh data and reset form
-      await refetchReservations()
+      // Refetch with pagination parameters to refresh the list
+      await refetchReservations({ businessId: salonId, businessType, page: 1, limit: 1000 })
       setShowModal(false)
       setEditingReservation(null)
       resetForm()
@@ -474,7 +498,8 @@ export default function SalonBookings() {
     if (confirm(t('deleteAppointmentConfirm'))) {
       try {
         await deleteReservation({ variables: { id } })
-        await refetchReservations()
+        // Refetch to refresh list after deletion
+        await refetchReservations({ businessId: salonId, businessType, page: 1, limit: 1000 })
         // Show a success toast after deletion
         toast.success(t('reservationDeletedSuccessfully') || 'Reservation deleted successfully')
       } catch (error) {
@@ -486,7 +511,7 @@ export default function SalonBookings() {
   }
 
   const handleStatusChange = async (id: string, newStatus: string) => {
-    const reservation = reservationsData?.reservations.find((r: Reservation) => r.id === id)
+    const reservation = reservationsData?.reservations?.docs?.find((r: Reservation) => r.id === id)
     if (!reservation) return
     try {
       await updateReservation({
@@ -497,7 +522,8 @@ export default function SalonBookings() {
           },
         },
       })
-      await refetchReservations()
+      // Refetch to refresh status after update
+      await refetchReservations({ businessId: salonId, businessType, page: 1, limit: 1000 })
       toast.success(t('reservationUpdatedSuccessfully') || 'Reservation updated successfully')
     } catch (error) {
       console.error(error)
@@ -506,7 +532,7 @@ export default function SalonBookings() {
   }
 
   const handlePaymentStatusChange = async (id: string, newPaymentStatus: string) => {
-    const reservation = reservationsData?.reservations.find((r: Reservation) => r.id === id)
+    const reservation = reservationsData?.reservations?.docs?.find((r: Reservation) => r.id === id)
     if (!reservation) return
     try {
       await updateReservation({
@@ -517,7 +543,8 @@ export default function SalonBookings() {
           },
         },
       })
-      await refetchReservations()
+      // Refetch to refresh payment status after update
+      await refetchReservations({ businessId: salonId, businessType, page: 1, limit: 1000 })
       toast.success(t('reservationUpdatedSuccessfully') || 'Reservation updated successfully')
     } catch (error) {
       console.error(error)

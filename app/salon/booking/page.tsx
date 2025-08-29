@@ -79,19 +79,35 @@ const GET_STAFF = gql`
   }
 `;
 
-// GraphQL: Fetch existing reservations for a business.  We use this to
-// determine which time slots are unavailable on a given date.
+// GraphQL: Fetch existing reservations for a business.  The backend now
+// returns a ReservationPagination object when page/limit arguments are
+// provided.  We request only the docs array to get the list of
+// reservations.  Supplying a high limit retrieves all reservations
+// needed to compute unavailable time slots.  Adjust the limit if your
+// salon handles more than 1000 bookings at once.
 const GET_RESERVATIONS = gql`
-  query GetReservations($businessId: ID!, $businessType: String!) {
-    reservations(businessId: $businessId, businessType: $businessType) {
-      id
-      date
-      time
-      status
-      duration
-      serviceId {
+  query GetReservations(
+    $businessId: ID!
+    $businessType: String!
+    $page: Int
+    $limit: Int
+  ) {
+    reservations(
+      businessId: $businessId
+      businessType: $businessType
+      page: $page
+      limit: $limit
+    ) {
+      docs {
         id
+        date
+        time
+        status
         duration
+        serviceId {
+          id
+          duration
+        }
       }
     }
   }
@@ -176,7 +192,12 @@ export default function SalonBookingPage() {
     skip: !salonId,
   });
   const { data: reservationsData } = useQuery(GET_RESERVATIONS, {
-    variables: { businessId: salonId, businessType: "salon" },
+    // Request all reservations with a high limit so that time slot
+    // availability is computed accurately.  If your salon has more than
+    // 1000 bookings at once you may increase the limit or implement
+    // client‑side pagination for this view.  The businessType is fixed
+    // to "salon" on this page.
+    variables: { businessId: salonId, businessType: "salon", page: 1, limit: 1000 },
     skip: !salonId,
   });
 
@@ -221,8 +242,10 @@ export default function SalonBookingPage() {
   // via the serviceId.  If both are missing a 30 minute default is
   // used.  Intervals are represented as minutes since midnight.
   const reservedIntervals = useMemo(() => {
-    if (!reservationsData?.reservations) return [] as { start: number; end: number }[];
-    return reservationsData.reservations
+    // reservations now returns a ReservationPagination object with a docs array.
+    // Guard against undefined to handle the initial loading state gracefully.
+    if (!reservationsData?.reservations?.docs) return [] as { start: number; end: number }[];
+    return reservationsData.reservations.docs
       .filter((r: any) => {
         // Only consider reservations on the selected date for the same service.
         // If no serviceId is selected yet we consider all reservations to avoid false negatives.

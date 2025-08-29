@@ -25,22 +25,38 @@ import {
  * payments for this business.
  */
 
+// Query to fetch paginated payments for a salon business.  The
+// backend returns a PaymentPagination object, so we request the docs
+// array along with pagination metadata.  Pagination variables
+// `page` and `limit` allow the backend to control the slice of
+// payments returned.  Here we fetch all payments by specifying
+// page=1 and a high limit (e.g., 1000) when invoking the query.
 const GET_PAYMENTS = gql`
-  query GetPayments($businessId: ID!) {
-    payments(businessId: $businessId) {
-      id
-      amount
-      currency
-      status
-      paymentMethod
-      createdAt
-      reservationId
-      reservation {
+  query GetPayments($businessId: ID!, $page: Int, $limit: Int) {
+    payments(businessId: $businessId, page: $page, limit: $limit) {
+      docs {
         id
-        customerInfo {
-          name
+        amount
+        currency
+        status
+        paymentMethod
+        createdAt
+        reservationId
+        reservation {
+          id
+          customerInfo {
+            name
+          }
         }
       }
+      totalDocs
+      totalPages
+      page
+      limit
+      hasPrevPage
+      hasNextPage
+      prevPage
+      nextPage
     }
   }
 `;
@@ -94,7 +110,10 @@ export default function SalonPaymentsPage() {
   const currency = settingsData?.salon?.settings?.currency || 'USD';
 
   const { data, loading, error } = useQuery(GET_PAYMENTS, {
-    variables: { businessId },
+    // Request all payments with a large limit.  If client-side
+    // pagination is added in the future, adjust page and limit
+    // accordingly.
+    variables: { businessId, page: 1, limit: 1000 },
     skip: !businessId,
   });
 
@@ -108,7 +127,9 @@ export default function SalonPaymentsPage() {
     return <div className="p-6 text-red-600">{t('failedLoadPayments')}</div>;
   }
 
-  const payments = data?.payments ?? [];
+  // Extract payment documents from the paginated response.  When
+  // payments or docs is undefined, default to an empty array.
+  const payments = data?.payments?.docs ?? [];
 
   return (
     <div className="p-6 space-y-6">

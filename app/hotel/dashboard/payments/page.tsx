@@ -28,6 +28,15 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+// Pagination components for navigating through pages of payments
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 
 /**
  * Payments page for the hotel dashboard.
@@ -41,22 +50,36 @@ import {
  * retrieved, an error is displayed.
  */
 
+// Query to fetch paginated payments for a business.  Returns a
+// PaymentPagination object with a docs array and pagination
+// metadata.  The optional page and limit arguments allow clients to
+// request specific pages.  Payments are sorted by newest first.
 const GET_PAYMENTS = gql`
-  query GetPayments($businessId: ID!) {
-    payments(businessId: $businessId) {
-      id
-      amount
-      currency
-      status
-      paymentMethod
-      createdAt
-      reservationId
-      reservation {
+  query GetPayments($businessId: ID!, $page: Int, $limit: Int) {
+    payments(businessId: $businessId, page: $page, limit: $limit) {
+      docs {
         id
-        customerInfo {
-          name
+        amount
+        currency
+        status
+        paymentMethod
+        createdAt
+        reservationId
+        reservation {
+          id
+          customerInfo {
+            name
+          }
         }
       }
+      totalDocs
+      limit
+      page
+      totalPages
+      hasPrevPage
+      hasNextPage
+      prevPage
+      nextPage
     }
   }
 `;
@@ -69,6 +92,11 @@ export default function HotelPaymentsPage() {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
+
+  // Pagination state for payments.  currentPage is 1-indexed and
+  // itemsPerPage controls how many payment rows are displayed per page.
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     async function fetchSession() {
@@ -93,11 +121,27 @@ export default function HotelPaymentsPage() {
     fetchSession();
   }, []);
 
-  // Fetch payments once we have a businessId
-  const { data, loading, error } = useQuery(GET_PAYMENTS, {
-    variables: { businessId },
+  // Fetch payments once we have a businessId with pagination.  The
+  // page and limit variables allow us to fetch a specific slice of
+  // payment data.  Sorting is handled server‑side.
+  const {
+    data,
+    loading,
+    error,
+    refetch: refetchPayments,
+  } = useQuery(GET_PAYMENTS, {
+    variables: { businessId, page: currentPage, limit: itemsPerPage },
     skip: !businessId,
   });
+
+  // Refetch payments whenever the currentPage changes to ensure the
+  // displayed data matches the selected page.  Skip when businessId is
+  // not yet available.
+  useEffect(() => {
+    if (!businessId) return;
+    refetchPayments({ businessId, page: currentPage, limit: itemsPerPage });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   // Fetch the hotel's currency once we know the businessId.  If the query
   // hasn't run yet or no currency is configured, default to USD.
@@ -117,7 +161,9 @@ export default function HotelPaymentsPage() {
     return <div className="p-6 text-red-600">{t("failedLoadPayments")}</div>;
   }
 
-  const payments = data?.payments ?? [];
+  // Extract the payment documents from the paginated response.  When
+  // no payments are present the result is an empty array.
+  const payments = data?.payments?.docs ?? [];
 
   return (
     <div className="p-6 space-y-6">
@@ -168,6 +214,53 @@ export default function HotelPaymentsPage() {
       </Table>
       {payments.length === 0 && (
         <p className="text-gray-600">{t("noPaymentsFound")}</p>
+      )}
+
+      {/* Pagination controls for payments */}
+      {data?.payments?.totalPages > 1 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) {
+                    setCurrentPage(currentPage - 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+            {Array.from({ length: data.payments.totalPages }, (_, idx) => idx + 1).map((pageNum) => (
+              <PaginationItem key={pageNum}>
+                <PaginationLink
+                  href="#"
+                  isActive={pageNum === currentPage}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (pageNum !== currentPage) {
+                      setCurrentPage(pageNum);
+                    }
+                  }}
+                >
+                  {pageNum}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const totalPages = data.payments.totalPages;
+                  if (currentPage < totalPages) {
+                    setCurrentPage(currentPage + 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
     </div>
   );

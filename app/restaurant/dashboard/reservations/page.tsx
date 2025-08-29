@@ -80,28 +80,49 @@ export default function RestaurantReservations() {
   }, [])
 
   // GraphQL operations
+  // Query to fetch paginated reservations for the restaurant dashboard.  The
+  // backend now returns a ReservationPagination object, so we request
+  // only the docs array.  We include page and limit variables so we
+  // can fetch all reservations with a high limit or implement
+  // server‑side pagination in future.  Adjust the limit if needed.
   const GET_RESERVATIONS = gql`
-    query GetReservations($businessId: ID!, $businessType: String!) {
-      reservations(businessId: $businessId, businessType: $businessType) {
-        id
-        customerInfo {
-          name
-          email
-          phone
-        }
-        date
-        time
-        partySize
-        tableId {
+    query GetReservations(
+      $businessId: ID!
+      $businessType: String!
+      $page: Int
+      $limit: Int
+    ) {
+      reservations(
+        businessId: $businessId
+        businessType: $businessType
+        page: $page
+        limit: $limit
+      ) {
+        docs {
           id
-          number
-          capacity
+          customerInfo {
+            name
+            email
+            phone
+          }
+          date
+          time
+          partySize
+          tableId {
+            id
+            number
+            capacity
+          }
+          status
+          notes
+          specialRequests
+          createdAt
+          reservationFileUrl
         }
-        status
-        notes
-        specialRequests
-        createdAt
-        reservationFileUrl
+        totalDocs
+        totalPages
+        page
+        limit
       }
     }
   `
@@ -134,13 +155,18 @@ export default function RestaurantReservations() {
     }
   `
 
-  const { data: reservationsData, loading: reservationsLoading, error: reservationsError, refetch: refetchReservations } = useQuery(
-    GET_RESERVATIONS,
-    {
-      variables: { businessId: restaurantId, businessType },
-      skip: !restaurantId || !businessType,
-    },
-  )
+  const {
+    data: reservationsData,
+    loading: reservationsLoading,
+    error: reservationsError,
+    refetch: refetchReservations,
+  } = useQuery(GET_RESERVATIONS, {
+    // Request all reservations at once with a high limit.  Should you
+    // wish to implement true pagination in the UI, adjust page and
+    // limit accordingly and update the pagination controls.
+    variables: { businessId: restaurantId, businessType, page: 1, limit: 1000 },
+    skip: !restaurantId || !businessType,
+  })
 
   const { data: tablesData, loading: tablesLoading, error: tablesError } = useQuery(GET_TABLES, {
     variables: { restaurantId },
@@ -187,7 +213,7 @@ export default function RestaurantReservations() {
   // perform client-side filtering based on the search term, status and
   // date filters.  Date comparisons use local timezone.
   const filteredReservations: Reservation[] = useMemo(() => {
-    const list: any[] = reservationsData?.reservations || []
+    const list: any[] = reservationsData?.reservations?.docs || []
     const now = new Date()
     const todayStr = now.toISOString().split("T")[0]
     const tomorrow = new Date(now)
@@ -286,7 +312,9 @@ export default function RestaurantReservations() {
           },
         })
       }
-      await refetchReservations()
+      // Refetch the reservations with the same pagination variables to
+      // refresh the list after create or update.
+      await refetchReservations({ businessId: restaurantId, businessType, page: 1, limit: 1000 })
       setShowModal(false)
       setEditingReservation(null)
       resetForm()
@@ -335,7 +363,8 @@ export default function RestaurantReservations() {
     if (!confirm(t('deleteReservationConfirm'))) return
     try {
       await deleteReservation({ variables: { id } })
-      await refetchReservations()
+      // Refetch the reservations after deletion with the same pagination variables
+      await refetchReservations({ businessId: restaurantId, businessType, page: 1, limit: 1000 })
     } catch (err) {
       console.error(err)
       alert(t('deleteReservationFailed'))

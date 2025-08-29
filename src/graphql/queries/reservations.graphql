@@ -10,50 +10,64 @@ query reservations(
   $businessType: String!
   $status: String
   $date: Date
+  $page: Int
+  $limit: Int
 ) {
   reservations(
     businessId: $businessId
     businessType: $businessType
     status: $status
     date: $date
+    page: $page
+    limit: $limit
   ) {
-    id
-    businessType
-    customerInfo {
-      name
-      email
-      phone
-    }
-    date
-    status
-    
-    # Hotel fields
-    roomId {
-      number
-      type
-    }
-    checkIn
-    checkOut
-    guests
-    
-    # Restaurant fields
-    tableId {
-      number
-      capacity
-    }
-    partySize
-    
-    # Salon fields
-    serviceId {
-      name
+    docs {
+      id
+      businessType
+      customerInfo {
+        name
+        email
+        phone
+      }
+      date
+      status
+      
+      # Hotel fields
+      roomId {
+        number
+        type
+      }
+      checkIn
+      checkOut
+      guests
+      
+      # Restaurant fields
+      tableId {
+        number
+        capacity
+      }
+      partySize
+      
+      # Salon fields
+      serviceId {
+        name
+        duration
+      }
+      staffId {
+        name
+      }
+      
       duration
+      
+      createdAt
     }
-    staffId {
-      name
-    }
-    
-    duration
-    
-    createdAt
+    totalDocs
+    limit
+    page
+    totalPages
+    hasPrevPage
+    hasNextPage
+    prevPage
+    nextPage
   }
 }
