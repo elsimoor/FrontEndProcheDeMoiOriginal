@@ -209,11 +209,12 @@ export default function HotelReservationsPage() {
   const [businessType, setBusinessType] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
-
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
+
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
 
   const {
     data: allReservationsData,
@@ -223,6 +224,7 @@ export default function HotelReservationsPage() {
     skip: !businessId || !businessType,
   });
 
+  // Form state
   const [formState, setFormState] = useState<ReservationFormState>({
     guestFirstName: "",
     guestLastName: "",
@@ -235,7 +237,6 @@ export default function HotelReservationsPage() {
     totalAmount: "",
     status: "pending",
   });
-
 
 
   useEffect(() => {
@@ -486,7 +487,6 @@ export default function HotelReservationsPage() {
   }, [formState.roomId]);
   const [updateReservation] = useMutation(UPDATE_RESERVATION);
 
-  // Form state
 
   /**
    * Local state to hold the currently selected date range for a hotel

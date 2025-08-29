@@ -529,9 +529,25 @@ export default function RoomDetailPage({ params }: { params: { roomId: string } 
                 {/* About this stay */}
                 <section>
                   <h2 className="text-lg font-semibold mb-4">About this stay</h2>
-                  <p className="text-sm text-gray-700 max-w-[600px]">
-                    {room.description || t("noDescriptionAvailable")}
-                  </p>
+                  {/*
+                   * Render the room description as HTML.  The description
+                   * comes from a rich text editor and may include HTML
+                   * tags (e.g. headings, bold, italics).  Using
+                   * dangerouslySetInnerHTML ensures the markup is
+                   * interpreted correctly rather than displayed as raw
+                   * text.  If no description is provided, display a
+                   * translated fallback.
+                   */}
+                  {room.description ? (
+                    <div
+                      className="text-sm text-gray-700 max-w-[600px] prose prose-slate"
+                      dangerouslySetInnerHTML={{ __html: room.description }}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-700 max-w-[600px]">
+                      {t("noDescriptionAvailable")}
+                    </p>
+                  )}
                 </section>
 
                 {/* Paid room options */}
