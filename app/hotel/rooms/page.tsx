@@ -31,29 +31,7 @@
 //   }
 // `;
 
-// // Query for rooms that are available within a date range
-// const GET_AVAILABLE_ROOMS = gql`
-//   query AvailableRooms($hotelId: ID!, $checkIn: Date!, $checkOut: Date!, $adults: Int!, $children: Int!) {
-//     availableRooms(hotelId: $hotelId, checkIn: $checkIn, checkOut: $checkOut, adults: $adults, children: $children) {
-//       id
-//       number
-//       type
-//       price
-//       status
-//       amenities
-//       features
-//       images
-//       capacity
-//       description
-//     }
-//   }
-// `;
 
-// const GET_AVAILABLE_ROOMS_COUNT = gql`
-//   query AvailableRoomsCount($hotelId: ID!, $checkIn: Date!, $checkOut: Date!, $adults: Int!, $children: Int!) {
-//     availableRoomsCount(hotelId: $hotelId, checkIn: $checkIn, checkOut: $checkOut, adults: $adults, children: $children)
-//   }
-// `;
 
 // export default function RoomsListPage() {
 //   const router = useRouter();
@@ -356,6 +334,28 @@ import { formatCurrency, currencySymbols } from "@/lib/currency"
 import useTranslation from "@/hooks/useTranslation"
 import { useLanguage } from "@/context/LanguageContext"
 
+
+
+// Query rooms across all hotels that are available within the specified date range.
+const GET_AVAILABLE_ROOMS_ALL_HOTELS = gql`
+  query AvailableRoomsAllHotels($checkIn: Date!, $checkOut: Date!, $adults: Int!, $children: Int!) {
+    availableRoomsAllHotels(checkIn: $checkIn, checkOut: $checkOut, adults: $adults, children: $children) {
+      id
+      type
+      price
+      status
+      amenities
+      features
+      images
+      capacity
+      description
+      bedType
+      monthlyPrices { startMonth endMonth price }
+      specialPrices { startMonth startDay endMonth endDay price }
+      hotelId { id name }
+    }
+  }
+`;
 // -------------------- Bed types (from your image) --------------------
 const BED_OPTIONS = [
   "Single",
@@ -526,19 +526,17 @@ export default function RoomsListPage() {
 
   const hasDates = !!checkIn && !!checkOut
 
-  // Rooms (available or all, depending on dates)
+  // Fetch available rooms across all hotels when dates are provided.  When
+  // no check‑in/out are specified, skip this query to avoid unnecessary
+  // requests.  We no longer query individual hotels for rooms because
+  // availableRoomsAllHotels returns rooms for every active hotel.
   const {
     data: roomsData,
     loading: roomsLoading,
     error: roomsError,
-  } = useQuery(hasDates ? GET_AVAILABLE_ROOMS : GET_ROOMS, {
-    variables: hasDates ? { hotelId, checkIn, checkOut, adults, children } : { hotelId },
-    skip: !hotelId,
-  })
-
-  useQuery(GET_AVAILABLE_ROOMS_COUNT, {
-    variables: { hotelId, checkIn, checkOut, adults, children },
-    skip: !hotelId || !hasDates,
+  } = useQuery(GET_AVAILABLE_ROOMS_ALL_HOTELS, {
+    variables: { checkIn, checkOut, adults, children },
+    skip: !hasDates,
   })
 
   // Fetch hotel settings to determine currency.  We skip the query if
@@ -556,7 +554,10 @@ export default function RoomsListPage() {
   const { locale, setLocale } = useLanguage()
 
   // Normalize
-  const roomsArray: any[] = roomsData?.rooms ?? roomsData?.availableRooms ?? []
+  // availableRoomsAllHotels contains rooms from all hotels matching the
+  // date range and capacity filters.  When the query is skipped or
+  // returns nothing, fallback to an empty array.
+  const roomsArray: any[] = roomsData?.availableRoomsAllHotels ?? []
 
   // Compute the number of nights for the selected date range.  If no
   // dates are provided (i.e. the search page is loaded without check‑in
@@ -644,6 +645,9 @@ export default function RoomsListPage() {
         description: room.description,
         count: 1,
         bedInfo: formatBedTypes(room.bedType),
+        // Store the associated hotelId on the grouped entry so that
+        // bookings can reference the correct hotel when selected.
+        hotelId: room.hotelId?.id,
       }
     } else {
       grouped[room.type].count += 1
@@ -656,6 +660,7 @@ export default function RoomsListPage() {
         grouped[room.type].amenities = room.amenities || grouped[room.type].amenities
         grouped[room.type].features = room.features || grouped[room.type].features
         grouped[room.type].bedInfo = formatBedTypes(room.bedType)
+          grouped[room.type].hotelId = room.hotelId?.id
       }
     }
   })
@@ -677,20 +682,24 @@ export default function RoomsListPage() {
   // selection and map them to room types when filtering.
   const hotelFilterOptions = ["boutique", "luxury", "family", "romantic"]
 
-  const handleSelect = (roomId: string) => {
+  // When the user selects a room, persist the booking details in
+  // localStorage and navigate to the room details page.  The room
+  // parameter contains aggregated information including the primary
+  // roomId and hotelId (see grouping logic above).
+  const handleSelect = (room: any) => {
     const booking = {
       checkIn,
       checkOut,
       adults,
       children,
       guests: adults + children,
-      roomId,
-      hotelId,
+      roomId: room.roomId,
+      hotelId: room.hotelId,
     }
     if (typeof window !== "undefined") {
       localStorage.setItem("booking", JSON.stringify(booking))
     }
-    router.push(`/hotel/rooms/${roomId}`)
+    router.push(`/hotel/rooms/${room.roomId}`)
   }
 
   // Remove legacy tab and filter arrays.  These were replaced by the
@@ -799,7 +808,15 @@ export default function RoomsListPage() {
 
         {/* Available Rooms Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">{t("availableRoomsHeading")}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("availableRoomsHeading")}</h1>
+          {/* Show the total number of rooms returned when available.  This
+          uses the generic roomsAvailable translation which adds the
+          suffix in the appropriate language (e.g. "room(s) available"). */}
+          {roomsArray.length > 0 && (
+            <p className="text-gray-600 mb-6">
+              {roomsArray.length} {t("roomsAvailable")}
+            </p>
+          )}
 
           {roomsLoading || hotelsLoading ? (
             <p>{t("loadingRooms")}</p>
@@ -813,7 +830,7 @@ export default function RoomsListPage() {
                 <div
                   key={room.roomId}
                   className="flex bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handleSelect(room.roomId)}
+                  onClick={() => handleSelect(room)}
                 >
                   {/* Room Image */}
                   <div className="w-64 h-48 flex-shrink-0">
