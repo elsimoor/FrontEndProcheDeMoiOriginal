@@ -343,7 +343,7 @@ export default function PaymentSuccessPage() {
           <div className="bg-gradient-to-r from-blue-600 to-emerald-600 px-6 py-4">
             <h2 className="text-xl font-semibold text-white flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              Reservation Summary
+              {t("reservationSummary")}
             </h2>
           </div>
 
@@ -355,7 +355,7 @@ export default function PaymentSuccessPage() {
                   <User className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Name</p>
+                  <p className="text-sm text-gray-500">{t("nameLabel")}</p>
                   <p className="font-medium text-gray-900">{reservationData.reservation.customerInfo?.name}</p>
                 </div>
               </div>
@@ -365,7 +365,7 @@ export default function PaymentSuccessPage() {
                   <Mail className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="text-sm text-gray-500">{t("emailLabel")}</p>
                   <p className="font-medium text-gray-900">{reservationData.reservation.customerInfo?.email}</p>
                 </div>
               </div>
@@ -380,7 +380,7 @@ export default function PaymentSuccessPage() {
                       <Calendar className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Check-in</p>
+                      <p className="text-sm text-gray-500">{t("checkInLabel")}</p>
                       <p className="font-medium text-gray-900">
                         {reservationData.reservation.checkIn
                           ? new Date(reservationData.reservation.checkIn).toLocaleDateString()
@@ -394,7 +394,7 @@ export default function PaymentSuccessPage() {
                       <Calendar className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Check-out</p>
+                      <p className="text-sm text-gray-500">{t("checkOutLabel")}</p>
                       <p className="font-medium text-gray-900">
                         {reservationData.reservation.checkOut
                           ? new Date(reservationData.reservation.checkOut).toLocaleDateString()
@@ -408,7 +408,7 @@ export default function PaymentSuccessPage() {
                       <Users className="w-4 h-4 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Guests</p>
+                      <p className="text-sm text-gray-500">{t("guestsLabelGeneral")}</p>
                       <p className="font-medium text-gray-900">{reservationData.reservation.guests ?? "-"}</p>
                     </div>
                   </div>
@@ -420,7 +420,7 @@ export default function PaymentSuccessPage() {
                       <Calendar className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Date</p>
+                      <p className="text-sm text-gray-500">{t("dateLabelGeneral")}</p>
                       <p className="font-medium text-gray-900">
                         {reservationData.reservation.date
                           ? new Date(reservationData.reservation.date).toLocaleDateString()
@@ -461,7 +461,7 @@ export default function PaymentSuccessPage() {
               <div className="border-t pt-4">
                 <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-4 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-medium text-gray-700">Total Amount</span>
+                    <span className="text-lg font-medium text-gray-700">{t("totalAmountLabel")}</span>
                     <span className="text-2xl font-bold text-emerald-600">
                       {
                         (() => {
@@ -486,7 +486,7 @@ export default function PaymentSuccessPage() {
             {reservationData.reservation.notes && (
               <div className="border-t pt-4">
                 <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <p className="text-sm font-medium text-amber-800 mb-1">Notes</p>
+                  <p className="text-sm font-medium text-amber-800 mb-1">{t("notesLabel")}</p>
                   <p className="text-amber-700">{reservationData.reservation.notes}</p>
                 </div>
               </div>
@@ -524,7 +524,7 @@ export default function PaymentSuccessPage() {
                 className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 <Download className="w-4 h-4" />
-                Download PDF
+                {t("downloadPdf")}
               </button>
             </div>
           </div>

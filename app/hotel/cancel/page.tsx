@@ -5,6 +5,7 @@ import { gql, useQuery, useMutation } from "@apollo/client";
 // Import currency helper to format refund amounts and totals correctly
 import { formatCurrency } from '@/lib/currency';
 import { useEffect, useState } from "react";
+import useTranslation from "@/hooks/useTranslation";
 
 /*
  * Hotel reservation cancellation page.
@@ -69,6 +70,7 @@ const CANCEL_RESERVATION = gql`
 `;
 
 export default function CancelReservationPage() {
+  const { t } = useTranslation()
   const params = useSearchParams();
   const reservationId = params.get("reservationId");
   // State used to control whether the guest has confirmed the
@@ -175,8 +177,8 @@ export default function CancelReservationPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white p-8 rounded-lg shadow max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">Reservation Cancellation</h1>
-          <p>Invalid reservation identifier.</p>
+          <h1 className="text-2xl font-bold mb-4">{t("reservationCancellation")}</h1>
+          <p>{t("invalidReservationId")}</p>
         </div>
       </div>
     );
@@ -185,8 +187,8 @@ export default function CancelReservationPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white p-8 rounded-lg shadow max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">Reservation Cancellation</h1>
-          <p>Loading your reservation...</p>
+          <h1 className="text-2xl font-bold mb-4">{t("reservationCancellation")}</h1>
+          <p>{t("loadingReservation")}</p>
         </div>
       </div>
     );
@@ -195,8 +197,8 @@ export default function CancelReservationPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white p-8 rounded-lg shadow max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">Reservation Cancellation</h1>
-          <p>Unable to retrieve your reservation. Please try again later.</p>
+          <h1 className="text-2xl font-bold mb-4">{t("reservationCancellation")}</h1>
+          <p>{t("unableToRetrieveReservation")}</p>
         </div>
       </div>
     );
@@ -207,8 +209,8 @@ export default function CancelReservationPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="bg-white p-8 rounded-lg shadow max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">Cancellation Complete</h1>
-          <p className="mb-2">Your reservation has been cancelled successfully.</p>
+          <h1 className="text-2xl font-bold mb-4">{t("cancellationComplete")}</h1>
+          <p className="mb-2">{t("reservationCancelledSuccess")}</p>
           <p className="mb-2">
             A refund of{' '}
             {formatCurrency(
@@ -218,7 +220,7 @@ export default function CancelReservationPage() {
             )}{' '}
             will be processed to your original payment method.
           </p>
-          <p className="text-sm text-gray-600">Please allow 5–7 business days for the refund to appear in your account.</p>
+          <p className="text-sm text-gray-600">{t("refundProcessingTime")}</p>
         </div>
       </div>
     );
@@ -230,31 +232,31 @@ export default function CancelReservationPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="bg-white p-8 rounded-lg shadow max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-4 text-center">Cancel Reservation</h1>
-        <p className="mb-4">Before proceeding, please review the details of your reservation and the applicable cancellation policy.</p>
+        <h1 className="text-2xl font-bold mb-4 text-center">{t("cancelReservationTitle")}</h1>
+        <p className="mb-4">{t("reviewDetailsMsg")}</p>
         <div className="mb-4">
-          <h2 className="font-semibold mb-2">Reservation Details</h2>
+          <h2 className="font-semibold mb-2">{t("reservationDetails")}</h2>
           <table className="w-full text-sm">
             <tbody>
               <tr>
-                <td className="py-1 font-medium">Reservation ID:</td>
+                <td className="py-1 font-medium">{t("reservationIdLabel")}:</td>
                 <td className="py-1 break-all">{reservation?.id}</td>
               </tr>
               {checkInDate && (
                 <tr>
-                  <td className="py-1 font-medium">Check‑in:</td>
+                  <td className="py-1 font-medium">{t("checkInLabel")}:</td>
                   <td className="py-1">{checkInDate}</td>
                 </tr>
               )}
               {checkOutDate && (
                 <tr>
-                  <td className="py-1 font-medium">Check‑out:</td>
+                  <td className="py-1 font-medium">{t("checkOutLabel")}:</td>
                   <td className="py-1">{checkOutDate}</td>
                 </tr>
               )}
               {typeof reservation?.totalAmount === 'number' && reservation.totalAmount > 0 && (
                 <tr>
-                  <td className="py-1 font-medium">Total Amount:</td>
+                  <td className="py-1 font-medium">{t("totalAmountLabel")}:</td>
                   <td className="py-1">
                     {formatCurrency(
                       reservation.totalAmount ?? 0,
@@ -268,7 +270,7 @@ export default function CancelReservationPage() {
           </table>
         </div>
         <div className="mb-4">
-          <h2 className="font-semibold mb-2">Cancellation Summary</h2>
+          <h2 className="font-semibold mb-2">{t("cancellationSummary")}</h2>
           {timeInfo.daysBefore > 0 ? (
             <p>You are {timeInfo.daysBefore} day{timeInfo.daysBefore !== 1 ? 's' : ''} before your check‑in date.</p>
           ) : timeInfo.hoursBefore > 0 ? (
@@ -288,12 +290,12 @@ export default function CancelReservationPage() {
               .
             </p>
           ) : (
-            <p>No refund is due based on the current cancellation policy.</p>
+            <p>{t("noRefundDue")}</p>
           )}
           <p className="text-sm text-gray-600 mt-2">Refunds will be processed via your original payment method. Please allow 5–7 business days for the funds to appear in your account.</p>
         </div>
         {cancelError && (
-          <p className="text-red-600 mb-2">An error occurred while cancelling your reservation. Please try again later.</p>
+          <p className="text-red-600 mb-2">{t("cancelError")}</p>
         )}
         <div className="text-center">
           <button
@@ -301,7 +303,7 @@ export default function CancelReservationPage() {
             disabled={cancelLoading}
             className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded disabled:opacity-50"
           >
-            {cancelLoading ? 'Cancelling...' : 'Confirm Cancellation'}
+            {cancelLoading ? t("confirmingCancellation") : t("confirmCancellation")}
           </button>
         </div>
       </div>

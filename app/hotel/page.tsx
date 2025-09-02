@@ -252,7 +252,7 @@ export default function HotelLanding() {
               </svg>
             </div>
             <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              {t("stayEase")}
+              {t("brandName")}
             </span>
           </div>
           <nav className="hidden md:flex space-x-8 text-sm font-medium text-gray-700">

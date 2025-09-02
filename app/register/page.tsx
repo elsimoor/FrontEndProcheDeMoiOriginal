@@ -262,8 +262,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function RegisterPage() {
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",

@@ -165,8 +165,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import useTranslation from "@/hooks/useTranslation"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function LoginPage() {
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLanguage()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -239,28 +243,26 @@ export default function LoginPage() {
             {/* Brand/Benefits panel */}
             <div className="order-last hidden md:order-first md:block">
               <div className="rounded-2xl border border-blue-200/50 bg-white/60 p-8 backdrop-blur">
-                <h2 className="mb-3 text-2xl font-bold text-gray-900">Welcome back to BusinessSuite</h2>
-                <p className="mb-6 text-gray-600">
-                  Sign in to manage your Hotel, Restaurant, or Salon from one powerful dashboard.
-                </p>
+                <h2 className="mb-3 text-2xl font-bold text-gray-900">{t("welcomeBack")}</h2>
+                <p className="mb-6 text-gray-600">{t("loginIntro")}</p>
                 <ul className="space-y-3 text-gray-700">
                   <li className="flex items-center gap-2">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-600" />
-                    Unified dashboard for all services
+                    {t("bulletUnifiedDashboard")}
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-purple-600" />
-                    Secure authentication and backups
+                    {t("bulletSecureAuth")}
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-pink-600" />
-                    24/7 support when you need it
+                    {t("bulletSupport")}
                   </li>
                 </ul>
                 <div className="mt-6 text-sm text-gray-500">
-                  New here?{" "}
+                  {t("newHere")} {" "}
                   <Link href="/register" className="font-medium text-blue-700 underline-offset-4 hover:underline">
-                    Create an account
+                    {t("createAccount")}
                   </Link>
                 </div>
               </div>
@@ -269,8 +271,8 @@ export default function LoginPage() {
             {/* Auth card */}
             <Card className="order-first mx-auto w-full max-w-md rounded-2xl border-gray-200/80 shadow-xl md:order-last">
               <CardHeader className="space-y-2 text-center">
-                <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">Sign in</CardTitle>
-                <CardDescription className="text-base text-gray-600">Access your BusinessSuite account</CardDescription>
+                <CardTitle className="text-3xl font-bold tracking-tight text-gray-900">{t("signInTitle")}</CardTitle>
+                <CardDescription className="text-base text-gray-600">{t("signInSubtitle")}</CardDescription>
               </CardHeader>
               <CardContent className="px-6 pb-6">
                 {error ? (
@@ -282,7 +284,7 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                   <div>
                     <Label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
-                      Email Address
+                      {t("emailAddress")}
                     </Label>
                     <div className="relative">
                       <Mail
@@ -305,7 +307,7 @@ export default function LoginPage() {
 
                   <div>
                     <Label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">
-                      Password
+                      {t("password")}
                     </Label>
                     <div className="relative">
                       <Lock
@@ -342,10 +344,10 @@ export default function LoginPage() {
                   <div className="flex items-center justify-between">
                     <label className="flex items-center">
                       <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                      <span className="ml-2 text-sm text-gray-600">Remember me</span>
-                    </label>
+                      <span className="ml-2 text-sm text-gray-600">{t("rememberMe")}</span>
+                  </label>
                     <Link href="#" className="text-sm font-medium text-blue-700 hover:underline">
-                      Forgot password?
+                      {t("forgotPassword")}
                     </Link>
                   </div>
 
@@ -354,8 +356,8 @@ export default function LoginPage() {
                     disabled={isLoading}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
                   >
-                    {isLoading ? "Signing in..." : "Sign In"}
-                  </Button>
+                    {isLoading ? t("signInBtn") + "..." : t("signInBtn")}
+                </Button>
                 </form>
 
                 <div className="mt-6 text-center text-sm text-gray-600">
